@@ -230,7 +230,8 @@ python3 build.py     # сборка + проверка обязательных 
 
 ## Лицензия
 
-Код — [MIT](LICENSE). Встроенный [`lib/mux-mp4.min.js`](src/lib/mux.js.LICENSE) — mux.js, Apache 2.0.
+Код — [MIT](LICENSE). Сторонние компоненты — [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
+(встроенный mux.js — Apache 2.0).
 
 > Расширение не обходит DRM и не скачивает закрытые видео.
 > Скачивайте только то, на что у вас есть право.
