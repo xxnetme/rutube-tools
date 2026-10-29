@@ -223,6 +223,7 @@ kbd{font-size:12.5px;background:#17171d;border:1px solid #2c2c36;border-bottom-w
   .sec h2,.sec .sub,.sec .card,.sec .shot{animation:rev linear both;animation-timeline:view();animation-range:entry 0% entry 45%}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:640px){.topnav{display:none!important}}
 </style>
 </head>
 <body>
@@ -234,7 +235,7 @@ kbd{font-size:12.5px;background:#17171d;border:1px solid #2c2c36;border-bottom-w
 <div style="display:flex;align-items:center;gap:12px;font-weight:700;font-size:17px">
 <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#ff5a4f"></rect><path d="M12.5 9.5v13l10-6.5z" fill="#0a0a0c"></path></svg>
 RuTube Tools</div>
-<nav style="display:flex;gap:22px;font-size:14px;font-weight:600;flex-wrap:wrap">
+<nav class="topnav" style="display:flex;gap:22px;font-size:14px;font-weight:600;flex-wrap:wrap">
 <a href="#features" style="color:#a3a3b0">Возможности</a>
 <a href="#install" style="color:#a3a3b0">Установка</a>
 <a href="#faq" style="color:#a3a3b0">Вопросы</a>
@@ -390,14 +391,17 @@ RuTube Tools</div>
 
 <footer style="border-top:1px solid #1c1c23;padding:28px 0;font-size:13px;color:#8b8b98;text-align:center">
 <div class="wrap">
-<a href="https://github.com/xxnetme/rutube-tools" style="color:#a3a3b0">GitHub</a> ·
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center">
+<a href="https://github.com/xxnetme/rutube-tools" style="color:#a3a3b0">GitHub</a>
 <a href="#faq" style="color:#a3a3b0">Вопросы</a>
 <a href="#author" style="color:#a3a3b0">Автор</a>
-<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md" style="color:#a3a3b0">Что нового</a> ·
-<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PRIVACY.md" style="color:#a3a3b0">Приватность</a> ·
-<a href="https://github.com/xxnetme/rutube-tools/blob/main/LICENSE" style="color:#a3a3b0">MIT</a> ·
-<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PUBLISH.md" style="color:#a3a3b0">Публикация в магазинах</a> · <a href="privacy.html" style="color:#a3a3b0">Политика конфиденциальности</a>
-<div style="margin-top:10px">RuTube Tools v1.3.2 · <a href="https://github.com/xxnetme" style="color:#a3a3b0">xxnetme</a> · MIT</div>
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md" style="color:#a3a3b0">Что нового</a>
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PRIVACY.md" style="color:#a3a3b0">Приватность</a>
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/LICENSE" style="color:#a3a3b0">MIT</a>
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PUBLISH.md" style="color:#a3a3b0">Публикация в магазинах</a>
+<a href="privacy.html" style="color:#a3a3b0">Политика конфиденциальности</a>
+</div>
+<div style="margin-top:12px">RuTube Tools v1.3.2 · <a href="https://github.com/xxnetme" style="color:#a3a3b0">xxnetme</a> · MIT</div>
 <div style="margin-top:6px">Скачивайте только то, на что у вас есть право.</div></div>
 </footer>
 
