@@ -99,8 +99,25 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' \
   python3 tools/amo-publish.py --previews
 ```
 
-Поле Privacy Policy API не принимает — его нужно вписать руками в кабинете:
-<https://addons.mozilla.org/ru/developers/addon/rutube-tools/> → «Edit» → Privacy Policy.
+Поле Privacy Policy у AMO — **текст, а не ссылка**, и живёт оно в отдельном эндпоинте
+`/addons/addon/<slug>/eula_policy/`. Пока оно пустое, карточка выглядит недозаполненной.
+Заполняется так (или руками в кабинете: <https://addons.mozilla.org/ru/developers/addon/rutube-tools/> → «Edit»):
+
+```python
+# короткий текст + ссылка на полную версию
+privacy_policy = {"ru": "...", "en-US": "..."}
+PATCH /api/v5/addons/addon/rutube-tools/eula_policy/
+```
+
+### Лимиты AMO, на которые легко налететь
+
+| Действие | Лимит | Симптом |
+|---|---|---|
+| PATCH карточки (`/addons/addon/<slug>/`) | ~10 запросов в час | `429 Request was throttled` |
+| Изменение EULA/приватности и загрузка скриншотов | отдельный суточный лимит | `429 … Expected available in 2700+ seconds` |
+
+Отсюда правило: сначала собирайте всё в один PATCH, а не по одному полю. Если поймали 429 —
+не повторяйте в цикле, это только продлевает блокировку; подождите указанное время.
 
 Пока идёт проверка, карточка по ссылке показывает «This add-on is not listed here yet».
 После одобрения ссылка станет публичной, а расширение начнёт обновляться само.
