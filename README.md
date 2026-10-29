@@ -98,6 +98,11 @@
 **Chrome, Edge, Яндекс.Браузер** — [скачать rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip),
 распаковать, затем `chrome://extensions` → «Режим разработчика» → «Загрузить распакованное».
 
+Магазины дополнений: сборка **1.3.2** подготовлена к загрузке — манифесты проходят `addons-linter`
+без ошибок, есть тексты карточек, скриншоты, промо-плитки, политика конфиденциальности и заметки
+для ревьюеров ([docs/PUBLISH.md](docs/PUBLISH.md)). Пока карточки не опубликованы вручную,
+ссылок на addons.mozilla.org и Chrome Web Store нет: загрузка требует аккаунтов автора.
+
 <details>
 <summary>Сборка из исходников</summary>
 
@@ -191,7 +196,7 @@ rutube-tools/
 │   ├── popup.html, popup.js     настройки
 │   └── offscreen.html, .js      сборка MP4 для Chromium
 ├── build.py                     сборка и проверки, только stdlib
-├── docs/                        CHANGELOG, FEATURES, PRIVACY, PUBLISH, скриншоты, лендинг
+├── docs/                        лендинг, privacy.html, CHANGELOG, FEATURES, PUBLISH, скриншоты
 ├── assets/                      баннеры и обложка, исходники в SVG
 └── .github/workflows/           checks и release по тегу
 ```

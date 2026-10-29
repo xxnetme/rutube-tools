@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Политика конфиденциальности — RuTube Tools</title>
+<meta name="description" content="RuTube Tools не собирает и не передаёт персональные данные: настройки хранятся локально, запросы идут только к RuTube и его CDN.">
+<link rel="canonical" href="https://xxnetme.github.io/rutube-tools/privacy.html">
+<meta name="robots" content="index, follow">
+<meta name="author" content="xxnetme">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" type="image/png" href="assets/icon-128.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RuTube Tools">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:url" content="https://xxnetme.github.io/rutube-tools/privacy.html">
+<meta property="og:title" content="Политика конфиденциальности — RuTube Tools">
+<meta property="og:description" content="Ни аналитики, ни рекламы, ни трекеров: что именно делает расширение с данными.">
+<meta property="og:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
+<style>
+:root{--bg:#0a0a0c;--surf:#101014;--line:#24242c;--ink:#f1f1f6;--dim:#a3a3b0;--faint:#8b8b98;--acc:#ff5a4f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 "Onest","Inter",-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--ink);text-decoration:none;border-bottom:1px solid #34343e}
+a:hover{border-color:var(--acc);color:#fff}
+.wrap{max-width:820px;margin:0 auto;padding:0 24px}
+header{border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,10,12,.88);backdrop-filter:blur(12px);z-index:5}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em;border:0}
+.brand svg{display:block}
+.back{font-size:14px;color:var(--dim);border:0}
+main{padding:64px 0 96px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.12;letter-spacing:-.03em;margin:0 0 10px;font-weight:640}
+h2{font-size:20px;letter-spacing:-.015em;margin:44px 0 12px;font-weight:620}
+p{margin:0 0 14px;color:#d7d7e0}
+ul{margin:0 0 16px;padding-left:20px;color:#d7d7e0}
+li{margin:0 0 6px}
+code{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;background:var(--surf);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:#e9e9f2}
+hr{border:0;border-top:1px solid var(--line);margin:36px 0}
+.tw{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th{text-align:left;font-weight:600;background:#131318;color:var(--faint);padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;letter-spacing:.02em;text-transform:uppercase}
+td{padding:11px 14px;border-bottom:1px solid #1b1b22;color:#cfcfd8;vertical-align:top}
+tr:last-child td{border-bottom:0}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--faint);font-size:14px}
+footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between}
+@media (prefers-reduced-motion:no-preference){main{animation:in .4s ease both}@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<a class="brand" href="./">
+<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#ff5a4f"/><path d="M12.5 9.5 23 16l-10.5 6.5z" fill="#0a0a0c"/></svg>
+RuTube Tools</a>
+<a class="back" href="./">← На главную</a>
+</div></header>
+<main class="wrap">
+<h1>Политика конфиденциальности — RuTube Tools</h1>
+<p><strong>Последнее обновление:</strong> 29.10.2026</p>
+<p><strong>Версия расширения:</strong> 1.3.2</p>
+<h2>Коротко</h2>
+<p>Расширение RuTube Tools <strong>не собирает, не хранит и не передаёт</strong> ваши персональные данные.</p>
+<p>Вся работа происходит локально в вашем браузере.</p>
+<h2>Какие данные обрабатываются</h2>
+<div class="tw"><table><thead><tr><th>Что</th><th>Где</th><th>Зачем</th><th>Куда уходит</th></tr></thead><tbody><tr><td>Адрес <code>.m3u8</code>-плейлиста и фрагменты видео</td><td>на вашем устройстве</td><td>чтобы скачать выбранное видео и собрать MP4</td><td>только на серверы RuTube / его CDN (<code>rutube.ru</code>, <code>*.rtbcdn.ru</code>), откуда вы и так смотрите видео</td></tr><tr><td>Название видео, длительность, список качеств</td><td>на вашем устройстве</td><td>показать качества и назвать файл</td><td>никуда</td></tr><tr><td>Настройки (качество, частота кадров, размер частей, клавиши)</td><td><code>storage.local</code> браузера</td><td>сохранить ваш выбор между сессиями</td><td>никуда, остаётся на устройстве</td></tr><tr><td>Сохранённые файлы</td><td>папка «Загрузки»</td><td>это и есть результат работы</td><td>никуда</td></tr><tr><td>Позиция просмотра (таймкод)</td><td><code>storage.local</code></td><td>кнопка «Продолжить с 12:34»</td><td>никуда</td></tr><tr><td>Субтитры и обложка</td><td>запрашиваются у RuTube по кнопке</td><td>скачать .srt / .jpg</td><td>только на серверы RuTube</td></tr><tr><td>Диагностика ошибки</td><td>формируется локально по кнопке</td><td>чтобы вы могли отправить её разработчику</td><td>никуда, пока вы сами её не скопируете</td></tr></tbody></table></div>
+<h2>Чего расширение НЕ делает</h2>
+<ul><li>Не отправляет аналитику, телеметрию и «статистику использования».</li><li>Не содержит рекламы, трекеров и сторонних скриптов.</li><li>Не читает содержимое других сайтов: скрипт работает только на <code>rutube.ru</code>.</li></ul>
+<p>  Широких разрешений на «все сайты» в манифесте нет вообще.</p>
+<ul><li>Не имеет доступа к вашим паролям, cookie-файлам аутентификации и переписке.</li></ul>
+<p>  Запросы к API RuTube идут <strong>без</strong> передачи cookie (<code>credentials: 'omit'</code>).</p>
+<ul><li>Не продаёт и не передаёт данные третьим лицам — потому что данных просто нет.</li></ul>
+<h2>Разрешения и зачем они нужны</h2>
+<div class="tw"><table><thead><tr><th>Разрешение</th><th>Назначение</th></tr></thead><tbody><tr><td><code>storage</code></td><td>сохранение ваших настроек на устройстве</td></tr><tr><td><code>downloads</code></td><td>сохранение готового MP4/PNG в папку «Загрузки»</td></tr><tr><td><code>offscreen</code> (только Chromium)</td><td>сборка файла в фоновом документе — в служебном скрипте нет <code>URL.createObjectURL</code></td></tr><tr><td><code><em>://rutube.ru/</em></code>, <code><em>://</em>.rutube.ru/*</code></td><td>показать кнопку и панель на странице видео</td></tr><tr><td><code><em>://</em>.rtbcdn.ru/<em></code>, <code></em>://<em>.rtbcdn.net/</em></code></td><td>загрузка фрагментов видео с CDN RuTube</td></tr></tbody></table></div>
+<h2>Сторонний код</h2>
+<p>В комплект входит библиотека <a href="https://github.com/videojs/mux.js">mux.js</a> (Apache License 2.0),</p>
+<p>она работает локально и не отправляет данные наружу.</p>
+<h2>Дети</h2>
+<p>Расширение не предназначено для детей и не собирает данные ни о ком.</p>
+<h2>Изменения</h2>
+<p>Если политика изменится, обновлённая версия будет опубликована вместе с новой версией</p>
+<p>расширения, а дата вверху — изменена.</p>
+<h2>Контакты</h2>
+<p>Автор: <code><укажите ваше имя / e-mail></code></p>
+<p>Issues: <code><ссылка на репозиторий></code></p>
+</main>
+<footer><div class="wrap">
+<span>RuTube Tools v1.3.2 · MIT</span>
+<span><a href="./">Сайт</a> · <a href="https://github.com/xxnetme/rutube-tools">Исходники</a> · <a href="https://github.com/xxnetme">xxnetme</a></span>
+</div></footer>
+</body>
+</html>
