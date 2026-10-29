@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /preview.html
+
+Sitemap: https://xxnetme.github.io/rutube-tools/sitemap.xml

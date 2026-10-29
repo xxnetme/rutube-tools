@@ -3,19 +3,107 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RuTube Tools — покадровая перемотка и скачивание в MP4</title>
-<meta name="description" content="Расширение для RuTube: шаг по кадрам, кадры в PNG и скачивание в MP4 — целиком, фрагментом или плейлистом. Без рекламы и трекеров, всё работает локально.">
-<meta name="theme-color" content="#0a0a0c">
+
+<title>RuTube Tools — скачать видео с RuTube в MP4, кадры, субтитры, плейлисты</title>
+<meta name="description" content="Бесплатное расширение для Firefox, Chrome и Edge: скачивание видео и плейлистов RuTube в MP4, покадровая перемотка, кадры в PNG, субтитры SRT, обложки. Без рекламы и трекеров.">
+<link rel="canonical" href="https://xxnetme.github.io/rutube-tools/">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="author" content="xxnetme">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" href="assets/icon-128.png">
+<link rel="apple-touch-icon" href="assets/icon-128.png">
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="RuTube Tools — покадровая перемотка и MP4">
-<meta property="og:description" content="Шаг по кадрам, кадры в PNG, скачивание целиком, фрагментом или плейлистом. Без рекламы и трекеров.">
+<meta property="og:site_name" content="RuTube Tools">
+<meta property="og:locale" content="ru_RU">
 <meta property="og:url" content="https://xxnetme.github.io/rutube-tools/">
+<meta property="og:title" content="RuTube Tools — скачивание, кадры, субтитры и плейлисты для RuTube">
+<meta property="og:description" content="Расширение для Firefox и Chromium: MP4 целиком, фрагментом или плейлистом, покадровая перемотка, PNG, SRT. Без рекламы и трекеров.">
 <meta property="og:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Панель RuTube Tools на странице видео RuTube">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RuTube Tools — расширение для RuTube">
+<meta name="twitter:description" content="MP4, кадры в PNG, субтитры, плейлисты и покадровая перемотка. Без рекламы и трекеров.">
+<meta name="twitter:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
 
-<link rel="icon" href="assets/icon-128.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "RuTube Tools",
+      "alternateName": "RuTube Tools — кадры и MP4",
+      "description": "Расширение для браузера: скачивание видео и плейлистов RuTube в MP4, покадровая перемотка, кадры в PNG, субтитры SRT, обложки, мини-плеер.",
+      "applicationCategory": "MultimediaApplication",
+      "applicationSubCategory": "Browser extension",
+      "operatingSystem": "Windows, macOS, Linux",
+      "browserRequirements": "Firefox 115+, Chrome / Edge / Яндекс.Браузер 109+",
+      "softwareVersion": "1.3.1",
+      "inLanguage": ["ru", "en"],
+      "license": "https://github.com/xxnetme/rutube-tools/blob/main/LICENSE",
+      "url": "https://xxnetme.github.io/rutube-tools/",
+      "downloadUrl": "https://github.com/xxnetme/rutube-tools/releases/latest",
+      "codeRepository": "https://github.com/xxnetme/rutube-tools",
+      "author": { "@type": "Person", "name": "xxnetme", "url": "https://github.com/xxnetme" },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "RUB" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Как скачать видео с RuTube в MP4?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Откройте страницу видео, нажмите кнопку MP4 в правом нижнем углу, выберите качество и нажмите «Скачать MP4». Файл соберётся в браузере и появится в папке «Загрузки»." }
+        },
+        {
+          "@type": "Question",
+          "name": "Можно ли скачать только фрагмент видео?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Да. Во вкладке «Скачать» переключитесь на «Фрагмент» и укажите начало и конец, например 12:30 и 12:45. Границы привязываются к фрагментам потока (2–4 секунды)." }
+        },
+        {
+          "@type": "Question",
+          "name": "Как скачать весь плейлист RuTube?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Откройте страницу плейлиста /plst/…, кнопка станет PL. Выберите качество и диапазон серий, затем «Скачать плейлист». Видео загружаются по очереди с паузой." }
+        },
+        {
+          "@type": "Question",
+          "name": "Как сохранить кадр в PNG?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Нажмите S — кадр текущего момента сохранится картинкой с таймкодом в имени файла. Для серии кадров откройте вкладку «Кадры» и задайте интервал раскадровки." }
+        },
+        {
+          "@type": "Question",
+          "name": "Как скачать субтитры с RuTube?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Вкладка «Ещё» → «Субтитры» → «Скачать». Сохраняется файл .srt, включая авто-субтитры RuTube. Там же обложка в JPG, главы и ссылка .m3u8." }
+        },
+        {
+          "@type": "Question",
+          "name": "Почему видео сохранилось как .ts, а не .mp4?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Так бывает с кодеками HEVC и AV1: собрать из них MP4 в браузере нельзя без перекодирования. Файл сохраняется как .ts и открывается в VLC. Видео в H.264 всегда собираются в обычный MP4." }
+        },
+        {
+          "@type": "Question",
+          "name": "Почему не скачивается прямой эфир или платное видео?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Прямые трансляции и видео с DRM-защитой не поддерживаются — это осознанное ограничение. Расширение не обходит защиту." }
+        },
+        {
+          "@type": "Question",
+          "name": "Расширение что-то отправляет на серверы?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Нет. Ни аналитики, ни рекламы, ни собственных серверов: запросы идут только к RuTube и его CDN, без cookie. Настройки хранятся локально." }
+        },
+        {
+          "@type": "Question",
+          "name": "Работает ли в Chrome, Edge и Яндекс.Браузере?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Да. Для Chromium-браузеров есть отдельная сборка .zip, устанавливается через «Режим разработчика» → «Загрузить распакованное»." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -31,15 +119,15 @@ a{color:#ff7a70;text-decoration:none}
 a:hover{color:#ffb0a8}
 :focus-visible{outline:2px solid #ff5a4f;outline-offset:3px;border-radius:6px}
 ::selection{background:rgba(255,90,79,.3)}
-
 .wrap{max-width:1120px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
-section[id]{scroll-margin-top:84px}
+section[id],header[id]{scroll-margin-top:84px}
 
 .card{background:#111116;border:1px solid #24242c;border-radius:20px;padding:24px}
 .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#1a1a22;margin-bottom:16px}
 .ic svg{width:21px;height:21px}
 .card h3{margin:0 0 8px;font-size:18px;font-weight:700;letter-spacing:-.01em}
 .card p{margin:0;color:#a3a3b0;font-size:15px;line-height:1.6}
+.card p code{font-size:13.5px}
 
 .btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 22px;border-radius:12px;
   font-weight:700;font-size:15px;box-sizing:border-box}
@@ -51,18 +139,19 @@ section[id]{scroll-margin-top:84px}
 .wide{grid-column:span 2}
 .two{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
-
 @media(max-width:940px){.bento{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr;gap:36px}}
 @media(max-width:640px){.bento,.two{grid-template-columns:1fr}.wide{grid-column:auto}}
 
 .badge{display:inline-block;border:1px solid #2c2c36;color:#c4c4cf;border-radius:999px;padding:6px 12px;
   font-size:13px;font-weight:600;white-space:nowrap}
 
-.k,code{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.k,code,kbd{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .k{font-size:14px;background:#17171d;border:1px solid #2c2c36;border-bottom-width:2px;border-radius:8px;
   padding:3px 10px;color:#f1f1f6;white-space:nowrap}
 code{font-size:13px;background:#17171d;border:1px solid #2c2c36;border-radius:6px;padding:2px 7px;color:#e4e4ec;
   word-break:break-word}
+kbd{font-size:12.5px;background:#17171d;border:1px solid #2c2c36;border-bottom-width:2px;border-radius:6px;
+  padding:1px 7px;color:#f1f1f6}
 
 .n{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
   background:#241516;color:#ff9a90;font-weight:800;font-size:14px}
@@ -73,26 +162,40 @@ code{font-size:13px;background:#17171d;border:1px solid #2c2c36;border-radius:6p
 
 .sec{padding-top:clamp(64px,9vw,112px)}
 .sec h2{margin:0 0 10px;font-size:clamp(26px,4vw,38px);letter-spacing:-.02em;font-weight:800}
-.sec .sub{margin:0 0 32px;color:#a3a3b0;font-size:17px;max-width:560px}
+.sec .sub{margin:0 0 32px;color:#a3a3b0;font-size:17px;max-width:620px}
+.h1-sub{margin:0 0 32px;font-size:clamp(15px,1.7vw,17px);color:#8b8b98;max-width:600px;line-height:1.55}
 
 /* скриншоты */
-.shot{aspect-ratio:16/10;border:1px solid #24242c;border-radius:20px;background:#0f0f14;overflow:hidden;
-  position:relative}
-.shot img{width:100%;height:100%;object-fit:cover;display:block}
+.shot{margin:0;border:1px solid #24242c;border-radius:20px;background:#0f0f14;overflow:hidden}
+.shot img{width:100%;height:auto;display:block;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
 .shot:hover img{transform:scale(1.015)}
-.shot img{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.shot figcaption{padding:12px 16px;font-size:13px;color:#8b8b98;border-top:1px solid #1c1c23}
+
+/* FAQ */
+.faq{border-top:1px solid #24242c}
+.faq details{border-bottom:1px solid #24242c;padding:0}
+.faq summary{cursor:pointer;padding:18px 40px 18px 0;font-size:16.5px;font-weight:600;color:#f1f1f6;
+  list-style:none;position:relative;transition:color .15s}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:hover{color:#ffb0a8}
+.faq summary::after{content:"";position:absolute;right:6px;top:50%;width:9px;height:9px;
+  border-right:2px solid #6e6f78;border-bottom:2px solid #6e6f78;transform:translateY(-70%) rotate(45deg);
+  transition:transform .2s,border-color .2s}
+.faq details[open] summary::after{transform:translateY(-30%) rotate(225deg);border-color:#ff7a70}
+.faq details p{margin:0 0 20px;color:#a3a3b0;font-size:15px;line-height:1.65;max-width:760px}
+.faq details b{color:#e6e6ec;font-weight:600}
 
 /* автор */
 .card.author{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:20px 24px}
 .author-mark{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;
   background:linear-gradient(150deg,#2a2a33,#17171d);border:1px solid #2c2c36;
-  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:#d9d9e2;letter-spacing:.02em}
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:#d9d9e2}
 .author-who b{display:block;font-size:17px;letter-spacing:-.01em}
 .author-who span{display:block;color:#8b8b98;font-size:13.5px;margin-top:1px}
 .author-links{margin-left:auto;display:flex;gap:22px;font-size:14px;font-weight:600;flex-wrap:wrap}
 @media(max-width:640px){.author-links{margin-left:0;width:100%;gap:18px}}
 
-/* анимации из макета */
+/* анимации */
 @keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes rev{from{opacity:0;translate:0 28px}to{opacity:1;translate:0 0}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -123,6 +226,7 @@ code{font-size:13px;background:#17171d;border:1px solid #2c2c36;border-radius:6p
 </style>
 </head>
 <body>
+
 <div style="font-family:'Onest',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#f1f1f6;background:#0a0a0c;line-height:1.5;-webkit-font-smoothing:antialiased">
 
 <div style="position:sticky;top:0;z-index:5;background:#0a0a0c;border-bottom:1px solid #1c1c23">
@@ -133,8 +237,9 @@ RuTube Tools</div>
 <nav style="display:flex;gap:22px;font-size:14px;font-weight:600;flex-wrap:wrap">
 <a href="#features" style="color:#a3a3b0">Возможности</a>
 <a href="#install" style="color:#a3a3b0">Установка</a>
-<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md" style="color:#a3a3b0">Что нового</a>
+<a href="#faq" style="color:#a3a3b0">Вопросы</a>
 <a href="#author" style="color:#a3a3b0">Автор</a>
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md" style="color:#a3a3b0">Что нового</a>
 <a href="https://github.com/xxnetme/rutube-tools" style="color:#a3a3b0">GitHub</a>
 </nav></div></div>
 
@@ -145,8 +250,9 @@ RuTube Tools</div>
 <span class="badge" style="border-color:#4a2a28;color:#ffb0a8">Firefox</span>
 <span class="badge" style="border-color:#4a2a28;color:#ffb0a8">Chrome / Edge</span>
 <span class="badge">Manifest V3</span><span class="badge">MIT</span></div>
-<h1 style="margin:0 0 20px;font-size:clamp(38px,6vw,68px);line-height:1.04;letter-spacing:-.03em;font-weight:800">Покадровая перемотка и MP4 <span style="color:#ff5a4f">прямо в плеере</span> RuTube</h1>
-<p style="margin:0 0 32px;font-size:clamp(16px,2vw,19px);color:#a3a3b0;max-width:520px">Шаг по кадрам, кадры в PNG, скачивание целиком, фрагментом или плейлистом. Без рекламы и трекеров, всё работает локально.</p>
+<h1 style="margin:0 0 14px;font-size:clamp(38px,6vw,68px);line-height:1.04;letter-spacing:-.03em;font-weight:800">Все инструменты для RuTube <span style="color:#ff5a4f">прямо в плеере</span></h1>
+
+<p class="h1-sub">Расширение для RuTube: скачивание видео и плейлистов в MP4, покадровая перемотка, кадры в PNG, субтитры и обложки. Без рекламы и трекеров, всё работает локально.</p>
 <div style="display:flex;flex-wrap:wrap;gap:12px">
 <a class="btn" style="background:#ff5a4f;color:#0a0a0c" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m6.5 10.5 5.5 5.5 5.5-5.5"></path><path d="M4 20h16"></path></svg>Скачать для Firefox (.xpi)</a>
 <a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m6.5 10.5 5.5 5.5 5.5-5.5"></path><path d="M4 20h16"></path></svg>Для Chrome / Edge (.zip)</a></div>
@@ -168,7 +274,7 @@ RuTube Tools</div>
 <main class="wrap">
 
 <section class="sec" id="features">
-<h2>Что умеет</h2>
+<h2>Что умеет расширение RuTube Tools</h2>
 <p class="sub">Четыре вкладки в одной аккуратной панели — и ноль настроек, чтобы начать.</p>
 <div class="bento">
 <div class="card wide"><div class="ic" style="color:#ff8a80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3z"></path><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"></path></svg></div><h3>MP4 целиком и фрагментом</h3><p>«С 12:30 по 12:45» — точность до фрагмента потока. Склейка в обычный MP4 прямо в браузере.</p></div>
@@ -181,7 +287,7 @@ RuTube Tools</div>
 </section>
 
 <section class="sec" id="install">
-<h2>Установка</h2>
+<h2>Как установить в Firefox, Chrome и Edge</h2>
 <p class="sub">Нужна одна минута.</p>
 <div class="two">
 <div class="card"><h3>Firefox</h3>
@@ -199,17 +305,17 @@ RuTube Tools</div>
 </section>
 
 <section class="sec">
-<h2>Как выглядит</h2>
+<h2>Как выглядит панель на странице видео</h2>
 <p class="sub">Тёмная панель, которая не спорит с дизайном RuTube.</p>
 <div class="two">
-<div class="shot img"><img src="screenshots/02-download.png" alt="Панель скачивания: качества, оценка размера, фрагмент" loading="lazy"></div>
-<div class="shot img"><img src="screenshots/03-frames.png" alt="Вкладка «Кадры»: A/B-петля и раскадровка" loading="lazy"></div>
-<div class="shot img"><img src="screenshots/05-info.png" alt="Вкладка «Инфо»: кодек, fps, битрейт, просмотры" loading="lazy"></div>
-<div class="shot img"><img src="screenshots/07-done.png" alt="Готовый файл: показать файл и скачать ещё" loading="lazy"></div></div>
+<figure class="shot"><img src="screenshots/02-download.png" alt="Вкладка скачивания в панели RuTube Tools: выбор качества 1080p–144p, оценка размера и режим фрагмента" loading="lazy" width="1280" height="800"><figcaption>Вкладка «Скачать»: качества, размер, фрагмент по таймкодам</figcaption></figure>
+<figure class="shot"><img src="screenshots/03-frames.png" alt="Вкладка «Кадры»: сохранение кадра в PNG, переход на кадр по номеру, петля A/B и раскадровка" loading="lazy" width="1280" height="800"><figcaption>Вкладка «Кадры»: PNG, переход по номеру, петля A/B, раскадровка</figcaption></figure><figure class="shot"><img src="screenshots/05-info.png" alt="Вкладка «Инфо»: кодек, частота кадров, битрейт, доступные качества, просмотры и дата публикации" loading="lazy" width="1280" height="800"><figcaption>Вкладка «Инфо»: кодек, fps, битрейт, просмотры</figcaption></figure>
+<figure class="shot"><img src="screenshots/07-done.png" alt="Готовый файл: кнопки «Показать файл», «Закрыть» и «Скачать ещё»" loading="lazy" width="1280" height="800"><figcaption>Готово: файл в загрузках и «Скачать ещё»</figcaption></figure>
+</div>
 </section>
 
 <section class="sec">
-<h2>Клавиши</h2>
+<h2>Горячие клавиши для покадровой перемотки</h2>
 <p class="sub">Полный набор «как на YouTube» включается в настройках расширения.</p>
 <div class="card" style="padding:8px 24px">
 <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 0"><span style="width:120px"><span class="k">,</span> <span class="k">.</span></span><span style="color:#a3a3b0">кадр назад / кадр вперёд</span></div>
@@ -220,8 +326,8 @@ RuTube Tools</div>
 </div>
 </section>
 
-<section class="sec">
-<h2>Чего не делает</h2>
+<section class="sec" style="padding-bottom:clamp(64px,9vw,112px)">
+<h2>Чего расширение не делает</h2>
 <p class="sub">Осознанные границы.</p>
 <div class="bento">
 <div class="card"><h3>Не обходит DRM</h3><p>Платные и защищённые видео не скачиваются — это осознанное ограничение.</p></div>
@@ -230,7 +336,40 @@ RuTube Tools</div>
 </div>
 </section>
 
-<section class="sec" id="author" style="padding-top:clamp(40px,6vw,72px);padding-bottom:clamp(48px,7vw,88px)">
+<section class="sec" id="faq">
+<h2>Вопросы и ответы</h2>
+<p class="sub">Коротко о том, что спрашивают чаще всего.</p>
+<div class="faq">
+<details><summary>Как скачать видео с RuTube в MP4?</summary>
+<p>Откройте страницу видео, нажмите кнопку <b>MP4</b> в правом нижнем углу, выберите качество и нажмите «Скачать MP4». Файл соберётся в браузере и появится в папке «Загрузки». Ничего устанавливать дополнительно не нужно.</p></details>
+
+<details><summary>Можно ли скачать только фрагмент видео?</summary>
+<p>Да. Во вкладке «Скачать» переключитесь на «Фрагмент», укажите начало и конец, например <code>12:30</code> и <code>12:45</code>. Кнопка с часами подставит время из плеера. Границы привязываются к фрагментам потока (2–4 секунды), поэтому файл может начинаться на пару секунд раньше.</p></details>
+
+<details><summary>Как скачать весь плейлист RuTube?</summary>
+<p>Откройте страницу плейлиста (<code>/plst/…</code>) — кнопка станет <b>PL</b>. Выберите качество и диапазон серий, затем «Скачать плейлист». Видео загружаются по очереди с паузой, между ними можно поставить очередь на паузу или отменить её.</p></details>
+
+<details><summary>Как сохранить кадр в PNG?</summary>
+<p>Нажмите <kbd>s</kbd> — кадр текущего момента сохранится картинкой с таймкодом в имени файла. Для серии кадров откройте вкладку «Кадры» и задайте интервал раскадровки (до 120 кадров).</p></details>
+
+<details><summary>Как скачать субтитры с RuTube?</summary>
+<p>Вкладка «Ещё» → раздел «Субтитры» → «Скачать». Сохраняется файл <code>.srt</code>, включая авто-субтитры RuTube. Там же можно скачать обложку в JPG, главы и ссылку <code>.m3u8</code>.</p></details>
+
+<details><summary>Почему видео сохранилось как .ts, а не .mp4?</summary>
+<p>Так бывает с кодеками HEVC и AV1: собрать из них MP4 в браузере нельзя без перекодирования. Файл сохраняется как <code>.ts</code> и открывается в VLC. Видео в H.264 всегда собираются в обычный MP4.</p></details>
+
+<details><summary>Почему не скачивается прямой эфир или платное видео?</summary>
+<p>Прямые трансляции и видео с DRM-защитой не поддерживаются — это осознанное ограничение. Расширение не обходит защиту и работает только с открытыми видео.</p></details>
+
+<details><summary>Расширение что-то отправляет на серверы?</summary>
+<p>Нет. Ни аналитики, ни рекламы, ни собственных серверов: запросы идут только к RuTube и его CDN, без cookie. Настройки и позиция просмотра хранятся локально в браузере.</p></details>
+
+<details><summary>Работает ли в Chrome, Edge и Яндекс.Браузере?</summary>
+<p>Да. Для Chromium-браузеров есть отдельная сборка (<code>.zip</code>), устанавливается через «Режим разработчика» → «Загрузить распакованное».</p></details>
+</div>
+</section>
+
+<section class="sec" id="author">
 <h2>Автор</h2>
 <p class="sub">Проект делает один человек, без компании и венчурных денег.</p>
 <div class="card author">
@@ -249,12 +388,11 @@ RuTube Tools</div>
 
 </main>
 
-
-
-
 <footer style="border-top:1px solid #1c1c23;padding:28px 0;font-size:13px;color:#8b8b98;text-align:center">
 <div class="wrap">
 <a href="https://github.com/xxnetme/rutube-tools" style="color:#a3a3b0">GitHub</a> ·
+<a href="#faq" style="color:#a3a3b0">Вопросы</a>
+<a href="#author" style="color:#a3a3b0">Автор</a>
 <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md" style="color:#a3a3b0">Что нового</a> ·
 <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PRIVACY.md" style="color:#a3a3b0">Приватность</a> ·
 <a href="https://github.com/xxnetme/rutube-tools/blob/main/LICENSE" style="color:#a3a3b0">MIT</a> ·
@@ -262,5 +400,18 @@ RuTube Tools</div>
 <div style="margin-top:10px">RuTube Tools v1.3.1 · <a href="https://github.com/xxnetme" style="color:#a3a3b0">xxnetme</a> · MIT</div>
 <div style="margin-top:6px">Скачивайте только то, на что у вас есть право.</div></div>
 </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ff5a4f&quot;},&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:3400}}">
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#ff5a4f' };
+}
+}
+</script>
+
+
+</body></html>
 </body>
 </html>
