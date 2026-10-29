@@ -3,6 +3,7 @@ build/
 release/
 dist/
 .dev/
+release-notes.md
 
 # системное
 .DS_Store
@@ -18,5 +19,4 @@ tmp/
 node_modules/
 __pycache__/
 *.pyc
-.amo-watch.log
 .amo-apply-all.log

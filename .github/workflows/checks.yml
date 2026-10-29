@@ -34,31 +34,13 @@ jobs:
 
       - name: addons-linter
         run: |
-          npx --yes addons-linter@latest release/rutube-tools-firefox.zip
+          # мажорная версия закреплена: иначе новый релиз линтера однажды уронит
+          # сборку без единой правки в коде. обновлять осознанно.
+          npx --yes addons-linter@10 release/rutube-tools-firefox.zip
           echo "addons-linter прошёл"
 
       - name: Версии совпадают
-        run: |
-          python3 - <<'PY'
-          import json, pathlib, re, sys
-          fx = json.loads(pathlib.Path('src/manifest.firefox.json').read_text(encoding='utf-8'))
-          cr = json.loads(pathlib.Path('src/manifest.chromium.json').read_text(encoding='utf-8'))
-          version = fx['version']
-          errors = []
-          if cr['version'] != version:
-              errors.append(f"chromium {cr['version']} != firefox {version}")
-          changelog = pathlib.Path('docs/CHANGELOG.md').read_text(encoding='utf-8')
-          if not re.search(rf'^## {re.escape(version)}\b', changelog, re.M):
-              errors.append(f"в CHANGELOG нет раздела {version}")
-          for f in ('docs/PRIVACY.md', 'README.md'):
-              text = pathlib.Path(f).read_text(encoding='utf-8')
-              if version not in text and f == 'docs/PRIVACY.md':
-                  errors.append(f"в {f} не указана версия {version}")
-          if errors:
-              print('::error::' + '; '.join(errors))
-              sys.exit(1)
-          print(f'версия {version} согласована: манифесты, CHANGELOG')
-          PY
+        run: python3 tools/check-versions.py
 
       - name: Лендинг и политика собираются
         run: |

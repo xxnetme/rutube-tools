@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RuTube Tools — кадры и MP4",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Покадровая перемотка, кадры в PNG, скачивание фрагментов и плейлистов RuTube в MP4.",
   "author": "xxnetme (https://github.com/xxnetme)",
   "homepage_url": "https://github.com/xxnetme/rutube-tools",

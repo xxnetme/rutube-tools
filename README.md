@@ -98,7 +98,7 @@
 **Chrome, Edge, Яндекс.Браузер** — [скачать rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip),
 распаковать, затем `chrome://extensions` → «Режим разработчика» → «Загрузить распакованное».
 
-> **Статус в магазинах.** Версия 1.3.2 отправлена в Firefox (AMO) и ждёт проверки:
+> **Статус в магазинах.** Заявка отправлена в Firefox (AMO) и ждёт проверки:
 > карточка [addons.mozilla.org/ru/firefox/addon/rutube-tools](https://addons.mozilla.org/ru/firefox/addon/rutube-tools/)
 > (статус `nominated`). Пока её не одобрили, ставить нужно через `about:debugging`, как выше.
 > Chrome Web Store, Edge Add-ons и Opera — сборка готова, подача впереди:

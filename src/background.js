@@ -624,5 +624,10 @@
     return true;
   });
 
-  if (globalThis.RT_DEBUG) console.log('[RuTube Tools] background готов');
+  /* Отладка фона: chrome.storage.local.set({ rtDebug: true }) — по умолчанию молчим. */
+  try {
+    api.storage.local.get({ rtDebug: false }, function (v) {
+      if (v && v.rtDebug) console.log('[RuTube Tools] background готов');
+    });
+  } catch (e) {}
 })();

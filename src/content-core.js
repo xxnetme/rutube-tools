@@ -23,10 +23,20 @@
     frameKeys: 'comma',     // comma | brackets | angle
     shotKey: 's',           // s | k | f
     preservePitch: true,
-    rememberPos: true
+    rememberPos: true,
+    rtDebug: false          // отладочные сообщения в консоли
   };
 
   var settings = Object.assign({}, DEFAULTS);
+
+  /* Отладка выключена по умолчанию. Включить на странице RuTube:
+   *   localStorage.setItem('rtDebug', '1')   — и перезагрузить вкладку.
+   * Выключить: localStorage.removeItem('rtDebug').
+   * Флаг в настройках (rtDebug) тоже работает — например, из попапа. */
+  function debugOn() {
+    try { if (localStorage.getItem('rtDebug') === '1') return true; } catch (e) {}
+    return !!(settings && settings.rtDebug);
+  }
 
   var state = {
     videoId: null,
@@ -934,7 +944,7 @@
       });
     } catch (e) {}
 
-    if (globalThis.RT_DEBUG) console.log('[RuTube Tools] content готов', location.href);
+    if (debugOn()) console.log('[RuTube Tools] content готов', location.href);
   }
 
   /* ------------------------------------------------------ общий неймспейс */
