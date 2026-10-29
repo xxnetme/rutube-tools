@@ -98,10 +98,12 @@
 **Chrome, Edge, Яндекс.Браузер** — [скачать rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip),
 распаковать, затем `chrome://extensions` → «Режим разработчика» → «Загрузить распакованное».
 
-Магазины дополнений: сборка **1.3.2** подготовлена к загрузке — манифесты проходят `addons-linter`
-без ошибок, есть тексты карточек, скриншоты, промо-плитки, политика конфиденциальности и заметки
-для ревьюеров ([docs/PUBLISH.md](docs/PUBLISH.md)). Пока карточки не опубликованы вручную,
-ссылок на addons.mozilla.org и Chrome Web Store нет: загрузка требует аккаунтов автора.
+> **Статус в магазинах.** Версия 1.3.2 отправлена в Firefox (AMO) и ждёт проверки:
+> карточка [addons.mozilla.org/ru/firefox/addon/rutube-tools](https://addons.mozilla.org/ru/firefox/addon/rutube-tools/)
+> (статус `nominated`). Пока её не одобрили, ставить нужно через `about:debugging`, как выше.
+> Chrome Web Store, Edge Add-ons и Opera — сборка готова, подача впереди:
+> файлы, тексты карточек и заметки ревьюерам лежат в [docs/PUBLISH.md](docs/PUBLISH.md)
+> и [docs/store/listing-ru.md](docs/store/listing-ru.md).
 
 <details>
 <summary>Сборка из исходников</summary>
@@ -176,7 +178,7 @@ URL видео
 Ноль аналитики, телеметрии и рекламы. Расширение работает только на `rutube.ru`, запросы идут
 исключительно к RuTube и его CDN, без cookie. Настройки и позиция просмотра хранятся локально
 в `storage.local`. В манифесте указано `data_collection_permissions: none`.
-Подробнее — [docs/PRIVACY.md](docs/PRIVACY.md).
+Подробнее — [страница политики](https://xxnetme.github.io/rutube-tools/privacy.html) или [docs/PRIVACY.md](docs/PRIVACY.md) в репозитории.
 
 ---
 
