@@ -50,6 +50,8 @@ jobs:
           changelog = pathlib.Path('docs/CHANGELOG.md').read_text(encoding='utf-8')
           m = re.search(rf'^## {re.escape(version)}\b.*?(?=^## |\Z)', changelog, re.S | re.M)
           body = m.group(0).strip() if m else f'Версия {version}.'
+          # заголовок раздела не нужен: название релиза — это tag
+          body = body.split('\n', 1)[1].strip() if body.startswith('## ') and '\n' in body else body
           out = pathlib.Path('release-notes.md')
           out.write_text(body + '\n', encoding='utf-8')
           print(f'заметки для {version}: {len(body)} символов')
