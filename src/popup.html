@@ -4,44 +4,118 @@
 <meta charset="utf-8">
 <title>RuTube Tools</title>
 <style>
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    --bg: #101013;
+    --panel: #16161a;
+    --panel-2: #1c1c22;
+    --line: rgba(255, 255, 255, .075);
+    --line-2: rgba(255, 255, 255, .13);
+    --ink: #eceef1;
+    --dim: #9b9ca4;
+    --faint: #6e6f78;
+    --acc: #f2413a;
+  }
   * { box-sizing: border-box; }
   body {
-    margin: 0; width: 336px; padding: 16px 16px 14px;
-    background: #17171a; color: #f1f1f4;
-    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    margin: 0; width: 344px; padding: 14px 14px 12px;
+    background: var(--bg); color: var(--ink);
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .2px; display: flex; align-items: center; gap: 8px; }
-  h1 .badge { font-size: 9px; font-weight: 700; letter-spacing: .7px; color: #ff6b6b; border: 1px solid rgba(255,107,107,.45); border-radius: 5px; padding: 1px 5px; }
-  .sub { color: #8d8d97; font-size: 11px; margin-bottom: 14px; }
-  .field { margin-bottom: 11px; }
-  label.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
-  .label { color: #c9c9d1; font-size: 12px; }
+
+  /* шапка */
+  .head { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+  .head img { width: 26px; height: 26px; border-radius: 7px; display: block; }
+  .head h1 { font-size: 13.5px; font-weight: 650; letter-spacing: .01em; margin: 0; flex: 1; }
+  .ver { font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; color: var(--faint);
+         border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; }
+  .sub { color: var(--faint); font-size: 11.5px; margin: 0 0 15px 36px; }
+
+  /* группы */
+  .group-label {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--faint); margin: 16px 0 7px 2px;
+  }
+  .group-label:first-of-type { margin-top: 0; }
+  .group { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 9px 11px; border-top: 1px solid var(--line); cursor: pointer;
+  }
+  .group > .row:first-child { border-top: 0; }
+  .row:hover { background: rgba(255, 255, 255, .022); }
+  .row.col { align-items: flex-start; }
+  .row.col .hint { margin-top: 3px; }
+  .row.col select, .row.col input[type=checkbox] { margin-top: 0; }
+  .row .txt { min-width: 0; }
+  .row .label { color: #d6d8dd; font-size: 12px; display: block; }
+  .row > .label { flex: 1; }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .hint { color: var(--faint); font-size: 10.5px; line-height: 1.4; margin-top: 2px; display: block; }
+
   select {
-    background: #232327; color: #f1f1f4; border: 1px solid #34343a; border-radius: 7px;
-    padding: 5px 7px; font-size: 12px; font-family: inherit; min-width: 108px;
+    background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 7px;
+    padding: 5px 7px; font-size: 11.5px; font-family: inherit; min-width: 118px; max-width: 152px; flex: 0 0 auto;
+    transition: border-color .12s;
   }
-  select:focus { outline: 1px solid #ff4d4d; }
-  input[type=checkbox] { appearance: none; width: 34px; height: 19px; border-radius: 99px; background: #34343a; position: relative; cursor: pointer; transition: background .15s; flex: 0 0 auto; border: 0; }
-  input[type=checkbox]:checked { background: #ff3b3b; }
-  input[type=checkbox]::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; transition: transform .15s; }
-  input[type=checkbox]:checked::after { transform: translateX(15px); }
-  .hint { color: #7b7b86; font-size: 11px; margin-top: 3px; line-height: 1.4; }
-  .sep { height: 1px; background: #2a2a2f; margin: 12px 0; }
-  .keys { font-size: 11.5px; color: #9d9da8; line-height: 1.6; }
-  kbd { background: #2a2a30; border: 1px solid #3a3a42; border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; font-family: inherit; font-size: 11px; color: #e6e6ec; }
-  .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; }
-  .ver { color: #63636d; font-size: 10.5px; }
-  button { background: #26262b; color: #cfcfd6; border: 1px solid #34343a; border-radius: 7px; padding: 5px 10px; font-size: 11.5px; font-family: inherit; cursor: pointer; }
-  button:hover { background: #303036; color: #fff; }
-  :focus-visible { outline: 2px solid #ff6b6b; outline-offset: 2px; }
+  select:focus { outline: none; border-color: rgba(242, 65, 58, .6); box-shadow: 0 0 0 3px rgba(242, 65, 58, .13); }
+
+  input[type=checkbox] {
+    appearance: none; width: 32px; height: 18px; border-radius: 99px; background: #33343b;
+    position: relative; cursor: pointer; transition: background .16s; flex: 0 0 auto; border: 0;
+  }
+  input[type=checkbox]:checked { background: var(--acc); }
+  input[type=checkbox]::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+    border-radius: 50%; background: #fff; transition: transform .16s; box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+  }
+  input[type=checkbox]:checked::after { transform: translateX(14px); }
+
+  kbd {
+    background: rgba(255, 255, 255, .09); border: 1px solid var(--line-2); border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px; color: #e6e8ec;
+  }
+
+  /* подвал с автором */
+  .foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .author { display: flex; align-items: center; gap: 9px; }
+  .avatar {
+    width: 26px; height: 26px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center;
+    background: linear-gradient(160deg, #2b2c33, #1b1b20); border: 1px solid var(--line-2);
+    font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; color: #cfd1d8;
+  }
+  .who { flex: 1; min-width: 0; line-height: 1.3; }
+  .who .role { display: block; color: var(--faint); font-size: 9.5px; text-transform: uppercase; letter-spacing: .09em; }
+  .who a { color: #d6d8dd; font-size: 12px; font-weight: 600; text-decoration: none; }
+  .who a:hover { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
+
+  .links { display: flex; align-items: center; gap: 10px; margin-top: 11px; }
+  .links a { color: var(--faint); font-size: 10.5px; text-decoration: none; }
+  .links a:hover { color: #cfd1d8; }
+  .links .dot { width: 3px; height: 3px; border-radius: 50%; background: #3a3b43; }
+
+  button {
+    margin-left: auto; background: transparent; color: var(--dim); border: 1px solid var(--line-2);
+    border-radius: 7px; padding: 4px 9px; font-size: 10.5px; font-family: inherit; cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  button:hover { background: rgba(255, 255, 255, .06); color: var(--ink); border-color: rgba(255, 255, 255, .22); }
+  :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 </style>
 </head>
 <body>
-  <h1>RuTube Tools <span class="badge">MP4</span></h1>
-  <div class="sub" data-i18n="pop.sub"></div>
+  <div class="head">
+    <img src="icons/icon-32.png" alt="">
+    <h1>RuTube Tools</h1>
+    <span class="ver" id="ver"></span>
+  </div>
+  <p class="sub" data-i18n="pop.sub"></p>
 
-  <div class="field">
+  <div class="group-label" data-i18n="pop.secDownload"></div>
+  <div class="group">
     <label class="row">
       <span class="label" data-i18n="pop.quality"></span>
       <select id="quality">
@@ -53,11 +127,27 @@
         <option value="worst" data-i18n="opt.worst"></option>
       </select>
     </label>
+    <div class="row col">
+      <span class="txt">
+        <label class="label" for="maxPartMB" data-i18n="pop.parts"></label>
+        <span class="hint" data-i18n="pop.partsHint"></span>
+      </span>
+      <select id="maxPartMB">
+        <option value="100">100</option>
+        <option value="220">220</option>
+        <option value="400">400</option>
+        <option value="800">800</option>
+      </select>
+    </div>
   </div>
 
-  <div class="field">
-    <label class="row">
-      <span class="label" data-i18n="pop.fps"></span>
+  <div class="group-label" data-i18n="pop.secKeys"></div>
+  <div class="group">
+    <div class="row col">
+      <span class="txt">
+        <label class="label" for="fps" data-i18n="pop.fps"></label>
+        <span class="hint" data-i18n="pop.fpsHint"></span>
+      </span>
       <select id="fps">
         <option value="auto" data-i18n="opt.auto"></option>
         <option value="24">24 fps</option>
@@ -66,26 +156,7 @@
         <option value="50">50 fps</option>
         <option value="60">60 fps</option>
       </select>
-    </label>
-    <div class="hint" data-i18n="pop.fpsHint"></div>
-  </div>
-
-  <div class="field">
-    <label class="row">
-      <span class="label" data-i18n="pop.parts"></span>
-      <select id="maxPartMB">
-        <option value="100">100</option>
-        <option value="220">220</option>
-        <option value="400">400</option>
-        <option value="800">800</option>
-      </select>
-    </label>
-    <div class="hint" data-i18n="pop.partsHint"></div>
-  </div>
-
-  <div class="sep"></div>
-
-  <div class="field">
+    </div>
     <label class="row">
       <span class="label" data-i18n="pop.frameKeys"></span>
       <select id="frameKeys">
@@ -94,9 +165,6 @@
         <option value="angle" data-i18n="opt.frameAngle"></option>
       </select>
     </label>
-  </div>
-
-  <div class="field">
     <label class="row">
       <span class="label" data-i18n="pop.shotKey"></span>
       <select id="shotKey">
@@ -105,9 +173,29 @@
         <option value="f" data-i18n="opt.shotF"></option>
       </select>
     </label>
+    <div class="row col">
+      <span class="txt">
+        <label class="label" for="youtubeKeys" data-i18n="pop.youtubeKeys"></label>
+        <span class="hint" data-i18n="pop.youtubeHint"></span>
+      </span>
+      <input type="checkbox" id="youtubeKeys">
+    </div>
   </div>
 
-  <div class="field">
+  <div class="group-label" data-i18n="pop.secBehavior"></div>
+  <div class="group">
+    <label class="row">
+      <span class="label" data-i18n="pop.showButton"></span>
+      <input type="checkbox" id="showButton">
+    </label>
+    <label class="row">
+      <span class="label" data-i18n="pop.pitch"></span>
+      <input type="checkbox" id="preservePitch">
+    </label>
+    <label class="row">
+      <span class="label" data-i18n="pop.remember"></span>
+      <input type="checkbox" id="rememberPos">
+    </label>
     <label class="row">
       <span class="label" data-i18n="pop.lang"></span>
       <select id="lang">
@@ -118,44 +206,22 @@
     </label>
   </div>
 
-  <div class="sep"></div>
-
-  <div class="field">
-    <label class="row">
-      <span class="label" data-i18n="pop.showButton"></span>
-      <input type="checkbox" id="showButton">
-    </label>
-  </div>
-
-  <div class="field">
-    <label class="row">
-      <span class="label" data-i18n="pop.youtubeKeys"></span>
-      <input type="checkbox" id="youtubeKeys">
-    </label>
-    <div class="hint" data-i18n="pop.youtubeHint"></div>
-  </div>
-
-  <div class="field">
-    <label class="row">
-      <span class="label" data-i18n="pop.pitch"></span>
-      <input type="checkbox" id="preservePitch">
-    </label>
-  </div>
-
-  <div class="field">
-    <label class="row">
-      <span class="label" data-i18n="pop.remember"></span>
-      <input type="checkbox" id="rememberPos">
-    </label>
-  </div>
-
-  <div class="sep"></div>
-
-  <div class="keys" id="keysHint"></div>
+  <div class="sub" id="keysHint" style="margin:11px 0 0 2px"></div>
 
   <div class="foot">
-    <span class="ver" id="ver"></span>
-    <button id="reset" data-i18n="pop.reset"></button>
+    <div class="author">
+      <span class="avatar" aria-hidden="true">xx</span>
+      <span class="who">
+        <span class="role" data-i18n="pop.developer"></span>
+        <a href="https://github.com/xxnetme" target="_blank" rel="noopener noreferrer">xxnetme</a>
+      </span>
+      <button id="reset" data-i18n="pop.reset"></button>
+    </div>
+    <div class="links">
+      <a href="https://github.com/xxnetme/rutube-tools" target="_blank" rel="noopener noreferrer" data-i18n="pop.source"></a>
+      <span class="dot"></span>
+      <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PRIVACY.md" target="_blank" rel="noopener noreferrer" data-i18n="pop.privacy"></a>
+    </div>
   </div>
 
   <script src="lib/i18n.js"></script>

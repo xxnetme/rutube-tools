@@ -487,7 +487,7 @@
         var jp = jobs.get(msg.jobId);
         if (!jp || !jp.queue) return { ok: false };
         jp.queue.paused = true;
-        setBadge('❚❚', '#8a8a93');
+        setBadge('II', '#8a8a93');
         return { ok: true, paused: true };
       }
 

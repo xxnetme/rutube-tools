@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 📖 Документация
+  - name: Документация
     url: https://github.com/xxnetme/rutube-tools#readme
     about: Установка, клавиши, ограничения, публикация
-  - name: 🗺️ Планы развития
+  - name: Планы развития
     url: https://github.com/xxnetme/rutube-tools/blob/main/docs/FEATURES.md
     about: Что запланировано и какие оценки по усилиям

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-label="Возможности RuTube Tools">
+  <defs>
+    <pattern id="grid2" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.022" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="400" fill="#0c0c0f"/>
+  <rect width="1200" height="400" fill="url(#grid2)"/>
+
+  <g font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.6" fill="#5c5d66">
+    <text x="56" y="58">ВОЗМОЖНОСТИ</text>
+  </g>
+  <line x1="56" y1="74" x2="1144" y2="74" stroke="#1c1c22"/>
+
+  <!-- 01 -->
+  <g transform="translate(56,108)">
+    <text x="0" y="12" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.2" fill="#f2413a">01</text>
+    <text x="0" y="48" font-family="Inter" font-size="22" font-weight="600" letter-spacing="-0.4" fill="#f2f3f5">Покадрово</text>
+    <text x="0" y="76" font-family="Inter" font-size="14" fill="#8b8c95">Точный шаг по кадрам, номер кадра и таймкод</text>
+  </g>
+  <!-- 02 -->
+  <g transform="translate(436,108)">
+    <text x="0" y="12" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.2" fill="#f2413a">02</text>
+    <text x="0" y="48" font-family="Inter" font-size="22" font-weight="600" letter-spacing="-0.4" fill="#f2f3f5">Фрагмент</text>
+    <text x="0" y="76" font-family="Inter" font-size="14" fill="#8b8c95">Отрезок по таймкодам без скачивания целого</text>
+  </g>
+  <!-- 03 -->
+  <g transform="translate(816,108)">
+    <text x="0" y="12" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.2" fill="#f2413a">03</text>
+    <text x="0" y="48" font-family="Inter" font-size="22" font-weight="600" letter-spacing="-0.4" fill="#f2f3f5">Плейлист</text>
+    <text x="0" y="76" font-family="Inter" font-size="14" fill="#8b8c95">Очередь с паузой, диапазоном и отчётом</text>
+  </g>
+
+  <line x1="56" y1="212" x2="1144" y2="212" stroke="#1c1c22"/>
+
+  <!-- 04 -->
+  <g transform="translate(56,248)">
+    <text x="0" y="12" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.2" fill="#f2413a">04</text>
+    <text x="0" y="48" font-family="Inter" font-size="22" font-weight="600" letter-spacing="-0.4" fill="#f2f3f5">Кадры в PNG</text>
+    <text x="0" y="76" font-family="Inter" font-size="14" fill="#8b8c95">Кадр, раскадровка серией, петля A/B</text>
+  </g>
+  <!-- 05 -->
+  <g transform="translate(436,248)">
+    <text x="0" y="12" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.2" fill="#f2413a">05</text>
+    <text x="0" y="48" font-family="Inter" font-size="22" font-weight="600" letter-spacing="-0.4" fill="#f2f3f5">Субтитры и обложка</text>
+    <text x="0" y="76" font-family="Inter" font-size="14" fill="#8b8c95">SRT, включая авто-субтитры, и постер в JPG</text>
+  </g>
+  <!-- 06 -->
+  <g transform="translate(816,248)">
+    <text x="0" y="12" font-family="JetBrains Mono" font-size="11.5" letter-spacing="1.2" fill="#f2413a">06</text>
+    <text x="0" y="48" font-family="Inter" font-size="22" font-weight="600" letter-spacing="-0.4" fill="#f2f3f5">Зеркала CDN</text>
+    <text x="0" y="76" font-family="Inter" font-size="14" fill="#8b8c95">Переключение на рабочий сервер при обрыве</text>
+  </g>
+
+  <line x1="56" y1="346" x2="1144" y2="346" stroke="#1c1c22"/>
+  <g font-family="Inter" font-size="13" fill="#5c5d66">
+    <text x="56" y="376">Без рекламы, трекеров и внешних серверов</text>
+    <text x="1144" y="376" text-anchor="end" font-family="JetBrains Mono" font-size="12" letter-spacing="0.5">MIT</text>
+  </g>
+</svg>

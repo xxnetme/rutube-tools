@@ -1,4 +1,4 @@
-name: 🐞 Баг
+name: Баг
 description: Что-то не работает — загрузка, кадры, плеер
 labels: ['bug']
 body:

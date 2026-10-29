@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="RuTube Tools">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111115"/><stop offset="1" stop-color="#09090b"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="glow" cx="0.5" cy="0.28" r="0.55">
+      <stop offset="0" stop-color="#f2413a" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#f2413a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5b46"/><stop offset="1" stop-color="#d92d24"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+
+  <g transform="translate(568,132)">
+    <rect width="144" height="144" rx="34" fill="url(#iconBg)"/>
+    <rect x="0.5" y="0.5" width="143" height="143" rx="33.5" fill="none" stroke="#ffffff" stroke-opacity="0.18"/>
+    <g fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M72 42v50"/><path d="M52 74l20 20 20-20"/><path d="M48 104h48"/>
+    </g>
+  </g>
+
+  <text x="640" y="368" text-anchor="middle" font-family="Inter" font-size="68" font-weight="700" letter-spacing="-2.4" fill="#f5f6f8">RuTube Tools</text>
+  <text x="640" y="410" text-anchor="middle" font-family="Inter" font-size="21" font-weight="400" fill="#9d9ea7">Покадровая перемотка · PNG-кадры · скачивание в MP4</text>
+
+  <g font-family="JetBrains Mono" font-size="13" letter-spacing="0.6" text-anchor="middle" fill="#6e6f78">
+    <text x="640" y="482">FIREFOX 115+ &#183; CHROMIUM MV3 &#183; MIT</text>
+  </g>
+
+  <g stroke="#1e1e24" stroke-width="1">
+    <line x1="440" y1="520" x2="840" y2="520"/>
+  </g>
+  <g font-family="Inter" font-size="14" text-anchor="middle" fill="#8d8e97">
+    <text x="640" y="552">github.com/xxnetme/rutube-tools</text>
+  </g>
+</svg>

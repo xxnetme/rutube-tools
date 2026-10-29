@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="RuTube Tools">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101014"/>
+      <stop offset="1" stop-color="#0a0a0c"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.028" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f2413a" stop-opacity="1"/>
+      <stop offset="0.45" stop-color="#f2413a" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="cardClip"><rect x="0.5" y="0.5" width="1279" height="399" rx="20"/></clipPath>
+  </defs>
+
+  <rect width="1280" height="400" fill="url(#bg)"/>
+  <rect width="1280" height="400" fill="url(#grid)"/>
+  <rect x="0" y="0" width="1280" height="1.5" fill="url(#fade)"/>
+
+  <!-- знак -->
+  <g clip-path="url(#cardClip)">
+    <rect x="72" y="128" width="144" height="144" rx="34" fill="#141419" stroke="#26262e"/>
+    <rect x="72" y="128" width="144" height="144" rx="34" fill="none" stroke="#f2413a" stroke-opacity="0.22"/>
+    <g transform="translate(72,128)" fill="none" stroke="#f2413a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M72 42v52"/><path d="M52 74l20 20 20-20"/><path d="M48 104h48"/>
+    </g>
+  </g>
+
+  <!-- заголовок -->
+  <text x="264" y="196" font-family="Inter" font-size="62" font-weight="700" letter-spacing="-2.2" fill="#f4f5f7">RuTube Tools</text>
+  <text x="266" y="236" font-family="Inter" font-size="20" font-weight="400" letter-spacing="-0.2" fill="#9d9ea7">Покадровая перемотка и скачивание видео — в плеере RuTube</text>
+
+  <!-- чипы -->
+  <g font-family="Inter" font-size="14" font-weight="500">
+    <rect x="266" y="266" width="176" height="32" rx="8" fill="#15151a" stroke="#26262d"/>
+    <text x="284" y="287" fill="#d8dade">Кадры в PNG</text>
+
+    <rect x="454" y="266" width="152" height="32" rx="8" fill="#15151a" stroke="#26262d"/>
+    <text x="472" y="287" fill="#d8dade">Фрагменты</text>
+
+    <rect x="618" y="266" width="172" height="32" rx="8" fill="#15151a" stroke="#26262d"/>
+    <text x="636" y="287" fill="#d8dade">Плейлисты</text>
+
+    <rect x="802" y="266" width="132" height="32" rx="8" fill="#15151a" stroke="#26262d"/>
+    <text x="820" y="287" fill="#d8dade">Субтитры</text>
+  </g>
+
+  <!-- правый блок: версия и платформы -->
+  <g font-family="JetBrains Mono" font-size="12.5" letter-spacing="0.4" text-anchor="end">
+    <text x="1208" y="176" fill="#f2413a">v1.3.1</text>
+    <text x="1208" y="206" fill="#6e6f78">Firefox 115+</text>
+    <text x="1208" y="230" fill="#6e6f78">Chromium · MV3</text>
+    <line x1="1076" y1="250" x2="1208" y2="250" stroke="#26262d"/>
+    <text x="1208" y="274" fill="#6e6f78">MIT</text>
+  </g>
+</svg>

@@ -782,7 +782,7 @@
       state.job.doneCount = (state.job.doneCount || 0) + 1;
       state.job.filesSaved = (state.job.filesSaved || 0) + ((msg.files || []).length);
       state.progress = { phase: 'meta', queue: state.job.queue, percent: 0 };
-      RT.toast((state.job.queue ? state.job.queue.title : '') + ' ✓', { duration: 1400 });
+      RT.toast((state.job.queue ? state.job.queue.title : '') + ' — готово', { duration: 1400 });
       render();
       return;
     }

@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
   "name": "RuTube Tools — кадры и MP4",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Покадровая перемотка, кадры в PNG, скачивание фрагментов и плейлистов RuTube в MP4.",
+  "author": "xxnetme (https://github.com/xxnetme)",
+  "homepage_url": "https://github.com/xxnetme/rutube-tools",
   "browser_specific_settings": {
     "gecko": {
       "id": "rutube-tools@arena.ai",
@@ -64,6 +66,5 @@
     "48": "icons/icon-48.png",
     "96": "icons/icon-96.png",
     "128": "icons/icon-128.png"
-  },
-  "homepage_url": "https://github.com/"
+  }
 }
