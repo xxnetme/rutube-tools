@@ -60,6 +60,28 @@ python3 build.py
 
 Первый канал: бесплатный, даёт постоянную подпись, а Firefox — целевой браузер.
 
+### Вариант через API (без браузера)
+
+Если не хочется щёлкать формы, AMO умеет принимать загрузку через официальный API.
+Куки и пароль для этого не нужны — только ключи JWT.
+
+1. <https://addons.mozilla.org/en-US/developers/addon/api/key/> → **Generate new key**.
+   Получите две строки: **JWT issuer** (`user:…`) и **JWT secret**.
+2. Запустите:
+
+```bash
+AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' \
+  python3 tools/amo-publish.py release/rutube-tools-firefox.zip
+```
+
+Скрипт загружает файл, ждёт валидацию, создаёт карточку с текстами из этого репозитория
+(название, описание, категория «Photos, Music & Videos», лицензия MIT, заметка ревьюеру)
+и отправляет версию на проверку. Повторный запуск добавляет новую версию к уже созданной
+карточке, а не создаёт вторую.
+
+Отзыв ключей — там же, кнопкой **Revoke**, в любой момент.
+
+
 1. <https://addons.mozilla.org/developers/> → войти через аккаунт Mozilla.
 2. **Submit a New Add-on** → **Continue** (согласие с правилами размещения).
 3. **Upload a Manually Created Add-on** → `release/rutube-tools-firefox.zip`
