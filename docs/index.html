@@ -7,8 +7,8 @@
 <meta name="description" content="Расширение для RuTube: покадровая перемотка, кадры в PNG и скачивание в MP4 — целиком, фрагментом или плейлистом. Без рекламы и трекеров.">
 <meta property="og:title" content="RuTube Tools">
 <meta property="og:description" content="Покадровая перемотка · кадры в PNG · скачивание в MP4 прямо в плеере RuTube">
-<meta property="og:image" content="../assets/social-preview.png">
-<link rel="icon" href="../src/icons/icon-128.png">
+<meta property="og:image" content="assets/social-preview.png">
+<link rel="icon" href="assets/icon-128.png">
 <style>
   :root{
     --bg:#0b0b0e; --bg2:#101014; --card:#14141a; --line:#23232c;
@@ -35,6 +35,9 @@
   .logo{width:104px;height:104px;border-radius:26px;box-shadow:0 16px 50px rgba(255,59,59,.28)}
   h1{font-size:clamp(30px,5vw,46px);letter-spacing:-.5px;margin:20px 0 8px;font-weight:800}
   .tagline{color:var(--muted);font-size:clamp(15px,2vw,19px)}
+  .nav{display:flex;gap:18px;justify-content:center;margin-top:18px;font-size:14px;font-weight:600}
+  .nav a{color:var(--muted)}
+  .nav a:hover{color:var(--fg);text-decoration:none}
   .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:22px}
   .chip{
     border:1px solid var(--line);background:#15151b;color:#c9c9d4;
@@ -98,7 +101,7 @@
 <div class="glow"></div>
 
 <header class="wrap">
-  <img class="logo" src="../assets/logo.png" alt="RuTube Tools">
+  <img class="logo" src="assets/logo.png" alt="RuTube Tools">
   <h1>RuTube Tools</h1>
   <p class="tagline">Покадровая перемотка · кадры в PNG · скачивание в MP4 — прямо в плеере RuTube</p>
   <div class="chips">
@@ -110,16 +113,21 @@
     <span class="chip">MIT</span>
   </div>
   <div class="cta">
-    <a class="btn primary" href="../release/rutube-tools-firefox.xpi">
+    <a class="btn primary" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m6.5 10.5 5.5 5.5 5.5-5.5"/><path d="M4 20h16"/></svg>
       Скачать для Firefox (.xpi)
     </a>
-    <a class="btn ghost" href="../release/rutube-tools-chromium.zip">
+    <a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m6.5 10.5 5.5 5.5 5.5-5.5"/><path d="M4 20h16"/></svg>
       Для Chrome / Edge (.zip)
     </a>
   </div>
   <p class="hint">Сборка 1.3.0 · устанавливается за минуту · работает локально</p>
+  <nav class="nav">
+    <a href="https://github.com/xxnetme/rutube-tools">GitHub</a>
+    <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md">Что нового</a>
+    <a href="preview.html">Макет интерфейса</a>
+  </nav>
 </header>
 
 <main class="wrap">
@@ -138,10 +146,10 @@
   <h2>Установка</h2>
   <p class="sub">Нужна одна минута.</p>
   <div class="steps">
-    <div class="step"><div><b>Firefox — скачать файл</b><span><a href="../release/rutube-tools-firefox.xpi">rutube-tools-firefox.xpi</a></span></div></div>
+    <div class="step"><div><b>Firefox — скачать файл</b><span><a href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi">rutube-tools-firefox.xpi</a></span></div></div>
     <div class="step"><div><b>Открыть страницу дополнений</b><span>В адресной строке: <code>about:debugging#/runtime/this-firefox</code></span></div></div>
     <div class="step"><div><b>«Загрузить временное дополнение…»</b><span>Выбрать скачанный <code>.xpi</code> — всё, кнопка MP4 появится на странице видео.</span></div></div>
-    <div class="step"><div><b>Chrome / Edge / Яндекс</b><span>Скачать <a href="../release/rutube-tools-chromium.zip">zip</a>, распаковать, открыть <code>chrome://extensions</code>, включить «Режим разработчика» → «Загрузить распакованное».</span></div></div>
+    <div class="step"><div><b>Chrome / Edge / Яндекс</b><span>Скачать <a href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip">zip</a>, распаковать, открыть <code>chrome://extensions</code>, включить «Режим разработчика» → «Загрузить распакованное».</span></div></div>
   </div>
 
   <div class="notice">
@@ -154,8 +162,8 @@
   <h2>Как выглядит</h2>
   <p class="sub">Тёмная панель, которая не спорит с дизайном RuTube.</p>
   <div class="two">
-    <div class="shot"><img src="../docs/screenshots/02-download.png" alt="Панель скачивания"></div>
-    <div class="shot"><img src="../docs/screenshots/03-frames.png" alt="Вкладка кадров"></div>
+    <div class="shot"><img src="screenshots/02-download.png" alt="Панель скачивания"></div>
+    <div class="shot"><img src="screenshots/03-frames.png" alt="Вкладка кадров"></div>
   </div>
 
   <h2>Клавиши</h2>
@@ -182,7 +190,8 @@
     <a href="https://github.com/xxnetme/rutube-tools">GitHub</a> ·
     <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md">Что нового</a> ·
     <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PRIVACY.md">Приватность</a> ·
-    <a href="https://github.com/xxnetme/rutube-tools/blob/main/LICENSE">MIT</a>
+    <a href="https://github.com/xxnetme/rutube-tools/blob/main/LICENSE">MIT</a> ·
+    <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PUBLISH.md">Публикация в AMO</a>
     <div style="margin-top:8px">Скачивайте только то, на что у вас есть право.</div>
   </div>
 </footer>

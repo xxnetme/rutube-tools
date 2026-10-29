@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square)](LICENSE)
 [![Без рекламы и трекеров](https://img.shields.io/badge/без%20рекламы%20и%20трекеров-8957e5?style=flat-square)](#приватность)
 
-[Возможности](#возможности) · [Установка](#установка) · [Клавиши](#клавиши) · [Как это работает](#как-это-работает) · [Ограничения](#ограничения) · [Разработка](#разработка)
+**[🌐 Сайт](https://xxnetme.github.io/rutube-tools/)** · [Возможности](#возможности) · [Установка](#установка) · [Клавиши](#клавиши) · [Как это работает](#как-это-работает) · [Ограничения](#ограничения) · [Разработка](#разработка)
 
 </div>
 
@@ -84,7 +84,7 @@
 about:debugging#/runtime/this-firefox → «Загрузить временное дополнение…» → rutube-tools-firefox.xpi
 ```
 
-Готовый файл: [`release/rutube-tools-firefox.xpi`](release/) · постоянная установка — после
+Готовый файл: **[rutube-tools-firefox.xpi](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi)** · постоянная установка — после
 публикации на addons.mozilla.org (инструкция: [`docs/PUBLISH.md`](docs/PUBLISH.md)).
 
 ### Chrome / Edge / Яндекс.Браузер
@@ -93,7 +93,7 @@ about:debugging#/runtime/this-firefox → «Загрузить временно�
 chrome://extensions → включить «Режим разработчика» → «Загрузить распакованное» → build/rutube-tools-chromium
 ```
 
-Сборка: [`release/rutube-tools-chromium.zip`](release/) · в Chromium сборка MP4 идёт
+Сборка: **[rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip)** · в Chromium сборка MP4 идёт
 в offscreen-документе, потому что служебный скрипт не умеет `URL.createObjectURL`.
 
 ### Из исходников
