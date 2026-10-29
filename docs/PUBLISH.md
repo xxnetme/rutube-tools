@@ -287,8 +287,13 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' python3 tools/amo-apply-all.py
    соберутся из раздела этой версии в `docs/CHANGELOG.md`.
 3. В карточках AMO и Edge можно указать ссылку на сайт — это внешняя ссылка на
    `https://xxnetme.github.io/rutube-tools/`, она же помогает индексации лендинга.
-4. Обновления: поднимаете версию в двух манифестах → `python3 build.py` → загружаете новый
-   zip в каждый магазин. `gecko.id` не меняется, пользователи обновляются автоматически.
+4. Обновления: поднимаете версию в двух манифестах и в `docs/CHANGELOG.md` → `python3 build.py`
+   → `python3 tools/check-versions.py` (то же делает CI) → загружаете новый zip в каждый магазин.
+   В AMO это одна команда:
+   ```bash
+   AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' python3 tools/amo-publish.py
+   ```
+   `gecko.id` не меняется, пользователи обновляются автоматически.
 
 ---
 
