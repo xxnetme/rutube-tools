@@ -4,378 +4,263 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RuTube Tools — покадровая перемотка и скачивание в MP4</title>
-<meta name="description" content="Расширение для RuTube: покадровая перемотка, кадры в PNG и скачивание в MP4 — целиком, фрагментом или плейлистом. Без рекламы и трекеров.">
-<meta property="og:title" content="RuTube Tools">
-<meta property="og:description" content="Покадровая перемотка, кадры в PNG и скачивание в MP4 прямо в плеере RuTube">
+<meta name="description" content="Расширение для RuTube: шаг по кадрам, кадры в PNG и скачивание в MP4 — целиком, фрагментом или плейлистом. Без рекламы и трекеров, всё работает локально.">
+<meta name="theme-color" content="#0a0a0c">
+<meta name="author" content="xxnetme">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="RuTube Tools — покадровая перемотка и MP4">
+<meta property="og:description" content="Шаг по кадрам, кадры в PNG, скачивание целиком, фрагментом или плейлистом. Без рекламы и трекеров.">
+<meta property="og:url" content="https://xxnetme.github.io/rutube-tools/">
 <meta property="og:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+
 <link rel="icon" href="assets/icon-128.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#0b0b0d;
-    --surf:#101014;
-    --line:#1d1d23;
-    --line-2:#2a2a32;
-    --ink:#f2f3f5;
-    --dim:#9b9ca5;
-    --faint:#66676f;
-    --acc:#f2413a;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-  body{
-    background:var(--bg);color:var(--ink);
-    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;
-    font-feature-settings:"kern" 1,"liga" 1;
-  }
-  .mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
-  a{color:inherit;text-decoration:none}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 
-  /* сетка-линии по краям, как у типографических лендингов */
-  .frame{position:relative}
-  .frame:before,.frame:after{
-    content:"";position:absolute;top:0;bottom:0;width:1px;background:var(--line);
-    left:calc(50% - 540px);right:calc(50% - 540px);
-  }
-  .frame:after{left:auto}
-  @media(max-width:1128px){.frame:before,.frame:after{display:none}}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#0a0a0c;color:#f1f1f6;
+  font-family:'Onest',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img{max-width:100%}
+a{color:#ff7a70;text-decoration:none}
+a:hover{color:#ffb0a8}
+:focus-visible{outline:2px solid #ff5a4f;outline-offset:3px;border-radius:6px}
+::selection{background:rgba(255,90,79,.3)}
 
-  /* верхняя панель */
-  .topbar{position:sticky;top:0;z-index:10;background:rgba(11,11,13,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-  .tb-in{display:flex;align-items:center;justify-content:space-between;height:60px}
-  .tb-brand{display:flex;align-items:center;gap:10px;font-size:14.5px;font-weight:650;letter-spacing:-.01em}
-  .tb-brand img{width:24px;height:24px;border-radius:6px;display:block}
-  .tb-nav{display:flex;align-items:center;gap:26px;font-size:13.5px;color:var(--dim)}
-  .tb-nav a{transition:color .12s}
-  .tb-nav a:hover{color:var(--ink)}
-  .tb-nav .tb-gh{color:var(--ink);border:1px solid var(--line-2);border-radius:7px;padding:5px 10px;font-size:12.5px}
-  .tb-nav .tb-gh:hover{border-color:#3a3a45;background:#131317}
-  @media(max-width:640px){.tb-nav a:not(.tb-gh){display:none}}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+section[id]{scroll-margin-top:84px}
 
-  /* шапка */
-  header{padding:88px 0 76px;border-bottom:1px solid var(--line)}
-  .eyebrow{
-    display:inline-flex;align-items:center;gap:9px;font-size:11.5px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--faint);margin-bottom:26px;
-  }
-  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--acc)}
-  h1{
-    font-size:clamp(38px,6vw,68px);line-height:1.02;letter-spacing:-.035em;font-weight:700;
-    max-width:820px;
-  }
-  h1 em{font-style:normal;color:var(--acc)}
-  .lead{color:var(--dim);font-size:clamp(16px,1.9vw,20px);max-width:620px;margin-top:26px;line-height:1.55}
-  .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:38px}
-  .btn{
-    display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 22px;border-radius:9px;
-    font-size:14.5px;font-weight:600;letter-spacing:-.005em;border:1px solid transparent;
-    transition:background .15s,border-color .15s,transform .1s;
-  }
-  .btn:active{transform:translateY(1px)}
-  .btn-primary{background:var(--acc);color:#fff}
-  .btn-primary:hover{background:#ff4a42}
-  .btn-ghost{border-color:var(--line-2);color:var(--dim)}
-  .btn-ghost:hover{border-color:#3a3a45;color:var(--ink);background:#131317}
-  .btn svg{width:16px;height:16px}
-  .meta{margin-top:22px;display:flex;flex-wrap:wrap;gap:20px;font-size:12.5px;color:var(--faint)}
-  .meta span{display:inline-flex;align-items:center;gap:7px}
-  .meta i{width:4px;height:4px;border-radius:50%;background:#33343c;display:inline-block}
+.card{background:#111116;border:1px solid #24242c;border-radius:20px;padding:24px}
+.ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#1a1a22;margin-bottom:16px}
+.ic svg{width:21px;height:21px}
+.card h3{margin:0 0 8px;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.card p{margin:0;color:#a3a3b0;font-size:15px;line-height:1.6}
 
-  /* секции */
-  section{padding:72px 0;border-bottom:1px solid var(--line)}
-  .sec-head{display:flex;align-items:baseline;gap:18px;margin-bottom:38px}
-  .sec-num{font-size:12px;color:var(--acc);letter-spacing:.12em}
-  h2{font-size:clamp(24px,3vw,32px);letter-spacing:-.025em;font-weight:650}
-  .sec-desc{color:var(--dim);font-size:15px;margin-top:10px;max-width:560px}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 22px;border-radius:12px;
+  font-weight:700;font-size:15px;box-sizing:border-box}
+.btn svg{width:18px;height:18px;flex:0 0 auto}
+.ghost{background:#16161c;border:1px solid #2c2c36;color:#ececf2}
+.ghost:hover{background:#1d1d25;color:#fff}
 
-  /* список возможностей: строки с номером, а не карточки */
-  .feat{border-top:1px solid var(--line)}
-  .feat-row{
-    display:grid;grid-template-columns:64px 260px 1fr;gap:24px;align-items:start;
-    padding:22px 0;border-bottom:1px solid var(--line);
-  }
-  .feat-row .n{font-size:12px;color:var(--faint);padding-top:4px}
-  .feat-row h3{font-size:16px;font-weight:600;letter-spacing:-.01em}
-  .feat-row p{color:var(--dim);font-size:14.5px;line-height:1.6}
-  @media(max-width:820px){
-    .feat-row{grid-template-columns:40px 1fr;gap:16px}
-    .feat-row p{grid-column:2}
-  }
+.bento{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.wide{grid-column:span 2}
+.two{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
 
-  /* установка */
-  .steps{border-top:1px solid var(--line)}
-  .step{
-    display:grid;grid-template-columns:56px 1fr auto;gap:22px;align-items:center;
-    padding:24px 0;border-bottom:1px solid var(--line);
-  }
-  .step .n{font-size:12px;color:var(--faint)}
-  .step h3{font-size:15.5px;font-weight:600;margin-bottom:4px}
-  .step p{color:var(--dim);font-size:14px}
-  .step .tail{font-size:12.5px;color:var(--faint);white-space:nowrap}
-  code{
-    background:#16161b;border:1px solid var(--line);border-radius:5px;padding:2px 6px;
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:#d6d8de;
-  }
-  .note{
-    display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;
-    border:1px solid #33221f;background:#151011;border-radius:10px;padding:16px 18px;margin-top:26px;
-  }
-  .note .ic{width:18px;height:18px;color:#ff8b7f;margin-top:2px}
-  .note p{color:#c9b6b3;font-size:13.5px;line-height:1.6}
+@media(max-width:940px){.bento{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr;gap:36px}}
+@media(max-width:640px){.bento,.two{grid-template-columns:1fr}.wide{grid-column:auto}}
 
-  /* галерея */
-  .shots{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000}
-  .shot img{display:block;width:100%}
-  .shot figcaption{font-size:12.5px;color:var(--faint);padding:11px 14px;border-top:1px solid var(--line);background:#0e0e11}
-  @media(max-width:760px){.shots{grid-template-columns:1fr}}
+.badge{display:inline-block;border:1px solid #2c2c36;color:#c4c4cf;border-radius:999px;padding:6px 12px;
+  font-size:13px;font-weight:600;white-space:nowrap}
 
-  /* клавиши */
-  .keys{width:100%;border-collapse:collapse;font-size:14px}
-  .keys tr{border-bottom:1px solid var(--line)}
-  .keys td{padding:13px 0;color:var(--dim)}
-  .keys td:first-child{width:180px;color:var(--ink)}
-  kbd{
-    background:#16161b;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;
-    padding:1px 7px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#e2e4e9;
-  }
+.k,code{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.k{font-size:14px;background:#17171d;border:1px solid #2c2c36;border-bottom-width:2px;border-radius:8px;
+  padding:3px 10px;color:#f1f1f6;white-space:nowrap}
+code{font-size:13px;background:#17171d;border:1px solid #2c2c36;border-radius:6px;padding:2px 7px;color:#e4e4ec;
+  word-break:break-word}
 
-  /* ограничения */
-  .limits{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;border-top:1px solid var(--line)}
-  .limit{padding:20px 22px 20px 0;border-bottom:1px solid var(--line)}
-  .limit h4{font-size:14px;font-weight:600;margin-bottom:5px}
-  .limit p{font-size:13.5px;color:var(--dim);line-height:1.55}
+.n{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  background:#241516;color:#ff9a90;font-weight:800;font-size:14px}
+.row{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-top:1px solid #24242c;
+  font-size:15px;color:#a3a3b0;line-height:1.55}
+.row:first-of-type{border-top:0;padding-top:4px}
+.row b{display:block;color:#f1f1f6;font-weight:600;margin-bottom:2px}
 
-  /* автор */
-  .author-card{
-    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
-    border:1px solid var(--line);border-radius:12px;padding:22px 24px;background:#0f0f12;
-  }
-  .author-card img{width:52px;height:52px;border-radius:13px}
-  .author-card .who h3{font-size:16px;font-weight:650;letter-spacing:-.01em}
-  .author-card .who p{font-size:13px;color:var(--faint);margin-top:2px}
-  .author-card .links{margin-left:auto;display:flex;gap:18px;font-size:13px;color:var(--dim)}
-  .author-card .links a:hover{color:var(--ink)}
-  @media(max-width:640px){.author-card .links{margin-left:0;width:100%}}
+.sec{padding-top:clamp(64px,9vw,112px)}
+.sec h2{margin:0 0 10px;font-size:clamp(26px,4vw,38px);letter-spacing:-.02em;font-weight:800}
+.sec .sub{margin:0 0 32px;color:#a3a3b0;font-size:17px;max-width:560px}
 
-  footer{padding:40px 0 64px;color:var(--faint);font-size:12.5px}
-  footer .row{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between}
-  footer a:hover{color:var(--dim)}
+/* скриншоты */
+.shot{aspect-ratio:16/10;border:1px solid #24242c;border-radius:20px;background:#0f0f14;overflow:hidden;
+  position:relative}
+.shot img{width:100%;height:100%;object-fit:cover;display:block}
+.shot:hover img{transform:scale(1.015)}
+.shot img{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
 
-  /* линии-акценты на числах */
-  ::selection{background:rgba(242,65,58,.28)}
+/* автор */
+.card.author{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:20px 24px}
+.author-mark{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;
+  background:linear-gradient(150deg,#2a2a33,#17171d);border:1px solid #2c2c36;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:#d9d9e2;letter-spacing:.02em}
+.author-who b{display:block;font-size:17px;letter-spacing:-.01em}
+.author-who span{display:block;color:#8b8b98;font-size:13.5px;margin-top:1px}
+.author-links{margin-left:auto;display:flex;gap:22px;font-size:14px;font-weight:600;flex-wrap:wrap}
+@media(max-width:640px){.author-links{margin-left:0;width:100%;gap:18px}}
+
+/* анимации из макета */
+@keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes rev{from{opacity:0;translate:0 28px}to{opacity:1;translate:0 0}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes pulse{from{opacity:.55;transform:scale(1)}to{opacity:0;transform:scale(2.1)}}
+@keyframes prog{from{transform:scaleX(.15)}to{transform:scaleX(2.1)}}
+
+.hero>div:first-child>*{animation:up .8s cubic-bezier(.2,.7,.2,1) both}
+.hero>div:first-child>:nth-child(2){animation-delay:.08s}
+.hero>div:first-child>:nth-child(3){animation-delay:.16s}
+.hero>div:first-child>:nth-child(4){animation-delay:.24s}
+.hero>div:first-child>:nth-child(5){animation-delay:.32s}
+.mock{animation:up .9s .25s cubic-bezier(.2,.7,.2,1) both,float 6s 1.2s ease-in-out infinite}
+.ring{transform-box:fill-box;transform-origin:center;animation:pulse 2s ease-out infinite}
+.bar{transform-box:fill-box;transform-origin:left;animation:prog 5s ease-in-out infinite alternate}
+
+.card,.btn,.badge{transition:transform .3s cubic-bezier(.2,.7,.2,1),border-color .3s,background .3s,box-shadow .3s}
+.bento .card:hover,.two .card:hover{transform:translateY(-5px);border-color:#5a2f2c;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.btn:hover{transform:translateY(-2px)}
+.badge:hover{border-color:#5a2f2c}
+.ic{transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.card:hover .ic{transform:rotate(-8deg) scale(1.1)}
+.n{transition:transform .3s}.row:hover .n{transform:scale(1.15)}
+
+@supports (animation-timeline:view()){
+  .sec h2,.sec .sub,.sec .card,.sec .shot{animation:rev linear both;animation-timeline:view();animation-range:entry 0% entry 45%}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<div style="font-family:'Onest',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#f1f1f6;background:#0a0a0c;line-height:1.5;-webkit-font-smoothing:antialiased">
 
-<div class="topbar">
-  <div class="wrap tb-in">
-    <a class="tb-brand" href="./">
-      <img src="assets/icon-128.png" alt="">
-      <span>RuTube Tools</span>
-    </a>
-    <nav class="tb-nav">
-      <a href="#features">Возможности</a>
-      <a href="#install">Установка</a>
-      <a href="#author">Автор</a>
-      <a href="https://github.com/xxnetme/rutube-tools" class="tb-gh">GitHub</a>
-    </nav>
-  </div>
+<div style="position:sticky;top:0;z-index:5;background:#0a0a0c;border-bottom:1px solid #1c1c23">
+<div class="wrap" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;min-height:64px">
+<div style="display:flex;align-items:center;gap:12px;font-weight:700;font-size:17px">
+<svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#ff5a4f"></rect><path d="M12.5 9.5v13l10-6.5z" fill="#0a0a0c"></path></svg>
+RuTube Tools</div>
+<nav style="display:flex;gap:22px;font-size:14px;font-weight:600;flex-wrap:wrap">
+<a href="#features" style="color:#a3a3b0">Возможности</a>
+<a href="#install" style="color:#a3a3b0">Установка</a>
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md" style="color:#a3a3b0">Что нового</a>
+<a href="#author" style="color:#a3a3b0">Автор</a>
+<a href="https://github.com/xxnetme/rutube-tools" style="color:#a3a3b0">GitHub</a>
+</nav></div></div>
+
+<header class="wrap" style="padding-top:clamp(48px,8vw,96px)">
+<div class="hero">
+<div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
+<span class="badge" style="border-color:#4a2a28;color:#ffb0a8">Firefox</span>
+<span class="badge" style="border-color:#4a2a28;color:#ffb0a8">Chrome / Edge</span>
+<span class="badge">Manifest V3</span><span class="badge">MIT</span></div>
+<h1 style="margin:0 0 20px;font-size:clamp(38px,6vw,68px);line-height:1.04;letter-spacing:-.03em;font-weight:800">Покадровая перемотка и MP4 <span style="color:#ff5a4f">прямо в плеере</span> RuTube</h1>
+<p style="margin:0 0 32px;font-size:clamp(16px,2vw,19px);color:#a3a3b0;max-width:520px">Шаг по кадрам, кадры в PNG, скачивание целиком, фрагментом или плейлистом. Без рекламы и трекеров, всё работает локально.</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<a class="btn" style="background:#ff5a4f;color:#0a0a0c" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m6.5 10.5 5.5 5.5 5.5-5.5"></path><path d="M4 20h16"></path></svg>Скачать для Firefox (.xpi)</a>
+<a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m6.5 10.5 5.5 5.5 5.5-5.5"></path><path d="M4 20h16"></path></svg>Для Chrome / Edge (.zip)</a></div>
+<p style="margin:16px 0 0;font-size:13px;color:#8b8b98">Сборка 1.3.1 · устанавливается за минуту · <a href="preview.html">макет интерфейса</a></p>
 </div>
-
-<header class="frame">
-  <div class="wrap">
-    <div class="eyebrow"><span class="dot"></span>Расширение для RuTube · v1.3.1</div>
-    <h1>Точный кадр.<br><em>Честный файл.</em></h1>
-    <p class="lead">Покадровая перемотка, кадры в PNG и скачивание в MP4 — целиком, фрагментом
-      по таймкодам или целым плейлистом. Всё считается в браузере: без ffmpeg, рекламы и трекеров.</p>
-
-    <div class="actions">
-      <a class="btn btn-primary" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m6.5 10.5 5.5 5.5 5.5-5.5"/><path d="M4 20h16"/></svg>
-        Скачать для Firefox
-      </a>
-      <a class="btn btn-ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m6.5 10.5 5.5 5.5 5.5-5.5"/><path d="M4 20h16"/></svg>
-        Chrome и Edge
-      </a>
-    </div>
-
-    <div class="meta">
-      <span>Firefox 115+</span><i></i>
-      <span>Chromium · Manifest V3</span><i></i>
-      <span>Без рекламы и трекеров</span><i></i>
-      <span class="mono">MIT</span>
-    </div>
-  </div>
+<div class="card mock" style="padding:16px;border-radius:24px">
+<div style="aspect-ratio:16/9;background:#0a0a0e;border-radius:14px;position:relative;overflow:hidden">
+<svg viewBox="0 0 160 90" style="width:100%;height:100%;display:block" aria-hidden="true"><circle class="ring" cx="80" cy="42" r="15" fill="#ff5a4f"></circle><circle cx="80" cy="42" r="15" fill="#1a1a22"></circle><path d="M75 34v16l13-8z" fill="#ff5a4f"></path><rect x="12" y="76" width="136" height="3" rx="1.5" fill="#24242c"></rect><rect class="bar" x="12" y="76" width="62" height="3" rx="1.5" fill="#ff5a4f"></rect></svg></div>
+<div style="display:flex;gap:6px;margin:14px 0;flex-wrap:wrap">
+<span class="badge" style="background:#241516;border-color:#4a2a28;color:#ffb0a8">MP4</span><span class="badge">Кадры</span><span class="badge">Субтитры</span><span class="badge">Плейлист</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0f0f14;border:1px solid #24242c;border-radius:12px;padding:12px 14px;font-size:14px;color:#a3a3b0"><span>Фрагмент</span><span class="k">12:30 — 12:45</span></div>
+<div style="display:flex;gap:10px;margin-top:10px">
+<div style="flex:1;background:#ff5a4f;color:#0a0a0c;border-radius:10px;text-align:center;padding:11px;font-weight:700;font-size:14px">Скачать MP4</div>
+<div style="background:#16161c;border:1px solid #2c2c36;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px">PNG</div></div>
+</div>
+</div>
 </header>
 
-<section id="features">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="sec-num mono">01</span>
-      <h2>Возможности</h2>
-    </div>
+<main class="wrap">
 
-    <div class="feat">
-      <div class="feat-row">
-        <span class="n mono">01</span>
-        <h3>Скачивание в MP4</h3>
-        <p>1080p…144p. Фрагменты потока качаются параллельно и собираются в обычный MP4 прямо в браузере — без ffmpeg и внешних программ.</p>
-      </div>
-      <div class="feat-row">
-        <span class="n mono">02</span>
-        <h3>Фрагмент по таймкодам</h3>
-        <p>«С 12:30 по 12:45» — не нужно качать час ради двух минут. Время можно взять прямо из плеера, фактические границы показываются до старта.</p>
-      </div>
-      <div class="feat-row">
-        <span class="n mono">03</span>
-        <h3>Плейлисты</h3>
-        <p>Очередь на странице плейлиста: диапазон серий, пауза между видео, счётчик готовых файлов и отчёт об ошибках.</p>
-      </div>
-      <div class="feat-row">
-        <span class="n mono">04</span>
-        <h3>Покадровая перемотка</h3>
-        <p>Шаг по кадрам с номером кадра и таймкодом, переход на кадр по номеру, петля A/B, сохранение кадра в PNG и раскадровка серией.</p>
-      </div>
-      <div class="feat-row">
-        <span class="n mono">05</span>
-        <h3>Субтитры, обложка, главы</h3>
-        <p>SRT, включая авто-субтитры RuTube, постер в JPG, метки глав из cuepoints и мини-плеер поверх других окон.</p>
-      </div>
-      <div class="feat-row">
-        <span class="n mono">06</span>
-        <h3>Устойчивость к обрывам</h3>
-        <p>Каждое качество RuTube отдаёт с двух серверов. При обрыве расширение перечитывает плейлист с резервного и продолжает с того же фрагмента.</p>
-      </div>
-    </div>
-  </div>
+<section class="sec" id="features">
+<h2>Что умеет</h2>
+<p class="sub">Четыре вкладки в одной аккуратной панели — и ноль настроек, чтобы начать.</p>
+<div class="bento">
+<div class="card wide"><div class="ic" style="color:#ff8a80"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v16H3z"></path><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"></path></svg></div><h3>MP4 целиком и фрагментом</h3><p>«С 12:30 по 12:45» — точность до фрагмента потока. Склейка в обычный MP4 прямо в браузере.</p></div>
+<div class="card"><div class="ic" style="color:#7cc4ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"></path><circle cx="3.5" cy="6" r="1.3"></circle><circle cx="3.5" cy="12" r="1.3"></circle><circle cx="3.5" cy="18" r="1.3"></circle></svg></div><h3>Плейлисты</h3><p>Очередь с паузой, диапазоном серий и отчётом об ошибках по каждому видео.</p></div>
+<div class="card"><div class="ic" style="color:#8ce6a0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.6"></circle><path d="m3.5 17 5-4.5 4 3.5 3.5-3 4.5 4"></path></svg></div><h3>Кадры в PNG</h3><p>Шаг по кадрам, сохранение кадра, раскадровка серией и A/B-петля.</p></div>
+<div class="card"><div class="ic" style="color:#c9a6ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="M10 10.2a2.6 2.6 0 1 0 0 3.6M17.5 10.2a2.6 2.6 0 1 0 0 3.6"></path></svg></div><h3>Субтитры и обложка</h3><p>.srt (включая авто-субтитры), .jpg обложка, главы, мини-плеер.</p></div>
+<div class="card"><div class="ic" style="color:#ffc978"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"></path></svg></div><h3>Зеркала CDN</h3><p>RuTube отдаёт каждое качество с двух серверов — расширение само переходит на рабочее.</p></div>
+
+</div>
 </section>
 
-<section id="install">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="sec-num mono">02</span>
-      <h2>Установка</h2>
-    </div>
-
-    <div class="steps">
-      <div class="step">
-        <span class="n mono">01</span>
-        <div>
-          <h3>Скачать файл расширения</h3>
-          <p>Для Firefox — <code>.xpi</code>, для Chromium — <code>.zip</code>.</p>
-        </div>
-        <span class="tail mono">1 файл</span>
-      </div>
-      <div class="step">
-        <span class="n mono">02</span>
-        <div>
-          <h3>Открыть страницу дополнений</h3>
-          <p>Firefox: <code>about:debugging#/runtime/this-firefox</code> · Chrome: <code>chrome://extensions</code></p>
-        </div>
-        <span class="tail mono">без перезапуска</span>
-      </div>
-      <div class="step">
-        <span class="n mono">03</span>
-        <div>
-          <h3>Загрузить</h3>
-          <p>Firefox — «Загрузить временное дополнение» и выбрать <code>.xpi</code>. Chromium — «Режим разработчика» и «Загрузить распакованное» из папки.</p>
-        </div>
-        <span class="tail mono">≈ 1 минута</span>
-      </div>
-    </div>
-
-    <div class="note">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.4" r=".9" fill="currentColor"/>
-      </svg>
-      <p>В Firefox временное дополнение действует до перезапуска браузера. Для постоянной установки нужна
-        подпись на addons.mozilla.org — процедура описана в
-        <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PUBLISH.md" style="color:#ffb3aa">docs/PUBLISH.md</a>.</p>
-    </div>
-  </div>
+<section class="sec" id="install">
+<h2>Установка</h2>
+<p class="sub">Нужна одна минута.</p>
+<div class="two">
+<div class="card"><h3>Firefox</h3>
+<div class="row"><span class="n">1</span><div><b>Скачать файл</b><a href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi">rutube-tools-firefox.xpi</a></div></div>
+<div class="row"><span class="n">2</span><div><b>Открыть страницу дополнений</b>В адресной строке: <code>about:debugging#/runtime/this-firefox</code></div></div>
+<div class="row"><span class="n">3</span><div><b>«Загрузить временное дополнение…»</b>Выбрать скачанный <code>.xpi</code> — кнопка MP4 появится на странице видео.</div></div></div>
+<div class="card"><h3>Chrome / Edge / Яндекс</h3>
+<div class="row"><span class="n">1</span><div><b>Скачать и распаковать</b><a href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip">rutube-tools-chromium.zip</a></div></div>
+<div class="row"><span class="n">2</span><div><b>Открыть расширения</b>В адресной строке: <code>chrome://extensions</code></div></div>
+<div class="row"><span class="n">3</span><div><b>Режим разработчика</b>Включить его и нажать «Загрузить распакованное».</div></div></div>
+</div>
+<div style="display:flex;gap:14px;align-items:flex-start;background:#1a1315;border:1px solid #4a2a28;border-radius:16px;padding:18px 20px;margin-top:16px;color:#ffc9c3;font-size:15px;line-height:1.6">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:0 0 auto;margin-top:2px"><path d="M12 4 2.8 20h18.4z"></path><path d="M12 10v4.5"></path><circle cx="12" cy="17.4" r=".9" fill="currentColor"></circle></svg>
+<div>Временное дополнение в Firefox живёт до перезапуска браузера. Для постоянной установки нужна подпись на addons.mozilla.org — инструкция в <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PUBLISH.md">docs/PUBLISH.md</a>.</div></div>
 </section>
 
-<section>
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="sec-num mono">03</span>
-      <h2>Интерфейс</h2>
-      <p class="sec-desc">Четыре вкладки в одной панели, которая не спорит с оформлением RuTube.</p>
-    </div>
-
-    <div class="shots">
-      <figure class="shot"><img src="screenshots/02-download.png" alt="Вкладка «Скачать»"><figcaption>Скачать — качества, оценка размера, весь ролик или фрагмент</figcaption></figure>
-      <figure class="shot"><img src="screenshots/03-frames.png" alt="Вкладка «Кадры»"><figcaption>Кадры — шаг по кадрам, петля A/B, раскадровка</figcaption></figure>
-      <figure class="shot"><img src="screenshots/05-info.png" alt="Вкладка «Инфо»"><figcaption>Инфо — кодек, fps, битрейт, качества, просмотры</figcaption></figure>
-      <figure class="shot"><img src="screenshots/07-done.png" alt="Готовый файл"><figcaption>Готово — файл в загрузках и «скачать ещё»</figcaption></figure>
-    </div>
-  </div>
+<section class="sec">
+<h2>Как выглядит</h2>
+<p class="sub">Тёмная панель, которая не спорит с дизайном RuTube.</p>
+<div class="two">
+<div class="shot img"><img src="screenshots/02-download.png" alt="Панель скачивания: качества, оценка размера, фрагмент" loading="lazy"></div>
+<div class="shot img"><img src="screenshots/03-frames.png" alt="Вкладка «Кадры»: A/B-петля и раскадровка" loading="lazy"></div>
+<div class="shot img"><img src="screenshots/05-info.png" alt="Вкладка «Инфо»: кодек, fps, битрейт, просмотры" loading="lazy"></div>
+<div class="shot img"><img src="screenshots/07-done.png" alt="Готовый файл: показать файл и скачать ещё" loading="lazy"></div></div>
 </section>
 
-<section>
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="sec-num mono">04</span>
-      <h2>Клавиши</h2>
-    </div>
-
-    <table class="keys">
-      <tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>кадр назад и кадр вперёд</td></tr>
-      <tr><td><kbd>&lt;</kbd> <kbd>&gt;</kbd></td><td>скорость от 0.25× до 2×</td></tr>
-      <tr><td><kbd>s</kbd></td><td>сохранить кадр в PNG</td></tr>
-      <tr><td><kbd>p</kbd></td><td>мини-плеер</td></tr>
-      <tr><td><kbd>?</kbd></td><td>подсказка на странице</td></tr>
-    </table>
-    <p class="sec-desc" style="margin-top:18px">Полный набор «как на YouTube» включается в настройках.
-      Клавиши кадров и кадра PNG переназначаются.</p>
-  </div>
+<section class="sec">
+<h2>Клавиши</h2>
+<p class="sub">Полный набор «как на YouTube» включается в настройках расширения.</p>
+<div class="card" style="padding:8px 24px">
+<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 0"><span style="width:120px"><span class="k">,</span> <span class="k">.</span></span><span style="color:#a3a3b0">кадр назад / кадр вперёд</span></div>
+<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 0;border-top:1px solid #24242c"><span style="width:120px"><span class="k">&lt;</span> <span class="k">&gt;</span></span><span style="color:#a3a3b0">скорость − / + (0.25× … 2×)</span></div>
+<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 0;border-top:1px solid #24242c"><span style="width:120px"><span class="k">s</span></span><span style="color:#a3a3b0">сохранить кадр в PNG</span></div>
+<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 0;border-top:1px solid #24242c"><span style="width:120px"><span class="k">p</span></span><span style="color:#a3a3b0">мини-плеер (Picture-in-Picture)</span></div>
+<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 0;border-top:1px solid #24242c"><span style="width:120px"><span class="k">?</span></span><span style="color:#a3a3b0">подсказка прямо на странице</span></div>
+</div>
 </section>
 
-<section>
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="sec-num mono">05</span>
-      <h2>Чего расширение не делает</h2>
-    </div>
-
-    <div class="limits">
-      <div class="limit"><h4>Не обходит DRM</h4><p>Платные и защищённые видео не скачиваются. Это осознанное ограничение.</p></div>
-      <div class="limit"><h4>Не записывает эфиры</h4><p>Прямые трансляции не поддерживаются.</p></div>
-      <div class="limit"><h4>Не собирает данные</h4><p>Нет аналитики, аккаунтов и серверов. Запросы только к RuTube и его CDN.</p></div>
-      <div class="limit"><h4>Не перекодирует</h4><p>Файл скачивается в выбранном качестве как есть.</p></div>
-    </div>
-  </div>
+<section class="sec">
+<h2>Чего не делает</h2>
+<p class="sub">Осознанные границы.</p>
+<div class="bento">
+<div class="card"><h3>Не обходит DRM</h3><p>Платные и защищённые видео не скачиваются — это осознанное ограничение.</p></div>
+<div class="card"><h3>Не пишет эфиры</h3><p>Прямые трансляции не поддерживаются.</p></div>
+<div class="card"><h3>Не собирает данные</h3><p>Нет ни аналитики, ни аккаунтов, ни серверов.</p></div>
+</div>
 </section>
 
-<section id="author" style="border-bottom:0">
-  <div class="wrap">
-    <div class="sec-head"><span class="sec-num mono">06</span><h2>Автор</h2></div>
-    <div class="author-card">
-      <img src="assets/logo.png" alt="">
-      <div class="who">
-        <h3>xxnetme</h3>
-        <p>Разработчик и автор проекта</p>
-      </div>
-      <div class="links">
-        <a href="https://github.com/xxnetme">GitHub</a>
-        <a href="https://github.com/xxnetme/rutube-tools">Репозиторий</a>
-        <a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md">Что нового</a>
-      </div>
-    </div>
+<section class="sec" id="author" style="padding-top:clamp(40px,6vw,72px);padding-bottom:clamp(48px,7vw,88px)">
+<h2>Автор</h2>
+<p class="sub">Проект делает один человек, без компании и венчурных денег.</p>
+<div class="card author">
+  <div class="author-mark" aria-hidden="true">xx</div>
+  <div class="author-who">
+    <b>xxnetme</b>
+    <span>разработчик и автор проекта</span>
   </div>
+  <div class="author-links">
+    <a href="https://github.com/xxnetme">GitHub</a>
+    <a href="https://github.com/xxnetme/rutube-tools">Репозиторий</a>
+    <a href="https://github.com/xxnetme/rutube-tools/issues">Проблемы и идеи</a>
+  </div>
+</div>
 </section>
 
-<footer>
-  <div class="wrap">
-    <div class="row">
-      <span>Скачивайте только то, на что у вас есть право.</span>
-      <span class="mono">RuTube Tools v1.3.1 · MIT</span>
-    </div>
-  </div>
+</main>
+
+
+
+
+<footer style="border-top:1px solid #1c1c23;padding:28px 0;font-size:13px;color:#8b8b98;text-align:center">
+<div class="wrap">
+<a href="https://github.com/xxnetme/rutube-tools" style="color:#a3a3b0">GitHub</a> ·
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md" style="color:#a3a3b0">Что нового</a> ·
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PRIVACY.md" style="color:#a3a3b0">Приватность</a> ·
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/LICENSE" style="color:#a3a3b0">MIT</a> ·
+<a href="https://github.com/xxnetme/rutube-tools/blob/main/docs/PUBLISH.md" style="color:#a3a3b0">Публикация в AMO</a>
+<div style="margin-top:10px">RuTube Tools v1.3.1 · <a href="https://github.com/xxnetme" style="color:#a3a3b0">xxnetme</a> · MIT</div>
+<div style="margin-top:6px">Скачивайте только то, на что у вас есть право.</div></div>
 </footer>
-
 </body>
 </html>
