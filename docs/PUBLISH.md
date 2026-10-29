@@ -316,7 +316,7 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' python3 tools/amo-apply-all.py
 | Предупреждение | Сколько | О чём | Решение |
 |---|---|---|
 | `KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION` | 1 | `data_collection_permissions` появилось в Firefox для Android 142, минимум заявлен 140 | на десктоп не влияет; убрать можно подъёмом минимума до 142 или блоком `gecko_android` с Android 142+, но Android мы не заявляем |
-| `UNSAFE_VAR_ASSIGNMENT` | 5 | присваивание в `innerHTML` динамических строк | ложные: строки собраны через `escapeHtml` (`popup.js:33`, `content-core.js:301/363/472`, `content-panel.js:18`) — проверено построчно |
+| `UNSAFE_VAR_ASSIGNMENT` | 5 | присваивание в `innerHTML` динамических строк | по делу — нет: данные RuTube (название, автор, плейлисты) вставляются через `esc()` — `content-panel.js:154, 274, 511, 513`; прочие интерполяции — числа и готовые фрагменты; в `popup.js:33` подставляется только текст локализации, он лежит в пакете |
 * Сборка 1.3.3 загружена в Chromium как распакованное расширение: фон, попап и панель на странице
   видео работают, ошибок в консоли нет, вкладок — 4.
 * Публичный адрес политики конфиденциальности отвечает: `https://xxnetme.github.io/rutube-tools/privacy.html`.
