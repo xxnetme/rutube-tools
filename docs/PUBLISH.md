@@ -81,6 +81,31 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' \
 
 Отзыв ключей — там же, кнопкой **Revoke**, в любой момент.
 
+### Что уже отправлено (29.10.2026)
+
+| Что | Значение |
+|---|---|
+| Карточка | <https://addons.mozilla.org/ru/firefox/addon/rutube-tools/> |
+| id / slug | 3111445 / `rutube-tools` |
+| guid | `rutube-tools@xxnetme.github.io` |
+| Статус | **nominated** — версия 1.3.2 ждёт проверки (`file.status = unreviewed`) |
+| Заполнено через API | название, краткое описание, полное описание (2135 символов), категория «Photos, Music & Videos», теги `video downloader, download, streaming`, лицензия MIT, иконка 128×128, 3 скриншота из 9, заметка ревьюеру |
+| Осталось дозаполнить | 6 скриншотов (лимит загрузок AMO — около часа), поле Privacy Policy в кабинете: `https://xxnetme.github.io/rutube-tools/privacy.html` |
+
+Догрузка скриншотов одной командой (можно повторить позже, уже загруженные пропускаются):
+
+```bash
+AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' \
+  python3 tools/amo-publish.py --previews
+```
+
+Поле Privacy Policy API не принимает — его нужно вписать руками в кабинете:
+<https://addons.mozilla.org/ru/developers/addon/rutube-tools/> → «Edit» → Privacy Policy.
+
+Пока идёт проверка, карточка по ссылке показывает «This add-on is not listed here yet».
+После одобрения ссылка станет публичной, а расширение начнёт обновляться само.
+
+
 
 1. <https://addons.mozilla.org/developers/> → войти через аккаунт Mozilla.
 2. **Submit a New Add-on** → **Continue** (согласие с правилами размещения).

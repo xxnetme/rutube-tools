@@ -78,7 +78,10 @@ def jwt(issuer: str, secret: str, ttl: int = 60) -> str:
 
 
 def call(method: str, path: str, token: str, payload=None, files=None) -> dict:
+    """Один запрос = один свежий JWT: AMO принимает exp не больше 60 секунд."""
     url = path if path.startswith("http") else API + path
+    if callable(token):
+        token = token()
     headers = {"Authorization": "JWT " + token, "Accept": "application/json"}
     data = None
 
@@ -134,7 +137,7 @@ def main() -> None:
     if not xpi.is_file():
         raise SystemExit(f"нет файла {xpi} — сначала python3 build.py")
 
-    token = jwt(issuer, secret)
+    token = lambda: jwt(issuer, secret)  # noqa: E731 — свежий токен на каждый запрос
     print(f"файл: {xpi.name} ({xpi.stat().st_size / 1024:.1f} KB)")
 
     print("1/4 загрузка…")
@@ -161,12 +164,10 @@ def main() -> None:
     else:
         raise SystemExit("валидация не завершилась за 3 минуты — проверьте вручную")
 
-    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
     version_payload = {
         "upload": up_uuid,
-        "license": {"name": {"ru": "MIT License", "en-US": "MIT License"},
-                    "text": {"en-US": license_text, "ru": license_text},
-                    "url": "https://github.com/xxnetme/rutube-tools/blob/main/LICENSE"},
+        # в API это slug предопределённой лицензии; свой текст — через custom_license
+        "license": "MIT",
         "release_notes": {"ru": "Подготовка к публикации в магазинах: постоянный gecko.id, "
                                 "минимальный Firefox 140, убрано неиспользуемое разрешение.",
                           "en-US": "Store preparation: stable gecko.id, minimum Firefox 140, "
@@ -204,5 +205,45 @@ def main() -> None:
     print("   кабинет:  https://addons.mozilla.org/ru/developers/addon/" + SLUG + "/")
 
 
+def previews(issuer: str, secret: str) -> None:
+    """Догрузка скриншотов: у AMO жёсткий лимит загрузок, поэтому пауза между файлами."""
+    token = lambda: jwt(issuer, secret)  # noqa: E731
+    shots = [
+        (1, "01-frame-step.png", "Покадровая перемотка: номер кадра и таймкод прямо в панели"),
+        (2, "02-download.png", "Скачивание в MP4: качество, целое видео или фрагмент по таймкодам"),
+        (3, "03-frames.png", "Раскадровка: серия кадров с заданным интервалом"),
+        (4, "04-more.png", "Субтитры в SRT, обложка, ссылка .m3u8 и мини-плеер"),
+        (5, "05-info.png", "Сведения о видео: кодек, fps, битрейт, размер файла"),
+        (6, "06-progress.png", "Загрузка: прогресс, скорость и кнопка «Отменить»"),
+        (7, "07-done.png", "Готово: файлы сохранены в папку «Загрузки»"),
+        (8, "08-playlist.png", "Плейлист: очередь серий с паузой и диапазоном"),
+        (9, "09-settings.png", "Настройки: качество, частота кадров, набор клавиш"),
+    ]
+    detail = call("GET", f"/addons/addon/{SLUG}/?lang=ru", token)
+    have = {(p.get("caption") or {}).get("ru"): p.get("id") for p in detail.get("previews", [])}
+    taken = {p.get("position") for p in detail.get("previews", [])}
+
+    for pos, name, caption in shots:
+        if pos in taken:
+            pid = next((p.get("id") for p in detail.get("previews", []) if p.get("position") == pos), None)
+            if pid and caption not in have:
+                time.sleep(3)
+                call("PATCH", f"/addons/addon/{SLUG}/previews/{pid}/", token,
+                     payload={"caption": {"ru": caption}})
+                print(f"  {name}: подпись добавлена")
+            continue
+        time.sleep(8)
+        path = ROOT / "docs/screenshots" / name
+        r = call("POST", f"/addons/addon/{SLUG}/previews/", token,
+                 payload={"position": pos}, files={"image": (path.name, path.read_bytes())})
+        time.sleep(3)
+        call("PATCH", f"/addons/addon/{SLUG}/previews/{r['id']}/", token,
+             payload={"caption": {"ru": caption}, "position": pos})
+        print(f"  {name}: загружен")
+
+
 if __name__ == "__main__":
-    main()
+    if "--previews" in sys.argv:
+        previews(os.environ["AMO_JWT_ISSUER"].strip(), os.environ["AMO_JWT_SECRET"].strip())
+    else:
+        main()
