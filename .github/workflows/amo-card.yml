@@ -1,0 +1,46 @@
+name: AMO — довести карточку до готового вида
+
+# Раз в час проверяет, спал ли суточный лимит AMO, и применяет правки:
+# политика конфиденциальности, локализация en-US, сайт поддержки, скриншоты 4–9.
+# Скрипт идемпотентный: готовое пропускает, поэтому лишние запуски ничего не ломают.
+#
+# Нужны секреты репозитория (Settings → Secrets and variables → Actions):
+#   AMO_JWT_ISSUER, AMO_JWT_SECRET — из https://addons.mozilla.org/developers/addon/api/key/
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+jobs:
+  card:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Проверить, что ключи AMO добавлены
+        env:
+          ISS: ${{ secrets.AMO_JWT_ISSUER }}
+          SEC: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          if [ -z "$ISS" ] || [ -z "$SEC" ]; then
+            echo "::error::Добавьте секреты AMO_JWT_ISSUER и AMO_JWT_SECRET: Settings -> Secrets and variables -> Actions"
+            exit 1
+          fi
+          echo "ключи на месте"
+
+      - name: Применить правки карточки
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+          AMO_ONCE: "1"
+        run: python3 tools/amo-apply-all.py
+
+      - name: Итог
+        if: always()
+        run: cat .amo-apply-all.log || true
