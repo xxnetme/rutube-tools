@@ -18,16 +18,23 @@ FLAVORS = {
 
 EXCLUDE_NAMES = {"manifest.firefox.json", "manifest.chromium.json"}
 
+# файлы, нужные только одной сборке: offscreen — механизм Chromium, в Firefox мёртв
+EXCLUDE_BY_FLAVOR = {
+    "firefox": {"offscreen.html", "offscreen.js"},
+    "chromium": set(),
+}
+
 REQUIRED = {"manifest.json", "background.js", "content-core.js", "content-panel.js",
             "lib/engine.js", "lib/i18n.js", "lib/mux-mp4.min.js", "popup.html", "popup.js"}
+REQUIRED_BY_FLAVOR = {"chromium": {"offscreen.html", "offscreen.js"}}
 
 # AMO/CWS не любят удалённый код и eval — проверяем свои файлы (кроме вендорного mux.js)
 FORBIDDEN = ("eval(", "new Function(", "document.write(", "innerHTML = '<script'")
 
 
-def collect_files():
+def collect_files(skip=frozenset()):
     for item in sorted(SRC.rglob("*")):
-        if item.is_file() and item.name not in EXCLUDE_NAMES:
+        if item.is_file() and item.name not in EXCLUDE_NAMES and item.name not in skip:
             yield item, item.relative_to(SRC)
 
 
@@ -50,7 +57,7 @@ def build_all():
         # распакованная папка (для «Load unpacked» / «Load Temporary Add-on»)
         dest = BUILD / f"rutube-tools-{flavor}"
         dest.mkdir(parents=True)
-        for item, rel in collect_files():
+        for item, rel in collect_files(EXCLUDE_BY_FLAVOR.get(flavor, frozenset())):
             target = dest / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, target)
@@ -58,7 +65,7 @@ def build_all():
         json.loads((dest / "manifest.json").read_text(encoding="utf-8"))  # валидация
 
         present = {f.relative_to(dest).as_posix() for f in dest.rglob("*") if f.is_file()}
-        missing = REQUIRED - present
+        missing = (REQUIRED | REQUIRED_BY_FLAVOR.get(flavor, set())) - present
         if missing:
             raise SystemExit(f"{flavor}: в сборке нет файлов: {sorted(missing)}")
 

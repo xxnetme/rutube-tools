@@ -187,7 +187,6 @@
     '.pill:hover{background:rgba(32,32,37,.94);border-color:rgba(255,255,255,.22);transform:translateY(-1px)}',
     '.pill:active{transform:translateY(0)}',
     '.pill svg{width:14px;height:14px;display:block;flex:0 0 auto;color:var(--acc)}',
-    '.pill .cap{font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;color:var(--faint);border-left:1px solid var(--line);padding-left:8px;margin-left:1px}',
     /* --- панель --- */
     '.card{width:340px;max-height:min(80vh,740px);display:flex;flex-direction:column;background:rgba(17,17,20,.97);color:var(--ink);border:1px solid var(--line-2);border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 24px 64px -20px rgba(0,0,0,.85);overflow:hidden;backdrop-filter:blur(20px) saturate(130%)}',
     '.hd{display:flex;align-items:center;gap:9px;padding:11px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}',
@@ -713,7 +712,6 @@
 
   /* ----------------------------------------------------- позиция просмотра */
 
-  var posTimer = 0;
   function posKey(videoId) { return 'pos:' + videoId; }
 
   function savePosition(v) {
@@ -936,7 +934,7 @@
       });
     } catch (e) {}
 
-    console.log('[RuTube Tools] content готов', location.href);
+    if (globalThis.RT_DEBUG) console.log('[RuTube Tools] content готов', location.href);
   }
 
   /* ------------------------------------------------------ общий неймспейс */

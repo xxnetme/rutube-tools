@@ -10,7 +10,6 @@ Thumbs.db
 *.log
 
 # тесты и временные файлы
-.dev/
 tmp/
 *.mp4
 *.ts

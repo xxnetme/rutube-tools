@@ -31,3 +31,45 @@ jobs:
             echo "::error::найден eval или внешний скрипт"; exit 1
           fi
           echo "чисто"
+
+      - name: addons-linter
+        run: |
+          npx --yes addons-linter@latest release/rutube-tools-firefox.zip
+          echo "addons-linter прошёл"
+
+      - name: Версии совпадают
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re, sys
+          fx = json.loads(pathlib.Path('src/manifest.firefox.json').read_text(encoding='utf-8'))
+          cr = json.loads(pathlib.Path('src/manifest.chromium.json').read_text(encoding='utf-8'))
+          version = fx['version']
+          errors = []
+          if cr['version'] != version:
+              errors.append(f"chromium {cr['version']} != firefox {version}")
+          changelog = pathlib.Path('docs/CHANGELOG.md').read_text(encoding='utf-8')
+          if not re.search(rf'^## {re.escape(version)}\b', changelog, re.M):
+              errors.append(f"в CHANGELOG нет раздела {version}")
+          for f in ('docs/PRIVACY.md', 'README.md'):
+              text = pathlib.Path(f).read_text(encoding='utf-8')
+              if version not in text and f == 'docs/PRIVACY.md':
+                  errors.append(f"в {f} не указана версия {version}")
+          if errors:
+              print('::error::' + '; '.join(errors))
+              sys.exit(1)
+          print(f'версия {version} согласована: манифесты, CHANGELOG')
+          PY
+
+      - name: Лендинг и политика собираются
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          for f in ('docs/index.html', 'docs/privacy.html'):
+              html = pathlib.Path(f).read_text(encoding='utf-8')
+              assert '<html lang="ru">' in html, f
+              assert html.count('<h1') == 1, f + ': заголовков h1 не один'
+          html = pathlib.Path('docs/index.html').read_text(encoding='utf-8')
+          data = json.loads(html.split('type="application/ld+json">', 1)[1].split('</script>', 1)[0])
+          assert data['@graph'], 'JSON-LD пуст'
+          print('страницы в порядке, JSON-LD парсится')
+          PY

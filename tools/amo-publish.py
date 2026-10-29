@@ -21,6 +21,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -60,6 +61,17 @@ APPROVAL_NOTES = (
     "the lower right corner. Frame stepping: comma and period. The MP4 button opens "
     "the download panel."
 )
+
+
+def release_notes() -> dict:
+    """Заметки к версии берутся из CHANGELOG, а не хардкодятся под 1.3.2."""
+    version = json.loads((ROOT / "src/manifest.firefox.json").read_text(encoding="utf-8"))["version"]
+    changelog = (ROOT / "docs/CHANGELOG.md").read_text(encoding="utf-8")
+    m = re.search(rf"^## {re.escape(version)}\b.*?(?=^## |\Z)", changelog, re.S | re.M)
+    body = (m.group(0).strip() if m else f"Версия {version}.").split("\n", 1)
+    text = body[1].strip() if len(body) > 1 else body[0]
+    text = text.replace("* ", "— ").replace("`", "")[:1200]
+    return {"ru": text}
 
 
 def jwt(issuer: str, secret: str, ttl: int = 60) -> str:
@@ -168,10 +180,7 @@ def main() -> None:
         "upload": up_uuid,
         # в API это slug предопределённой лицензии; свой текст — через custom_license
         "license": "MIT",
-        "release_notes": {"ru": "Подготовка к публикации в магазинах: постоянный gecko.id, "
-                                "минимальный Firefox 140, убрано неиспользуемое разрешение.",
-                          "en-US": "Store preparation: stable gecko.id, minimum Firefox 140, "
-                                   "unused host permission removed."},
+        "release_notes": release_notes(),
         "approval_notes": APPROVAL_NOTES,
     }
 

@@ -15,7 +15,7 @@
 * Заявка в Firefox подана: AMO id `3111445`, статус `nominated`.
 * Для магазинов добавлены промо-плитки `promo-marquee.png` (1400×560) и `promo-small.png` (440×280),
   готовые тексты карточек и заметки ревьюерам — `docs/store/`.
-* Скрипты публикации через API: `tools/amo-publish.py`, `tools/amo-watch.py`.
+* Скрипты публикации через API: `tools/amo-publish.py`, `tools/amo-apply-all.py`.
 
 ## 1.3.1 — 29.10.2026
 

@@ -49,7 +49,7 @@
   <!-- правый блок: версия и платформы -->
   <g font-family="JetBrains Mono" font-size="12.5" letter-spacing="0.4" text-anchor="end">
     <text x="1208" y="176" fill="#f2413a">v1.3.1</text>
-    <text x="1208" y="206" fill="#6e6f78">Firefox 115+</text>
+    <text x="1208" y="206" fill="#6e6f78">Firefox 140+</text>
     <text x="1208" y="230" fill="#6e6f78">Chromium · MV3</text>
     <line x1="1076" y1="250" x2="1208" y2="250" stroke="#26262d"/>
     <text x="1208" y="274" fill="#6e6f78">MIT</text>

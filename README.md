@@ -8,7 +8,7 @@
 
 <a href="https://github.com/xxnetme/rutube-tools/releases/latest"><img src="https://img.shields.io/github/v/release/xxnetme/rutube-tools?style=flat-square&color=f2413a&label=release" alt="Release"></a>
 <a href="https://github.com/xxnetme/rutube-tools/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/xxnetme/rutube-tools/checks.yml?style=flat-square&label=build" alt="Build"></a>
-<img src="https://img.shields.io/badge/firefox-115%2B-8a8d95?style=flat-square" alt="Firefox 115+">
+<img src="https://img.shields.io/badge/firefox-140%2B-8a8d95?style=flat-square" alt="Firefox 140+">
 <img src="https://img.shields.io/badge/chromium-mv3-8a8d95?style=flat-square" alt="Chromium MV3">
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8a8d95?style=flat-square" alt="MIT"></a>
 

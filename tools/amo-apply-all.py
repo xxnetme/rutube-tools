@@ -190,8 +190,25 @@ def step_shots() -> bool:
     return True
 
 
+def all_done() -> bool:
+    """Готово ли всё: политика верная, en-US есть, скриншотов 9."""
+    try:
+        d = amo.call("GET", f"/addons/addon/{amo.SLUG}/?lang=ru", tk())
+        pol = amo.call("GET", f"/addons/addon/{amo.SLUG}/eula_policy/", tk())
+    except SystemExit as e:
+        log(f"проверка состояния: {str(e)[:160]}")
+        return False
+    locales = set((d.get("name") or {}).keys())
+    shots = len(d.get("previews", []))
+    policy_ok = (pol.get("privacy_policy") or {}).get("ru", "").strip() == PRIVACY["ru"].strip()
+    return "en-US" in locales and shots >= 9 and policy_ok
+
+
 def main() -> int:
     log("старт")
+    if all_done():
+        log("всё уже готово — правок не требуется")
+        return 0
     ok1 = step_privacy()
     ok2 = step_metadata()
     ok3 = step_shots()

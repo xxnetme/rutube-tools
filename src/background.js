@@ -624,5 +624,5 @@
     return true;
   });
 
-  console.log('[RuTube Tools] background готов');
+  if (globalThis.RT_DEBUG) console.log('[RuTube Tools] background готов');
 })();

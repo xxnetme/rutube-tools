@@ -41,6 +41,21 @@ jobs:
           path: release/*
           if-no-files-found: error
 
+      - name: Заметки только для этой версии
+        id: notes
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re
+          version = json.loads(pathlib.Path('src/manifest.firefox.json').read_text())['version']
+          changelog = pathlib.Path('docs/CHANGELOG.md').read_text(encoding='utf-8')
+          m = re.search(rf'^## {re.escape(version)}\b.*?(?=^## |\Z)', changelog, re.S | re.M)
+          body = m.group(0).strip() if m else f'Версия {version}.'
+          out = pathlib.Path('release-notes.md')
+          out.write_text(body + '\n', encoding='utf-8')
+          print(f'заметки для {version}: {len(body)} символов')
+          PY
+          echo "file=release-notes.md" >> "$GITHUB_OUTPUT"
+
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -49,5 +64,4 @@ jobs:
             release/rutube-tools-firefox.xpi
             release/rutube-tools-firefox.zip
             release/rutube-tools-chromium.zip
-          generate_release_notes: true
-          body_path: docs/CHANGELOG.md
+          body_path: ${{ steps.notes.outputs.file }}
