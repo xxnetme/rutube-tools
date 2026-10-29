@@ -6,6 +6,7 @@ name: AMO — довести карточку до готового вида
 # сразу выходит с кодом 0, не трогая API. После этого воркфлоу можно отключить:
 # Actions -> «AMO — довести карточку до готового вида» -> ... -> Disable workflow.
 #
+# Без секретов воркфлоу просто пропускает шаги с предупреждением, а не падает.
 # Нужны секреты репозитория (Settings → Secrets and variables → Actions):
 #   AMO_JWT_ISSUER, AMO_JWT_SECRET — из https://addons.mozilla.org/developers/addon/api/key/
 
@@ -26,17 +27,21 @@ jobs:
           python-version: "3.12"
 
       - name: Проверить, что ключи AMO добавлены
+        id: keys
         env:
           ISS: ${{ secrets.AMO_JWT_ISSUER }}
           SEC: ${{ secrets.AMO_JWT_SECRET }}
         run: |
           if [ -z "$ISS" ] || [ -z "$SEC" ]; then
-            echo "::error::Добавьте секреты AMO_JWT_ISSUER и AMO_JWT_SECRET: Settings -> Secrets and variables -> Actions"
-            exit 1
+            echo "::warning::Секреты AMO_JWT_ISSUER и AMO_JWT_SECRET не добавлены — пропускаю. Settings -> Secrets and variables -> Actions"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "ключи на месте"
 
       - name: Применить правки карточки
+        if: steps.keys.outputs.ready == 'true'
         env:
           AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
           AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
@@ -44,5 +49,5 @@ jobs:
         run: python3 tools/amo-apply-all.py
 
       - name: Итог
-        if: always()
+        if: always() && steps.keys.outputs.ready == 'true'
         run: cat .amo-apply-all.log || true
