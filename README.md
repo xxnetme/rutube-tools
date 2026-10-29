@@ -90,7 +90,8 @@ about:debugging#/runtime/this-firefox → «Загрузить временно�
 ### Chrome / Edge / Яндекс.Браузер
 
 ```text
-chrome://extensions → включить «Режим разработчика» → «Загрузить распакованное» → build/rutube-tools-chromium
+1. распаковать rutube-tools-chromium.zip в папку
+2. chrome://extensions → «Режим разработчика» → «Загрузить распакованное» → выбрать эту папку
 ```
 
 Сборка: **[rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip)** · в Chromium сборка MP4 идёт
@@ -189,8 +190,10 @@ rutube-tools/
 │   ├── popup.html · popup.js    # настройки
 │   └── offscreen.html · .js     # сборка MP4/blob для Chromium
 ├── build.py                     # сборка + проверки (только stdlib)
-├── docs/                        # PUBLISH · PRIVACY · CHANGELOG · FEATURES · скриншоты
-└── release/                     # .xpi и .zip
+├── docs/                        # PUBLISH · PRIVACY · CHANGELOG · FEATURES · скриншоты · лендинг
+├── assets/                      # баннер, обложка, превью интерфейса
+├── build/ · release/            # создаются build.py (в git их нет)
+└── .github/workflows/           # checks (синтаксис + сборка) и release (по тегу v*)
 ```
 
 ---
