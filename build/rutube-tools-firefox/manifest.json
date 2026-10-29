@@ -1,0 +1,69 @@
+{
+  "manifest_version": 3,
+  "name": "RuTube Tools — кадры и MP4",
+  "version": "1.3.0",
+  "description": "Покадровая перемотка, кадры в PNG, скачивание фрагментов и плейлистов RuTube в MP4.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "rutube-tools@arena.ai",
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "permissions": [
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "*://rutube.ru/*",
+    "*://*.rutube.ru/*",
+    "*://*.rtbcdn.ru/*",
+    "*://*.rtbcdn.net/*"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
+  ],
+  "background": {
+    "scripts": [
+      "lib/mux-mp4.min.js",
+      "lib/engine.js",
+      "background.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://rutube.ru/*",
+        "*://*.rutube.ru/*"
+      ],
+      "js": [
+        "lib/engine.js",
+        "lib/i18n.js",
+        "content-core.js",
+        "content-panel.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "RuTube Tools",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png"
+    }
+  },
+  "icons": {
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "homepage_url": "https://github.com/"
+}

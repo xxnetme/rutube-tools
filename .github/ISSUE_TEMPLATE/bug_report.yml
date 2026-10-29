@@ -1,0 +1,64 @@
+name: 🐞 Баг
+description: Что-то не работает — загрузка, кадры, плеер
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за отчёт! Самое полезное — **диагностика из расширения**:
+        откройте панель → «Скопировать диагностику» (появляется при ошибке) и вставьте сюда.
+  - type: textarea
+    id: what
+    attributes:
+      label: Что произошло
+      placeholder: Нажал «Скачать MP4», дошло до 40% и упало с ошибкой…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как повторить
+      placeholder: |
+        1. Открыть https://rutube.ru/video/<id>/
+        2. Нажать MP4 → 720p
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: video
+    attributes:
+      label: Ссылка на видео
+      description: Если видео публичное и проблема воспроизводится на нём
+      placeholder: https://rutube.ru/video/…
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Браузер
+      options:
+        - Firefox
+        - Chrome
+        - Edge
+        - Яндекс.Браузер
+        - Другой (напишите в описании)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Версия расширения
+      placeholder: 1.3.0 (видно в настройках расширения, внизу)
+    validations:
+      required: true
+  - type: textarea
+    id: diag
+    attributes:
+      label: Диагностика
+      description: Панель → «Скопировать диагностику» → вставить сюда
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Проверки
+      options:
+        - label: Проблема не в DRM-видео и не в прямом эфире (их скачивание не поддерживается)
+        - label: Я обновил(а) расширение до последней версии

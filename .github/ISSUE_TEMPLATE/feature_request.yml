@@ -1,0 +1,26 @@
+name: 💡 Идея
+description: Предложить функцию
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу решаем
+      placeholder: Хочу сохранить только звук лекции, чтобы слушать в дороге
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Как это могло бы выглядеть
+      placeholder: Переключатель «Видео / Только звук» в панели качеств
+  - type: dropdown
+    id: area
+    attributes:
+      label: Область
+      options: [Скачивание, Кадры и PNG, Плеер и клавиши, Интерфейс, Другое]
+  - type: markdown
+    attributes:
+      value: |
+        Перед предложением загляните в [`docs/FEATURES.md`](../blob/main/docs/FEATURES.md) —
+        там уже разобраны планы, оценки и то, чего мы **сознательно не делаем** (обход DRM, реклама).

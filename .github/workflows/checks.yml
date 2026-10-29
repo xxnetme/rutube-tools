@@ -1,0 +1,33 @@
+name: Checks
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: JS syntax
+        run: |
+          for f in $(find src -name '*.js' ! -name 'mux*'); do
+            node --check "$f" || exit 1
+          done
+          echo "синтаксис в порядке"
+
+      - name: Build
+        run: python3 build.py
+
+      - name: No remote code / eval
+        run: |
+          if grep -RnE "eval\(|new Function\(|https?://[^\"' ]+\.js" src --include='*.js' | grep -v 'mux'; then
+            echo "::error::найден eval или внешний скрипт"; exit 1
+          fi
+          echo "чисто"
