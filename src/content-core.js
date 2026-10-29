@@ -178,6 +178,7 @@
 
   var CSS = [
     ':host{all:initial}',
+    '[hidden]{display:none!important}',
     '*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}',
     /* --- оболочка --- */
     '.wrap{position:fixed;right:16px;bottom:80px;z-index:2147483000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;font-size:13px;line-height:1.4;--ink:#eceef1;--dim:#9b9ca4;--faint:#6e6f78;--line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.13);--surf:#151519;--surf-2:#1d1d23;--acc:#f2413a;--ok:#4ec97a;--err:#f2695f}',
