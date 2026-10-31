@@ -13,7 +13,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: JS syntax
         run: |
@@ -21,6 +21,15 @@ jobs:
             node --check "$f" || exit 1
           done
           echo "синтаксис в порядке"
+
+      - name: Тесты
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          npm install --no-save jsdom
+          npm test
+
+      - name: ESLint
+        run: npm run lint
 
       - name: Build
         run: python3 build.py

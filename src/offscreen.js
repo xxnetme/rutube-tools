@@ -23,6 +23,8 @@
         mode: cfg.mode,
         concurrency: cfg.concurrency || 5,
         muxjs: globalThis.muxjs,
+        audio: globalThis.RTAudio,
+        title: cfg.title,
         signal: ctrl.signal,
         onProgress: function (p) {
           post({
@@ -54,7 +56,7 @@
     if (!msg || typeof msg.type !== 'string') return false;
 
     if (msg.type === 'rt:offscreen-ping') {
-      sendResponse({ ok: !!(L && globalThis.muxjs) });
+      sendResponse({ ok: !!(L && globalThis.muxjs && globalThis.RTAudio) });
       return true;
     }
 
@@ -72,7 +74,7 @@
     }
 
     if (msg.type === 'rt:offscreen-run') {
-      if (!L || !globalThis.muxjs) {
+      if (!L || !globalThis.muxjs || !globalThis.RTAudio) {
         sendResponse({ ok: false, error: 'Библиотеки не загружены в offscreen' });
         return true;
       }

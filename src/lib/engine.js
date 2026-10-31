@@ -1,7 +1,7 @@
 /*!
  * RuTube Tools — движок: разбор HLS-плейлистов, склейка TS → MP4, плейлисты RuTube.
  * Работает и в браузере (globalThis.RTLib), и в Node (module.exports).
- * Зависимость для режима MP4: mux.js (globalThis.muxjs).
+ * Зависимости: mux.js (режим MP4, globalThis.muxjs) и lib/audio.js (режим M4A, globalThis.RTAudio).
  */
 (function (global) {
   'use strict';
@@ -45,28 +45,38 @@
     return out;
   }
 
-  function fetchSignal(signal) {
+  /**
+   * Выполняет work(signal) с общим тайм-аутом и внешней отменой. Таймер и подписка снимаются
+   * по завершении — иначе на каждый сегмент оставался бы висеть таймер на 45 секунд.
+   */
+  async function withAbort(external, work) {
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(new Error('timeout')); }, REQ_TIMEOUT);
-    function onAbort() { clearTimeout(timer); ctrl.abort((signal && signal.reason) || new Error('aborted')); }
-    if (signal) {
-      if (signal.aborted) onAbort();
-      else signal.addEventListener('abort', onAbort, { once: true });
+    function onAbort() { ctrl.abort((external && external.reason) || new Error('aborted')); }
+    if (external) {
+      if (external.aborted) onAbort();
+      else external.addEventListener('abort', onAbort, { once: true });
     }
-    ctrl.signal.addEventListener('abort', function () { clearTimeout(timer); }, { once: true });
-    return ctrl.signal;
+    try {
+      return await work(ctrl.signal);
+    } finally {
+      clearTimeout(timer);
+      if (external) external.removeEventListener('abort', onAbort);
+    }
   }
 
   async function fetchText(url, opts) {
     opts = opts || {};
-    var r = await fetch(url, {
-      signal: fetchSignal(opts.signal),
-      credentials: 'omit',
-      cache: 'no-store',
-      headers: opts.headers || {}
+    return withAbort(opts.signal, async function (signal) {
+      var r = await fetch(url, {
+        signal: signal,
+        credentials: 'omit',
+        cache: 'no-store',
+        headers: opts.headers || {}
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + String(url).slice(0, 120));
+      return r.text();
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + String(url).slice(0, 120));
-    return r.text();
   }
 
   async function fetchJson(url, opts) {
@@ -400,12 +410,18 @@
     var signal = cfg.signal;
     var onProgress = cfg.onProgress || function () {};
     var muxjs = cfg.muxjs || global.muxjs;
+    var audioLib = cfg.audio || global.RTAudio;
 
     if (mode === 'mp4' && (!muxjs || !muxjs.mp4 || !muxjs.mp4.Transmuxer)) mode = 'ts';
+    // «только звук» нельзя подменить другим режимом: молча отдать видео вместо аудио было бы ошибкой
+    if (mode === 'm4a' && (!audioLib || !audioLib.createExtractor)) {
+      throw new Error('Модуль извлечения звука не загружен');
+    }
 
     var chunks = [];
     var initSegment = null;
     var transmuxer = null;
+    var extractor = null;
     var receivedBytes = 0;
     var doneCount = 0;
     var total = segments.length;
@@ -417,6 +433,8 @@
         if (s.data && s.data.byteLength) chunks.push(s.data);
       });
     }
+
+    if (mode === 'm4a') extractor = audioLib.createExtractor({ title: cfg.title });
 
     function emit() {
       onProgress({
@@ -431,13 +449,11 @@
       attempt = attempt || 1;
       if (signal && signal.aborted) throw new Error('Отменено пользователем');
       try {
-        var r = await fetch(segments[idx], {
-          signal: fetchSignal(signal),
-          credentials: 'omit',
-          cache: 'no-store'
+        return await withAbort(signal, async function (sig) {
+          var r = await fetch(segments[idx], { signal: sig, credentials: 'omit', cache: 'no-store' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return new Uint8Array(await r.arrayBuffer());
         });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return new Uint8Array(await r.arrayBuffer());
       } catch (e) {
         if (signal && signal.aborted) throw e;
         if (attempt < 3) {
@@ -475,6 +491,8 @@
       receivedBytes += res.buf.byteLength;
       if (mode === 'mp4') {
         transmuxer.push(res.buf, { remux: true });
+      } else if (mode === 'm4a') {
+        extractor.push(res.buf);
       } else {
         chunks.push(res.buf);
       }
@@ -485,6 +503,11 @@
       startOne();
     }
 
+    if (mode === 'm4a') {
+      var audio = extractor.finish();
+      return { chunks: audio.chunks, mime: 'audio/mp4', ext: 'm4a', bytes: audio.bytes,
+               durationSec: audio.durationSec };
+    }
     if (mode === 'mp4') {
       transmuxer.flush();
       if (!initSegment) throw new Error('mux.js не смог собрать MP4 (возможно, неподдерживаемый кодек)');
@@ -494,6 +517,53 @@
     }
     return { chunks: chunks, mime: 'video/mp2t', ext: 'ts',
              bytes: chunks.reduce(function (s, c) { return s + c.byteLength; }, 0) };
+  }
+
+  /* ------------------------------------------------------------------ главы */
+
+  /** Главы в виде «0:00 Название» — формат описаний YouTube, понимают многие плееры. */
+  function chaptersToText(cuepoints) {
+    return (cuepoints || []).map(function (c) {
+      return formatTime(c.time) + ' ' + (c.title || '');
+    }).join('\n') + '\n';
+  }
+
+  function ffEscape(s) {
+    return String(s == null ? '' : s).replace(/[=;#\\\n]/g, function (ch) {
+      return ch === '\n' ? '\\\n' : '\\' + ch;
+    });
+  }
+
+  /**
+   * Главы в формате FFMETADATA1. Вшиваются без перекодирования:
+   *   ffmpeg -i видео.mp4 -i главы.ffmeta -map_metadata 1 -map_chapters 1 -c copy готово.mp4
+   */
+  function chaptersToFfmetadata(cuepoints, durationSec, title) {
+    var list = (cuepoints || []).filter(function (c) { return isFinite(c.time) && c.time >= 0; })
+      .slice().sort(function (a, b) { return a.time - b.time; });
+    var out = [';FFMETADATA1'];
+    if (title) out.push('title=' + ffEscape(title));
+    for (var i = 0; i < list.length; i++) {
+      var startMs = Math.round(list[i].time * 1000);
+      var endMs = i + 1 < list.length
+        ? Math.round(list[i + 1].time * 1000)
+        : Math.max(startMs + 1000, Math.round((durationSec || 0) * 1000));
+      out.push('[CHAPTER]', 'TIMEBASE=1/1000', 'START=' + startMs, 'END=' + endMs,
+               'title=' + ffEscape(list[i].title || ('Глава ' + (i + 1))));
+    }
+    return out.join('\n') + '\n';
+  }
+
+  /**
+   * Для режима «только звук» берём самый лёгкий поток: звук у всех качеств одинаковый,
+   * а трафик — в десятки раз меньше, чем у 1080p.
+   */
+  function pickAudioVariant(variants) {
+    var best = null;
+    (variants || []).forEach(function (v) {
+      if (!best || (v.bandwidth || Infinity) < (best.bandwidth || Infinity)) best = v;
+    });
+    return best;
   }
 
   function sanitizeFilename(name) {
@@ -569,6 +639,9 @@
     getSegments: getSegments,
     getSegmentsWithMirrors: getSegmentsWithMirrors,
     pickVariant: pickVariant,
+    pickAudioVariant: pickAudioVariant,
+    chaptersToText: chaptersToText,
+    chaptersToFfmetadata: chaptersToFfmetadata,
     planParts: planParts,
     segmentRange: segmentRange,
     segmentOffsets: segmentOffsets,

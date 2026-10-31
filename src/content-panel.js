@@ -148,11 +148,21 @@
 
     var big = list.some(function (v) { return v.estimatedBytes > 900 * 1024 * 1024; });
     var isPart = state.mode === 'part';
-    var variant = currentVariant();
+    var isAudio = state.format === 'audio';
+    var light = L.pickAudioVariant(list);
 
     setHTML(
       '<div class="title">' + esc(info.title) + '</div>' +
-      '<div class="q">' + rows + '</div>' +
+      '<div class="seg" style="margin-bottom:8px">' +
+        '<button data-fmt="video" class="' + (!isAudio ? 'on' : '') + '">' + esc(t('dl.fmtVideo')) + '</button>' +
+        '<button data-fmt="audio" class="' + (isAudio ? 'on' : '') + '">' + esc(t('dl.fmtAudio')) + '</button>' +
+      '</div>' +
+      (isAudio
+        ? '<div class="hint" style="margin-bottom:8px">' + esc(t('dl.audioHint', {
+            q: light ? light.label : '—',
+            size: light && light.estimatedBytes ? L.formatBytes(light.estimatedBytes) : '?'
+          })) + '</div>'
+        : '<div class="q">' + rows + '</div>') +
       '<div class="seg">' +
         '<button data-mode="full" class="' + (!isPart ? 'on' : '') + '">' + esc(t('dl.modeFull')) + '</button>' +
         '<button data-mode="part" class="' + (isPart ? 'on' : '') + '">' + esc(t('dl.modePart')) + '</button>' +
@@ -166,15 +176,15 @@
             '<button class="btn ghost small" data-take="to" title="' + esc(t('dl.fromPlayer')) + '">⏱</button></div>'
         : '') +
       '<div class="row" style="margin-top:10px">' +
-        '<button class="btn" data-act="go">' + esc(isPart ? t('dl.startPart') : t('dl.start')) + '</button>' +
+        '<button class="btn" data-act="go">' + esc(isPart ? t('dl.startPart') : (isAudio ? t('dl.startAudio') : t('dl.start'))) + '</button>' +
         '<button class="btn ghost" data-act="link" title="' + esc(t('dl.copyLink')) + '">' +
           '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>' +
         '</button>' +
       '</div>' +
       '<div class="hint">' +
         (info.durationSec ? esc(t('dl.duration')) + ' ' + L.formatTime(info.durationSec) + ' · ' : '') +
-        esc(t('dl.mergeHint')) +
-        (big ? '. ' + esc(t('dl.partsHint', { n: RT.settings.maxPartMB })) : '') +
+        (isAudio ? '' : esc(t('dl.mergeHint'))) +
+        (big && !isAudio ? '. ' + esc(t('dl.partsHint', { n: RT.settings.maxPartMB })) : '') +
       '</div>' +
       '<div class="hint">' + esc(t('dl.frameHint', { key: RT.settings.shotKey })) + '</div>'
     );
@@ -189,10 +199,18 @@
       });
     });
 
-    $$('.seg button').forEach(function (b) {
+    $$('.seg button[data-mode]').forEach(function (b) {
       b.addEventListener('click', function (e) {
         e.preventDefault();
         state.mode = b.getAttribute('data-mode');
+        render();
+      });
+    });
+
+    $$('.seg button[data-fmt]').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        state.format = b.getAttribute('data-fmt');
         render();
       });
     });
@@ -255,7 +273,9 @@
     // грубая оценка объёма: типичный битрейт RuTube для выбранного качества
     var BITRATE = { '144': 140000, '240': 220000, '360': 380000, '480': 500000, '720': 720000, '1080': 1500000 };
     var chosenQ = state.plChoice || RT.settings.quality;
-    var kbps = BITRATE[chosenQ] || BITRATE['720'];
+    var plAudio = state.format === 'audio';
+    // для звука качается самый лёгкий поток (144p), а не выбранное качество
+    var kbps = plAudio ? BITRATE['144'] : (BITRATE[chosenQ] || BITRATE['720']);
     var fromIdx = state.pFrom ? Math.max(1, Number(state.pFrom)) : 1;
     var toIdx = state.pTo ? Math.min(Number(state.pTo), pl.videosCount) : Math.min(pl.videosCount, fromIdx + (pl.videos.length || 50) - 1);
     var estimate = 0;
@@ -273,8 +293,13 @@
     setHTML(
       '<div class="title">' + esc(pl.title) + '</div>' +
       '<div class="muted" style="margin-bottom:10px">' + esc(t('pl.count', { n: pl.videosCount })) + '</div>' +
+      '<div class="field"><span class="lb">' + esc(t('dl.format')) + '</span>' +
+        '<span class="in"><select data-sel="fmt">' +
+          '<option value="video"' + (plAudio ? '' : ' selected') + '>' + esc(t('dl.fmtVideo')) + '</option>' +
+          '<option value="audio"' + (plAudio ? ' selected' : '') + '>' + esc(t('dl.fmtAudio')) + '</option>' +
+        '</select></span></div>' +
       '<div class="field"><span class="lb">' + esc(t('info.qualities')) + '</span>' +
-        '<span class="in"><select data-sel="q">' + qualityOptions + '</select></span></div>' +
+        '<span class="in"><select data-sel="q"' + (plAudio ? ' disabled' : '') + '>' + qualityOptions + '</select></span></div>' +
       '<div class="field"><span class="lb">' + esc(t('pl.range')) + '</span>' +
         '<span class="in"><input type="number" min="1" max="' + pl.videosCount + '" data-in="pfrom" placeholder="1" value="' + esc(state.pFrom || '') + '"></span>' +
         '<span class="in"><input type="number" min="1" max="' + pl.videosCount + '" data-in="pto" placeholder="' + pl.videosCount + '" value="' + esc(state.pTo || '') + '"></span></div>' +
@@ -287,6 +312,9 @@
 
     var sel = $('[data-sel="q"]');
     if (sel) sel.addEventListener('change', function () { state.plChoice = sel.value; });
+
+    var fmt = $('[data-sel="fmt"]');
+    if (fmt) fmt.addEventListener('change', function () { state.format = fmt.value; render(); });
 
     $$('[data-in]').forEach(function (inp) {
       inp.addEventListener('input', function () {
@@ -436,7 +464,11 @@
       '<div class="sect"><h5>' + esc(t('more.chapters')) + '</h5>' +
         (chapters
           ? '<div class="list">' + chapters + '</div>' +
-            '<div class="row" style="margin-top:6px"><button class="btn ghost wide small" data-act="chcopy">' + esc(t('more.copyChapters')) + '</button></div>'
+            '<div class="row" style="margin-top:6px"><button class="btn ghost wide small" data-act="chcopy">' + esc(t('more.copyChapters')) + '</button></div>' +
+            '<div class="row" style="margin-top:6px">' +
+              '<button class="btn ghost wide small" data-act="chtxt">' + esc(t('more.saveChapters')) + '</button>' +
+              '<button class="btn ghost wide small" data-act="chff">' + esc(t('more.saveChaptersFf')) + '</button></div>' +
+            '<div class="hint">' + esc(t('more.chaptersHint')) + '</div>'
           : '<div class="muted">' + esc(t('more.none')) + '</div>') +
       '</div>' +
       '<div class="sect"><h5>' + esc(t('more.copyLink')) + '</h5>' +
@@ -479,6 +511,23 @@
         return L.formatTime(c.time) + ' — ' + (c.title || '');
       }).join('\n');
       RT.copyText(text, t('toast.copied'));
+    });
+
+    function saveText(text, suffix, ext) {
+      var name = L.sanitizeFilename(info.title) + ' — ' + suffix + '.' + ext;
+      var dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+      RT.sendMessage({ type: 'rt:save-data-url', dataUrl: dataUrl, filename: name }).then(function (r) {
+        RT.toast(r && r.ok ? t('more.saved', { name: r.name }) : t('more.saveFail'));
+      });
+    }
+    var chtxt = $('[data-act="chtxt"]');
+    if (chtxt) chtxt.addEventListener('click', function () {
+      saveText(L.chaptersToText(info.cuepoints), t('more.chapters').toLowerCase(), 'txt');
+    });
+    var chff = $('[data-act="chff"]');
+    if (chff) chff.addEventListener('click', function () {
+      saveText(L.chaptersToFfmetadata(info.cuepoints, info.durationSec, info.title),
+               t('more.chapters').toLowerCase(), 'ffmeta');
     });
 
     var link = $('[data-act="link"]');
@@ -555,15 +604,18 @@
       }
     }
 
+    var audio = state.format === 'audio';
     state.lastRequest = { videoId: id, height: variant ? variant.height : null, from: from, to: to };
     state.result = null;
-    state.job = { id: null, kind: 'video', startedAt: Date.now(), quality: variant ? variant.label : '', phase: 'meta' };
+    state.job = { id: null, kind: 'video', startedAt: Date.now(),
+                  quality: audio ? 'M4A' : (variant ? variant.label : ''), phase: 'meta' };
     RT.startKeepalive();
     render();
 
     RT.sendMessage({
       type: 'rt:start',
       videoId: id,
+      audio: audio,
       height: variant ? variant.height : null,
       from: from,
       to: to,
@@ -583,7 +635,6 @@
   function startPlaylist() {
     var plId = RT.getPlaylistId();
     if (!plId || !state.playlist) return;
-    var variant = null;
     state.lastRequest = { playlistId: plId, height: state.plChoice || RT.settings.quality };
     state.result = null;
     state.job = { id: null, kind: 'playlist', startedAt: Date.now(), phase: 'queue-load' };
@@ -593,6 +644,7 @@
     RT.sendMessage({
       type: 'rt:start-playlist',
       playlistId: plId,
+      audio: state.format === 'audio',
       height: state.plChoice || RT.settings.quality,
       fromIndex: state.pFrom ? Math.max(0, Number(state.pFrom) - 1) : 0,
       toIndex: state.pTo ? Number(state.pTo) : null,

@@ -6,16 +6,21 @@
  *   {phase:'meta'|'playlist'|'parts'|'download'|'save'|'done'|'error'|'cancelled',
  *    percent, done, total, bytes, part, parts, quality, mode, files[], downloadIds[],
  *    queue:{index,total,title,videoId,paused}}
+ *
+ * Незавершённые загрузки хранятся в storage.local['rtPending'] и переживают перезапуск браузера
+ * (и убийство service worker в Chromium). Докачка идёт с границы частей/видео: уже сохранённые
+ * на диск файлы не скачиваются заново.
  */
 'use strict';
 (function () {
   if (typeof self !== 'undefined' && typeof self.window === 'undefined') self.window = self;
 
   if (typeof importScripts === 'function' &&
-      (typeof RTLib === 'undefined' || typeof muxjs === 'undefined')) {
+      (typeof RTLib === 'undefined' || typeof muxjs === 'undefined' || typeof RTAudio === 'undefined')) {
     try {
       if (typeof muxjs === 'undefined') importScripts('lib/mux-mp4.min.js');
       if (typeof RTLib === 'undefined') importScripts('lib/engine.js');
+      if (typeof RTAudio === 'undefined') importScripts('lib/audio.js');
     } catch (e) { console.warn('[RT] importScripts:', e); }
   }
 
@@ -28,6 +33,64 @@
 
   // последняя ошибка — для кнопки «Скопировать диагностику»
   var lastError = null;
+
+  /* ------------------------------------------------ незавершённые загрузки */
+
+  var PENDING_KEY = 'rtPending';
+  var PENDING_TTL = 14 * 24 * 3600 * 1000;
+  var pendingChain = Promise.resolve();
+
+  // Все изменения идут через одну цепочку: два параллельных read-modify-write затёрли бы друг друга.
+  function pendingMutate(fn, readOnly) {
+    pendingChain = pendingChain.then(async function () {
+      var got = await api.storage.local.get({ rtPending: [] });
+      var list = Array.isArray(got[PENDING_KEY]) ? got[PENDING_KEY] : [];
+      var now = Date.now();
+      list = list.filter(function (r) { return r && r.id && now - (r.updatedAt || 0) < PENDING_TTL; });
+      var next = fn(list) || list;
+      if (!readOnly) await api.storage.local.set({ rtPending: next });
+      return next;
+    }).catch(function () {});
+    return pendingChain;
+  }
+
+  function pendingUpsert(rec) {
+    rec.updatedAt = Date.now();
+    return pendingMutate(function (list) {
+      var i = list.findIndex(function (r) { return r.id === rec.id; });
+      if (i === -1) list.push(rec); else list[i] = Object.assign(list[i], rec);
+      return list;
+    });
+  }
+
+  function pendingPatch(id, patch) {
+    if (!id) return Promise.resolve();
+    return pendingMutate(function (list) {
+      list.forEach(function (r) { if (r.id === id) Object.assign(r, patch, { updatedAt: Date.now() }); });
+      return list;
+    });
+  }
+
+  function pendingRemove(id) {
+    if (!id) return Promise.resolve();
+    return pendingMutate(function (list) { return list.filter(function (r) { return r.id !== id; }); });
+  }
+
+  function pendingRead() {
+    return pendingMutate(function (list) { return list; }, true).then(function (l) { return l || []; });
+  }
+
+  // Service worker в Chromium засыпает через ~30 с без обращений к API расширений —
+  // пока идёт загрузка, раз в 20 с дёргаем безобидный вызов.
+  var swTimer = null;
+  function keepAliveWhileBusy() {
+    if (swTimer || !jobs.size) return;
+    swTimer = setInterval(function () {
+      if (!jobs.size) { clearInterval(swTimer); swTimer = null; return; }
+      try { var p = api.runtime.getPlatformInfo(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    }, 20000);
+    if (swTimer && swTimer.unref) swTimer.unref();        // в Node (тесты) таймер не держит процесс
+  }
 
   /* ------------------------------------------------------------ утилиты */
 
@@ -117,7 +180,7 @@
       var runId = job.jobId + ':' + (job.partIndex || 0);
       var res = await sendExt({
         type: 'rt:offscreen-run',
-        cfg: { runId: runId, segments: segments, mode: mode, concurrency: 5 }
+        cfg: { runId: runId, segments: segments, mode: mode, concurrency: 5, title: job.title }
       });
       if (!res || !res.ok) {
         var err = new Error((res && res.error) || 'build-failed');
@@ -130,6 +193,8 @@
       segments: segments,
       mode: mode,
       muxjs: globalThis.muxjs,
+      audio: globalThis.RTAudio,
+      title: job.title,
       concurrency: 5,
       signal: job.controller.signal,
       onProgress: job.onProgress
@@ -176,6 +241,7 @@
       p.type = 'rt:progress';
       p.jobId = job.jobId;
       if (queueInfo) p.queue = queueInfo;
+      (job.root || job).progress = { phase: p.phase, percent: p.percent, part: p.part, parts: p.parts };
       sendTab(job.tabId, p);
       if (p.phase === 'download' && typeof p.percent === 'number') setBadge(p.percent + '%', '#ff3b3b');
       else if (p.phase === 'meta' || p.phase === 'playlist' || p.phase === 'parts') setBadge('…', '#ff3b3b');
@@ -188,8 +254,11 @@
       if (info.isLive) throw new Error('live');
       if (info.drmProtected) throw new Error('drm');
 
-      var variant = RTLib.pickVariant(info.variants, opts.height);
-      var mode = variant.compatible ? 'mp4' : 'ts';
+      var audioOnly = !!opts.audio;
+      var variant = audioOnly ? RTLib.pickAudioVariant(info.variants) : RTLib.pickVariant(info.variants, opts.height);
+      // звук достаём из любого потока, а видео в HEVC/AV1 без перекодирования в MP4 не собрать
+      var mode = audioOnly ? 'm4a' : (variant.compatible ? 'mp4' : 'ts');
+      job.title = info.title;
 
       post({ phase: 'playlist', quality: variant.label });
       var media = await RTLib.getSegmentsWithMirrors(variant.mirrors, { signal: job.controller.signal });
@@ -215,7 +284,9 @@
       var durations = media.durations.slice(startSeg, endSeg);
       var segments = media.segments.slice(startSeg, endSeg);
       var maxPartBytes = Math.max(50, opts.maxPartMB || 220) * 1024 * 1024;
-      var parts = RTLib.planParts(durations, variant.bandwidth, maxPartBytes);
+      // звук весит мало и в куски не режется
+      var parts = audioOnly ? [{ start: 0, end: segments.length }]
+                            : RTLib.planParts(durations, variant.bandwidth, maxPartBytes);
       var base = RTLib.sanitizeFilename(info.title);
       if (opts.from != null || opts.to != null) {
         base += ' (' + RTLib.formatTime(realFrom).replace(/:/g, '-') + '-' + RTLib.formatTime(realTo).replace(/:/g, '-') + ')';
@@ -233,13 +304,19 @@
       var saved = [], savedIds = [];
       var mirrorIndex = media.mirrorIndex || 0;
 
-      for (var i = 0; i < parts.length; i++) {
+      // докачка: уже сохранённые части пропускаем, если разбиение не изменилось
+      var firstPart = opts.startPart || 0;
+      if (firstPart >= parts.length || (opts.partsTotal && opts.partsTotal !== parts.length)) firstPart = 0;
+      if (firstPart) saved = (opts.savedFiles || []).slice(0, firstPart);
+      if (opts.pendingId) pendingPatch(opts.pendingId, { title: info.title, partsTotal: parts.length, status: 'running' });
+
+      for (var i = firstPart; i < parts.length; i++) {
         if (job.controller.signal.aborted) throw new Error('cancelled');
         var p = parts[i];
         var startedAt = Date.now();
         var filename = base +
           (parts.length > 1 ? ' — ' + (i + 1) + '/' + parts.length : '') +
-          (mode === 'mp4' ? '.mp4' : '.ts');
+          (mode === 'm4a' ? '.m4a' : mode === 'mp4' ? '.mp4' : '.ts');
 
         job.partIndex = i;
         job.partStart = startSeg + p.start;
@@ -268,6 +345,7 @@
         var res = await runPart(job, variant, segments.slice(p.start, p.end), mode, filename);
         saved.push(res.name);
         savedIds.push(res.id);
+        if (opts.pendingId) pendingPatch(opts.pendingId, { nextPart: i + 1, savedFiles: saved.slice() });
       }
 
       post({
@@ -279,6 +357,7 @@
         mirror: job.mirror || mirrorIndex
       });
       lastError = null;
+      if (opts.pendingId) pendingRemove(opts.pendingId);
       return { ok: true, files: saved };
     } catch (e) {
       var msg = (e && e.message) || String(e);
@@ -296,6 +375,12 @@
         part: (job.partIndex || 0) + 1,
         at: new Date().toISOString()
       };
+      if (opts.pendingId) {
+        var finalCodes = ['live', 'drm', 'empty-range'];
+        if (finalCodes.indexOf(code) !== -1) pendingRemove(opts.pendingId);          // повторять бессмысленно
+        else if (cancelled && job.abortReason !== 'tab-closed') pendingRemove(opts.pendingId);
+        else pendingPatch(opts.pendingId, { status: cancelled ? 'interrupted' : 'error', error: code.slice(0, 200) });
+      }
       // в очереди одно упавшее видео не должно закрывать всю панель
       if (!queueInfo || cancelled) {
         post({ phase: cancelled ? 'cancelled' : 'error', error: code, detail: msg });
@@ -329,6 +414,7 @@
       var endIndex = opts.toIndex && opts.toIndex > 0 ? Math.min(opts.toIndex, total) : total;
       if (endIndex - startIndex > 500) endIndex = startIndex + 500; // предохранитель
       if (endIndex <= startIndex) throw new Error('playlist-empty');
+      if (opts.pendingId) pendingPatch(opts.pendingId, { title: pl.title, total: endIndex - (opts.originalFrom != null ? opts.originalFrom : startIndex), status: 'running' });
 
       var cache = {};                       // offset страницы -> массив видео
       var pageSize = pl.pageSize || 50;
@@ -372,6 +458,7 @@
         var r = await runVideo(sub, {
           videoId: v.id,
           height: opts.height,
+          audio: opts.audio,
           maxPartMB: opts.maxPartMB,
           from: null,
           to: null
@@ -380,6 +467,7 @@
         if (r.ok) saved = saved.concat(r.files);
         else if (job.controller.signal.aborted) throw new Error('cancelled');
         else failed.push({ title: v.title, error: r.error });
+        if (opts.pendingId) pendingPatch(opts.pendingId, { nextIndex: i + 1 });
 
         if (opts.delayMs) await new Promise(function (res) { setTimeout(res, opts.delayMs); });
       }
@@ -391,13 +479,107 @@
         queue: { index: count, total: count, title: pl.title, done: true }
       });
       setBadge('');
+      if (opts.pendingId) pendingRemove(opts.pendingId);
     } catch (e) {
       var msg = (e && e.message) || String(e);
       var cancelled = /cancelled|Отменено/i.test(msg);
+      if (opts.pendingId) {
+        if (cancelled && job.abortReason !== 'tab-closed') pendingRemove(opts.pendingId);
+        else pendingPatch(opts.pendingId, { status: cancelled ? 'interrupted' : 'error', error: msg.slice(0, 200) });
+      }
       lastError = { code: 'playlist', message: msg, playlistId: opts.playlistId, at: new Date().toISOString() };
       post({ phase: cancelled ? 'cancelled' : 'error', error: cancelled ? 'cancelled' : 'playlist', detail: msg });
       setBadge('');
     }
+  }
+
+  /* ------------------------------------------------------ запуск и докачка */
+
+  function newId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  /**
+   * Запускает загрузку одного видео. resume — запись из rtPending, если это докачка:
+   * тогда id записи сохраняется, а прогресс продолжается с nextPart.
+   */
+  function launchVideo(p, tabId, resume) {
+    var jobId = newId('job');
+    var job = { jobId: jobId, controller: new AbortController(), tabId: tabId, onProgress: null,
+                pendingId: resume ? resume.id : jobId };
+    job.root = job;
+    jobs.set(jobId, job);
+    keepAliveWhileBusy();
+
+    if (!resume) {
+      dropStale(function (r) { return r.kind === 'video' && r.videoId === p.videoId && !!r.audio === !!p.audio; });
+    }
+    pendingUpsert({
+      id: job.pendingId, kind: 'video', videoId: p.videoId, height: p.height, audio: !!p.audio,
+      from: p.from, to: p.to, maxPartMB: p.maxPartMB,
+      title: resume ? resume.title : '', nextPart: resume ? resume.nextPart || 0 : 0,
+      partsTotal: resume ? resume.partsTotal || 0 : 0, savedFiles: resume ? resume.savedFiles || [] : [],
+      status: 'running', createdAt: resume ? resume.createdAt : Date.now()
+    });
+
+    runVideo(job, {
+      videoId: p.videoId, height: p.height, audio: !!p.audio,
+      from: p.from, to: p.to, maxPartMB: p.maxPartMB,
+      pendingId: job.pendingId,
+      startPart: resume ? resume.nextPart || 0 : 0,
+      partsTotal: resume ? resume.partsTotal || 0 : 0,
+      savedFiles: resume ? resume.savedFiles || [] : []
+    }, null).finally(function () { jobs.delete(jobId); });
+    return jobId;
+  }
+
+  function launchPlaylist(p, tabId, resume) {
+    var jobId = newId('pl');
+    var job = { jobId: jobId, controller: new AbortController(), tabId: tabId, onProgress: null,
+                queue: { paused: false, resume: null }, pendingId: resume ? resume.id : jobId };
+    job.root = job;
+    jobs.set(jobId, job);
+    keepAliveWhileBusy();
+
+    var originalFrom = resume && resume.fromIndex != null ? resume.fromIndex : (p.fromIndex || 0);
+    var startAt = resume && resume.nextIndex ? Math.max(resume.nextIndex, originalFrom) : (p.fromIndex || 0);
+    if (!resume) {
+      dropStale(function (r) { return r.kind === 'playlist' && r.playlistId === p.playlistId && !!r.audio === !!p.audio; });
+    }
+    pendingUpsert({
+      id: job.pendingId, kind: 'playlist', playlistId: p.playlistId, height: p.height, audio: !!p.audio,
+      fromIndex: originalFrom, toIndex: p.toIndex || null, nextIndex: startAt, maxPartMB: p.maxPartMB,
+      title: resume ? resume.title : '', status: 'running', createdAt: resume ? resume.createdAt : Date.now()
+    });
+
+    runPlaylist(job, {
+      playlistId: p.playlistId, height: p.height, audio: !!p.audio,
+      fromIndex: startAt, originalFrom: originalFrom, toIndex: p.toIndex,
+      delayMs: p.delayMs || 800, maxPartMB: p.maxPartMB, pendingId: job.pendingId
+    }).finally(function () { jobs.delete(jobId); });
+    return jobId;
+  }
+
+  // Новый запуск того же видео/плейлиста (например, «Повторить загрузку») заменяет старую
+  // незавершённую запись, иначе в списке для докачки копились бы дубли.
+  function dropStale(match) {
+    var active = {};
+    jobs.forEach(function (j) { if (j.pendingId) active[j.pendingId] = true; });
+    return pendingMutate(function (list) {
+      return list.filter(function (r) { return active[r.id] || !match(r); });
+    });
+  }
+
+  async function listPending() {
+    var list = await pendingRead();
+    return list.map(function (r) {
+      var running = null;
+      jobs.forEach(function (job) { if (job.pendingId === r.id) running = job; });
+      return Object.assign({}, r, {
+        running: !!running,
+        progress: running && running.progress ? running.progress : null
+      });
+    }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
   }
 
   /* -------------------------------------------------------------- роутер */
@@ -449,38 +631,53 @@
 
       case 'rt:start': {
         var tabId = sender && sender.tab && sender.tab.id;
-        var jobId = 'job_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-        var controller = new AbortController();
-        var job = { jobId: jobId, controller: controller, tabId: tabId, onProgress: null };
-        jobs.set(jobId, job);
-        runVideo(job, {
+        var jobId = launchVideo({
           videoId: msg.videoId,
           height: msg.height,
+          audio: !!msg.audio,
           from: msg.from != null ? msg.from : null,
           to: msg.to != null ? msg.to : null,
           maxPartMB: msg.maxPartMB
-        }, null).finally(function () { jobs.delete(jobId); });
+        }, tabId, null);
         return { ok: true, jobId: jobId };
       }
 
       case 'rt:start-playlist': {
         var tabId2 = sender && sender.tab && sender.tab.id;
-        var jobId2 = 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-        var ctrl2 = new AbortController();
-        var job2 = {
-          jobId: jobId2, controller: ctrl2, tabId: tabId2,
-          queue: { paused: false, resume: null }, onProgress: null
-        };
-        jobs.set(jobId2, job2);
-        runPlaylist(job2, {
+        var jobId2 = launchPlaylist({
           playlistId: msg.playlistId,
           height: msg.height,
+          audio: !!msg.audio,
           fromIndex: msg.fromIndex,
           toIndex: msg.toIndex,
           delayMs: msg.delayMs || 800,
           maxPartMB: msg.maxPartMB
-        }).finally(function () { jobs.delete(jobId2); });
+        }, tabId2, null);
         return { ok: true, jobId: jobId2 };
+      }
+
+      case 'rt:pending-list':
+        return { ok: true, items: await listPending() };
+
+      case 'rt:pending-resume': {
+        var items = await listPending();
+        var rec = items.filter(function (r) { return r.id === msg.id; })[0];
+        if (!rec) return { ok: false, error: 'not-found' };
+        if (rec.running) return { ok: true, already: true };
+        var tabIdR = sender && sender.tab && sender.tab.id;
+        var newJob = rec.kind === 'playlist' ? launchPlaylist(rec, tabIdR, rec) : launchVideo(rec, tabIdR, rec);
+        return { ok: true, jobId: newJob };
+      }
+
+      case 'rt:pending-discard': {
+        jobs.forEach(function (job) {
+          if (job.pendingId === msg.id) {
+            try { job.controller.abort(); } catch (e) {}
+            if (job.queue && job.queue.resume) job.queue.resume();
+          }
+        });
+        await pendingRemove(msg.id);
+        return { ok: true };
       }
 
       case 'rt:pause': {
@@ -579,6 +776,7 @@
     api.tabs.onRemoved.addListener(function (tabId) {
       jobs.forEach(function (job) {
         if (job.tabId === tabId) {
+          job.abortReason = 'tab-closed';          // запись о загрузке остаётся — можно докачать из popup
           try { job.controller.abort(); } catch (e) {}
           if (job.queue && job.queue.resume) job.queue.resume();
           if (CAN_OFFSCREEN) sendExt({ type: 'rt:offscreen-cancel', runId: job.jobId + ':0' });
@@ -615,7 +813,8 @@
 
     var handled = ['rt:ping', 'rt:keepalive', 'rt:info', 'rt:playlist-info', 'rt:start',
       'rt:start-playlist', 'rt:pause', 'rt:resume', 'rt:cancel', 'rt:show-download',
-      'rt:diagnostics', 'rt:save-url', 'rt:save-data-url'];
+      'rt:diagnostics', 'rt:save-url', 'rt:save-data-url',
+      'rt:pending-list', 'rt:pending-resume', 'rt:pending-discard'];
     if (handled.indexOf(msg.type) === -1) return false;
 
     route(msg, sender).then(sendResponse, function (e) {

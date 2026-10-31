@@ -92,6 +92,75 @@
     apply(DEFAULTS);
   });
 
+  /* ---------------------------------------------- незавершённые загрузки */
+
+  function send(msg) {
+    try {
+      var r = api.runtime.sendMessage(msg);
+      return r && r.then ? r.catch(function () { return null; }) : Promise.resolve(null);
+    } catch (e) { return Promise.resolve(null); }
+  }
+
+  function pendingStatus(r) {
+    var kind = r.audio ? ' · ' + I.t('pop.pendingAudio') : '';
+    if (r.running) {
+      var pr = r.progress && typeof r.progress.percent === 'number' ? r.progress.percent : 0;
+      return I.t('pop.pendingRunning', { p: pr }) + kind;
+    }
+    var pos = r.kind === 'playlist'
+      ? I.t('pop.pendingPlaylist', { n: Math.max(0, (r.nextIndex || 0) - (r.fromIndex || 0)) + 1, total: r.total || '?' })
+      : I.t('pop.pendingVideo', { n: (r.nextPart || 0) + 1, total: r.partsTotal || '?' });
+    return pos + kind + ' · ' + I.t('pop.pendingBroken');
+  }
+
+  function renderPending(items) {
+    var wrap = el('pendingWrap'), list = el('pendingList');
+    wrap.hidden = !items.length;
+    while (list.firstChild) list.removeChild(list.firstChild);
+    items.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'pend';
+
+      var txt = document.createElement('div');
+      txt.className = 'txt';
+      var ttl = document.createElement('div');
+      ttl.className = 'ttl';
+      ttl.textContent = r.title || r.videoId || r.playlistId || '—';
+      var st = document.createElement('div');
+      st.className = 'st';
+      st.textContent = pendingStatus(r);
+      txt.appendChild(ttl);
+      txt.appendChild(st);
+      row.appendChild(txt);
+
+      if (!r.running) {
+        var go = document.createElement('button');
+        go.className = 'go';
+        go.textContent = I.t('pop.resume');
+        go.addEventListener('click', function () {
+          go.disabled = true;
+          send({ type: 'rt:pending-resume', id: r.id }).then(refreshPending);
+        });
+        row.appendChild(go);
+      }
+      var rm = document.createElement('button');
+      rm.textContent = I.t('pop.discard');
+      rm.addEventListener('click', function () {
+        send({ type: 'rt:pending-discard', id: r.id }).then(refreshPending);
+      });
+      row.appendChild(rm);
+      list.appendChild(row);
+    });
+  }
+
+  function refreshPending() {
+    return send({ type: 'rt:pending-list' }).then(function (r) {
+      if (r && r.ok) renderPending(r.items || []);
+    });
+  }
+  refreshPending();
+  setInterval(refreshPending, 1500);
+
   try {
     el('ver').textContent = 'v' + api.runtime.getManifest().version;
   } catch (e) {}

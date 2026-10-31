@@ -16,7 +16,15 @@ cd rutube-tools
 python3 build.py            # сборка + проверки
 ```
 
-Зависимостей нет: только Python 3 для сборки и Node (по желанию) для `node --check`.
+В самом расширении зависимостей нет. Для сборки нужен Python 3, для проверок — Node 20+:
+
+```bash
+npm test        # 55 проверок: движок, звук, фон, панель
+npm run lint    # ESLint
+npm install --no-save jsdom   # по желанию: включает смоук-тест панели
+```
+
+Тесты звука используют `ffmpeg`/`ffprobe`, если они установлены, и пропускают эти проверки, если нет.
 
 ### Правила
 
@@ -35,6 +43,6 @@ python3 build.py            # сборка + проверки
 
 ## Перед PR
 
-- [ ] `python3 build.py` без ошибок
+- [ ] `python3 build.py`, `npm test` и `npm run lint` без ошибок
 - [ ] Проверено в Firefox и Chromium
 - [ ] Обновлён `docs/CHANGELOG.md` (одна строка, понятная не-технарю)

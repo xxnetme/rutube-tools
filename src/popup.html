@@ -80,6 +80,13 @@
   }
 
   /* подвал с автором */
+  .pend { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-top: 1px solid var(--line); }
+  .pend:first-child { border-top: 0; }
+  .pend .txt { flex: 1; min-width: 0; }
+  .pend .ttl { color: #d6d8dd; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pend .st { color: var(--faint); font-size: 10.5px; line-height: 1.4; margin-top: 2px; }
+  .pend button { margin-left: 0; padding: 4px 8px; font-size: 11px; }
+  .pend button.go { color: var(--ink); border-color: var(--acc); }
   .foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
   .author { display: flex; align-items: center; gap: 9px; }
   .avatar {
@@ -113,6 +120,11 @@
     <span class="ver" id="ver"></span>
   </div>
   <p class="sub" data-i18n="pop.sub"></p>
+
+  <div id="pendingWrap" hidden>
+    <div class="group-label" data-i18n="pop.pending"></div>
+    <div class="group" id="pendingList"></div>
+  </div>
 
   <div class="group-label" data-i18n="pop.secDownload"></div>
   <div class="group">
