@@ -259,7 +259,7 @@ rutube-tools/
 ├── tests/                       npm test: движок, звук, фон, панель (jsdom)
 ├── build.py                     сборка и проверки, только stdlib
 ├── eslint.config.js, package.json   только для тестов и линтера
-├── docs/                        сайт, privacy.html, CHANGELOG, FEATURES, PUBLISH, скриншоты
+├── docs/                        сайт, privacy.html, CHANGELOG, FEATURES, PUBLISH, ROADMAP, скриншоты
 ├── assets/                      баннеры и обложка, исходники в SVG
 └── .github/workflows/           checks и release по тегу
 ```
