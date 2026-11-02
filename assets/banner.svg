@@ -1,72 +1,172 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="RuTube Tools">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="RuTube Tools — панель в плеере RuTube: MP4, звук M4A, кадры и докачка">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#14141a"/><stop offset="1" stop-color="#09090b"/>
+      <stop offset="0" stop-color="#15151b"/><stop offset="0.55" stop-color="#0b0b0e"/><stop offset="1" stop-color="#08080a"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.14" cy="0.5" r="0.55">
-      <stop offset="0" stop-color="#f2413a" stop-opacity="0.30"/><stop offset="1" stop-color="#f2413a" stop-opacity="0"/>
+    <radialGradient id="glowL" cx="0.1" cy="0.42" r="0.5">
+      <stop offset="0" stop-color="#f2413a" stop-opacity="0.26"/><stop offset="1" stop-color="#f2413a" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glow2" cx="0.95" cy="0.1" r="0.4">
-      <stop offset="0" stop-color="#ff8a5b" stop-opacity="0.14"/><stop offset="1" stop-color="#ff8a5b" stop-opacity="0"/>
+    <radialGradient id="glowR" cx="0.92" cy="0.86" r="0.55">
+      <stop offset="0" stop-color="#ff7a4d" stop-opacity="0.16"/><stop offset="1" stop-color="#ff7a4d" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff5b46"/><stop offset="1" stop-color="#d92d24"/>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff6650"/><stop offset="1" stop-color="#d92d24"/>
     </linearGradient>
-    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
-      <circle cx="1" cy="1" r="1" fill="#ffffff" fill-opacity="0.05"/>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f2413a" stop-opacity="0"/><stop offset="0.45" stop-color="#f2413a" stop-opacity="0.85"/><stop offset="1" stop-color="#f2413a" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#1b1b22"/><stop offset="1" stop-color="#111116"/>
+    </linearGradient>
+    <linearGradient id="cta" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5b46"/><stop offset="1" stop-color="#e03028"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="glowBtn" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#f2413a" flood-opacity="0.45"/>
+    </filter>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#ffffff" fill-opacity="0.045"/>
     </pattern>
-    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#f2413a" stop-opacity="0"/><stop offset="0.5" stop-color="#f2413a"/><stop offset="1" stop-color="#f2413a" stop-opacity="0"/>
-    </linearGradient>
+    <clipPath id="panelClip"><rect x="690" y="44" width="526" height="312" rx="20"/></clipPath>
   </defs>
 
   <rect width="1280" height="400" fill="url(#bg)"/>
   <rect width="1280" height="400" fill="url(#dots)"/>
-  <rect width="1280" height="400" fill="url(#glow)"/>
-  <rect width="1280" height="400" fill="url(#glow2)"/>
-  <rect x="0" y="0" width="1280" height="2" fill="url(#line)" opacity="0.9"/>
+  <rect width="1280" height="400" fill="url(#glowL)"/>
+  <rect width="1280" height="400" fill="url(#glowR)"/>
+  <rect x="0" y="0" width="1280" height="2" fill="url(#edge)"/>
 
-  <!-- знак -->
-  <g transform="translate(72,118)">
-    <rect width="156" height="156" rx="38" fill="url(#lg)"/>
-    <rect x="1" y="1" width="154" height="154" rx="37" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="2"/>
-    <g fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M78 45v52"/><path d="M54 76l24 24 24-24"/><path d="M50 118h56"/>
+  <!-- ================= логотип и название ================= -->
+  <g transform="translate(64,66)">
+    <rect width="80" height="80" rx="20" fill="url(#mark)"/>
+    <rect x="0.5" y="0.5" width="79" height="79" rx="19.5" fill="none" stroke="#fff" stroke-opacity="0.20" stroke-width="1.5"/>
+    <g fill="none" stroke="#fff" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40 22v27"/><path d="M27.5 38.5L40 51l12.5-12.5"/><path d="M25.5 60h29"/>
     </g>
   </g>
 
-  <!-- заголовок -->
-  <text x="268" y="184" font-family="Inter" font-size="64" font-weight="700" letter-spacing="-2.4" fill="#f4f5f7">RuTube Tools</text>
-  <text x="270" y="226" font-family="Inter" font-size="22" font-weight="400" letter-spacing="-0.2" fill="#a2a3ad">Скачивание, звук и покадровая перемотка — прямо в плеере</text>
+  <text x="162" y="112" font-family="Inter" font-size="40" font-weight="700" letter-spacing="-1.4" fill="#f4f5f7">RuTube Tools</text>
+  <text x="163" y="141" font-family="Inter" font-size="15.5" font-weight="400" fill="#a2a3ad">Скачивание, звук и кадры — прямо в плеере RuTube</text>
 
-  <!-- чипы -->
-  <g font-family="Inter" font-size="14.5" font-weight="500" fill="#e2e4e8">
-    <rect x="270" y="258" width="82" height="34" rx="17" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-    <text x="311" y="280" text-anchor="middle">MP4</text>
+  <!-- ================= чипы возможностей (ширина до 668) ================= -->
+  <g font-family="Inter" font-size="12.5" font-weight="500">
+    <rect x="64" y="170" width="62" height="30" rx="15" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.13"/>
+    <text x="95" y="190" text-anchor="middle" fill="#e6e7ec">MP4</text>
 
-    <rect x="362" y="258" width="132" height="34" rx="17" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.5"/>
-    <text x="428" y="280" text-anchor="middle" fill="#ffb3ad">Звук · M4A</text>
+    <rect x="134" y="170" width="112" height="30" rx="15" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.55"/>
+    <text x="190" y="190" text-anchor="middle" fill="#ffb6b0">Звук · M4A</text>
 
-    <rect x="504" y="258" width="118" height="34" rx="17" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-    <text x="563" y="280" text-anchor="middle">Плейлисты</text>
+    <rect x="254" y="170" width="100" height="30" rx="15" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.13"/>
+    <text x="304" y="190" text-anchor="middle" fill="#e6e7ec">Плейлисты</text>
 
-    <rect x="632" y="258" width="104" height="34" rx="17" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.5"/>
-    <text x="684" y="280" text-anchor="middle" fill="#ffb3ad">Докачка</text>
+    <rect x="362" y="170" width="92" height="30" rx="15" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.55"/>
+    <text x="408" y="190" text-anchor="middle" fill="#ffb6b0">Докачка</text>
 
-    <rect x="746" y="258" width="118" height="34" rx="17" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-    <text x="805" y="280" text-anchor="middle">Кадры PNG</text>
+    <rect x="462" y="170" width="104" height="30" rx="15" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.13"/>
+    <text x="514" y="190" text-anchor="middle" fill="#e6e7ec">Кадры PNG</text>
 
-    <rect x="874" y="258" width="116" height="34" rx="17" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-    <text x="932" y="280" text-anchor="middle">Субтитры</text>
+    <rect x="574" y="170" width="94" height="30" rx="15" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.13"/>
+    <text x="621" y="190" text-anchor="middle" fill="#e6e7ec">Субтитры</text>
   </g>
 
-  <!-- версия и платформы -->
-  <g>
-    <rect x="1088" y="64" width="120" height="34" rx="17" fill="#f2413a" fill-opacity="0.14" stroke="#f2413a" stroke-opacity="0.55"/>
-    <text x="1148" y="86" text-anchor="middle" font-family="JetBrains Mono" font-size="14" font-weight="700" fill="#ff8f86">v1.4.0</text>
+  <!-- ================= версия и платформы ================= -->
+  <g font-family="JetBrains Mono" font-size="12" fill="#6f7079">
+    <text x="64" y="240">v1.4.0</text>
+    <circle cx="126" cy="236" r="1.5" fill="#4a4b53"/>
+    <text x="140" y="240">Firefox 140+ · Chromium MV3</text>
+    <circle cx="330" cy="236" r="1.5" fill="#4a4b53"/>
+    <text x="344" y="240">MIT</text>
   </g>
-  <g font-family="JetBrains Mono" font-size="13" text-anchor="end" fill="#6f7079">
-    <text x="1208" y="318">Firefox 140+ · Chromium MV3</text>
-    <text x="1208" y="342">без рекламы и трекеров · MIT</text>
+
+  <!-- ================= полезное под капотом ================= -->
+  <g font-family="Inter" font-size="12.5" fill="#7e7f88">
+    <g>
+      <circle cx="69" cy="276" r="9" fill="#f2413a" fill-opacity="0.16"/>
+      <path d="M65.2 276.2l2.6 2.6 5-5.2" fill="none" stroke="#ff8f86" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="86" y="280">без рекламы и трекеров</text>
+    </g>
+    <g>
+      <circle cx="264" cy="276" r="9" fill="#f2413a" fill-opacity="0.16"/>
+      <path d="M260.2 276.2l2.6 2.6 5-5.2" fill="none" stroke="#ff8f86" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="281" y="280">всё локально, без серверов</text>
+    </g>
+    <g>
+      <circle cx="470" cy="276" r="9" fill="#f2413a" fill-opacity="0.16"/>
+      <path d="M466.2 276.2l2.6 2.6 5-5.2" fill="none" stroke="#ff8f86" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="487" y="280">55 автотестов</text>
+    </g>
   </g>
+
+  <!-- ================= отметка магазина ================= -->
+  <g font-family="Inter" font-size="12.5" font-weight="500">
+    <rect x="64" y="308" width="184" height="32" rx="16" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.11"/>
+    <circle cx="86" cy="324" r="6" fill="#f2413a" fill-opacity="0.22"/>
+    <circle cx="86" cy="324" r="2.6" fill="#ff7a70"/>
+    <text x="102" y="329" fill="#c9cad1">в Firefox Add-ons</text>
+  </g>
+
+  <!-- ================= макет панели 690..1216 ================= -->
+  <g filter="url(#soft)">
+    <rect x="690" y="44" width="526" height="312" rx="20" fill="#111116"/>
+  </g>
+  <g clip-path="url(#panelClip)">
+    <rect x="690" y="44" width="526" height="312" fill="url(#panel)"/>
+    <rect x="690" y="44" width="526" height="48" fill="#15151b"/>
+    <rect x="690" y="91" width="526" height="1" fill="#26262e"/>
+
+    <!-- заголовок панели -->
+    <rect x="712" y="60" width="34" height="17" rx="5" fill="#f2413a"/>
+    <text x="729" y="73" text-anchor="middle" font-family="Inter" font-size="9.5" font-weight="700" fill="#fff">MP4</text>
+    <text x="756" y="73" font-family="Inter" font-size="13" font-weight="600" fill="#e9eaf0">RuTube Tools</text>
+    <path d="M1172 64l9 9m0-9l-9 9" stroke="#6c6d76" stroke-width="1.6" stroke-linecap="round"/>
+
+    <!-- вкладки -->
+    <g font-family="Inter" font-size="11.5" font-weight="500">
+      <text x="712" y="115" fill="#f0f1f5">Скачать</text>
+      <rect x="711" y="122" width="47" height="2" rx="1" fill="#f2413a"/>
+      <text x="778" y="115" fill="#7d7e87">Кадры</text>
+      <text x="830" y="115" fill="#7d7e87">Ещё</text>
+      <text x="872" y="115" fill="#7d7e87">Инфо</text>
+    </g>
+
+    <!-- имя видео -->
+    <text x="712" y="150" font-family="Inter" font-size="11" font-weight="500" fill="#c9cad2">Лекция 03 — как устроен звук в видео</text>
+
+    <!-- переключатель формата -->
+    <rect x="712" y="162" width="300" height="32" rx="8" fill="#ffffff" fill-opacity="0.045" stroke="#2a2a32"/>
+    <rect x="714" y="164" width="146" height="28" rx="6.5" fill="#ffffff" fill-opacity="0.09"/>
+    <text x="787" y="182" text-anchor="middle" font-family="Inter" font-size="11" font-weight="500" fill="#b9bac3">Видео MP4</text>
+    <text x="937" y="182" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#ff8f86">Только звук</text>
+
+    <!-- качество -->
+    <g font-family="Inter" font-size="11">
+      <circle cx="717" cy="215" r="4" fill="none" stroke="#4d4e57" stroke-width="1.4"/>
+      <text x="730" y="219" fill="#a9aab3">1080p</text>
+      <text x="1194" y="219" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6f7079">179 МБ</text>
+
+      <circle cx="717" cy="241" r="4" fill="none" stroke="#4d4e57" stroke-width="1.4"/>
+      <text x="730" y="245" fill="#a9aab3">720p</text>
+      <text x="1194" y="245" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#6f7079">86 МБ</text>
+
+      <circle cx="717" cy="267" r="5" fill="#f2413a"/>
+      <circle cx="717" cy="267" r="2" fill="#fff"/>
+      <text x="730" y="271" fill="#f0f1f5" font-weight="500">только звук</text>
+      <text x="1194" y="271" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#ff8f86">≈10 МБ</text>
+    </g>
+
+    <!-- кнопка -->
+    <g filter="url(#glowBtn)">
+      <rect x="712" y="288" width="424" height="40" rx="10" fill="url(#cta)"/>
+    </g>
+    <text x="924" y="313" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#fff">Скачать звук (M4A)</text>
+    <rect x="1148" y="288" width="46" height="40" rx="10" fill="#ffffff" fill-opacity="0.06" stroke="#33333c"/>
+    <path d="M1165 305v9M1161 309a4 4 0 118 0v2.5l1.6 2.5h-11.2l1.6-2.5z" fill="none" stroke="#9b9ca5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- подсказка -->
+    <text x="712" y="342" font-family="Inter" font-size="10.5" fill="#6f7079">Звук берётся из самого лёгкого потока — трафика уходит меньше</text>
+  </g>
+  <rect x="690.5" y="44.5" width="525" height="311" rx="19.5" fill="none" stroke="#ffffff" stroke-opacity="0.09"/>
 </svg>
