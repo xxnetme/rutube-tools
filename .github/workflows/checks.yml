@@ -51,6 +51,11 @@ jobs:
       - name: Версии совпадают
         run: python3 tools/check-versions.py
 
+      - name: Размеры картинок в разметке
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 tools/check-images.py
+
       - name: Лендинг и политика собираются
         run: |
           python3 - <<'PY'
