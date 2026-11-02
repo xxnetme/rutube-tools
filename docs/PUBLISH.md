@@ -88,7 +88,7 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' \
 | Карточка | <https://addons.mozilla.org/ru/firefox/addon/rutube-tools/> |
 | id / slug | 3111445 / `rutube-tools` |
 | guid | `rutube-tools@xxnetme.github.io` |
-| Статус | **nominated** — версия 1.3.2 ждёт проверки (`file.status = unreviewed`) <!-- ver:prev --> |
+| Статус | **public** — 1.3.2 одобрена 01.11.2026, страница открыта <!-- ver:prev --> |
 | Заполнено через API | название, краткое описание, полное описание (2135 символов), категория «Photos, Music & Videos», теги `video downloader, download, streaming`, лицензия MIT, иконка 128×128, 3 скриншота из 9, заметка ревьюеру |
 | Осталось дозаполнить | 6 скриншотов (лимит загрузок AMO — около часа), поле Privacy Policy в кабинете: `https://xxnetme.github.io/rutube-tools/privacy.html` |
 
@@ -160,7 +160,7 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' python3 tools/amo-apply-all.py
 
 ### Состояние на 29.10.2026
 
-* Дополнение: **nominated**, версия 1.3.2 у ревьюеров, публичной ссылки пока нет. <!-- ver:prev -->
+* Дополнение: **public** — 1.3.2 прошла проверку 01.11.2026, ставится из магазина. <!-- ver:prev -->
 * Заполнено: название, краткое и полное описание, категория, теги, лицензия MIT, иконка,
   3 скриншота из 9, заметка ревьюеру.
 * **Версия в очереди старше, чем в `main`.** После подачи в репозитории прошла уборка —

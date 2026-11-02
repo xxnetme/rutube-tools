@@ -51,16 +51,17 @@
 
 | | Firefox | Chrome · Edge · Яндекс |
 |---|---|---|
-| **1. Скачать** | [rutube-tools-firefox.xpi](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi) | [rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip), распаковать |
+| **0. Магазин** | [Открыть в Firefox Add-ons](https://addons.mozilla.org/ru/firefox/addon/rutube-tools/) — кнопка «Добавить в Firefox» | пока нет в магазине, шаги ниже |
+| **1. Скачать** | [rutube-tools-firefox.xpi](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi) — свежая сборка | [rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip), распаковать |
 | **2. Открыть** | `about:debugging#/runtime/this-firefox` | `chrome://extensions` |
 | **3. Подключить** | «Загрузить временное дополнение…» | «Режим разработчика» → «Загрузить распакованное» |
 
 Откройте любое видео RuTube — кнопка **MP4** появится в правом нижнем углу плеера. На странице плейлиста (`/plst/…`) она станет **PL**.
 
 > [!NOTE]
-> **Статус в магазинах.** Заявка отправлена в Firefox (AMO) и ждёт проверки:
-> карточка [addons.mozilla.org/ru/firefox/addon/rutube-tools](https://addons.mozilla.org/ru/firefox/addon/rutube-tools/)
-> (статус `nominated`). Пока её не одобрили, ставить нужно через `about:debugging`: временное дополнение живёт до перезапуска браузера.
+> **В Firefox — ставится одной кнопкой:** [RuTube Tools в Firefox Add-ons](https://addons.mozilla.org/ru/firefox/addon/rutube-tools/).
+> Дополнение проверено Mozilla и обновляется само; временная установка через `about:debugging` нужна только
+> для свежей сборки из `main`, которой ещё нет в магазине.
 > Chrome Web Store, Edge Add-ons и Opera — сборка готова, подача впереди:
 > файлы, тексты карточек и заметки ревьюерам лежат в [docs/PUBLISH.md](docs/PUBLISH.md) и [docs/store/listing-ru.md](docs/store/listing-ru.md).
 
