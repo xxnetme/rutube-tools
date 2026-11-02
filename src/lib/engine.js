@@ -574,6 +574,53 @@
       .slice(0, 110) || 'video';
   }
 
+  /** То же, но без «видео» вместо пустой строки: нужно для сегментов пути. */
+  function cleanSegment(name) {
+    return String(name == null ? '' : name)
+      .replace(/[\\:*?"<>|\r\n\t]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/^[.\s]+|[.\s]+$/g, '')
+      .slice(0, 110);
+  }
+
+  /**
+   * Подставляет переменные в шаблон имени: {title} {author} {quality} {date} {playlist}.
+   * Пустая переменная не оставляет после себя «вдовий» разделитель:
+   * «{author} — {title}» без автора даёт «Название», а не « — Название».
+   */
+  function applyNameTemplate(tpl, vars) {
+    var src = String(tpl == null ? '' : tpl).trim() || '{title}';
+    var out = src.replace(/\{(\w+)\}/g, function (m, key) {
+      var v = vars ? vars[key] : null;
+      return v == null ? '' : String(v).trim();
+    }).replace(/\{[^{}]*\}/g, '');   // незнакомые переменные не должны попасть в имя
+    return out
+      .replace(/\(\s*\)|\[\s*\]|\{\s*\}/g, '')          // пустые скобки от пустой переменной
+      .replace(/[ \t]+/g, ' ')
+      .replace(/(\s*[—–|·,]\s*){2,}/g, function (m) {   // два разделителя подряд
+        if (m.indexOf('—') !== -1 || m.indexOf('–') !== -1) return ' — ';
+        if (m.indexOf('|') !== -1) return ' | ';
+        if (m.indexOf('·') !== -1) return ' · ';
+        return ', ';
+      })
+      .replace(/^[\s—–|·,.\-]+|[\s—–|·,.\-]+$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Готовое имя файла по шаблону. Косая черта в шаблоне создаёт подпапку
+   * (`{playlist}/{title}`), каждый сегмент чистится отдельно, поэтому путь
+   * не ломает загрузки. Пустой шаблон и шаблон из одних переменных без данных
+   * дают название видео.
+   */
+  function filenameFromTemplate(tpl, vars) {
+    var filled = applyNameTemplate(tpl, vars);
+    var segs = filled.split('/').map(cleanSegment).filter(function (s) { return !!s; });
+    if (!segs.length) return sanitizeFilename(vars && vars.title);
+    return segs.join('/');
+  }
+
   var TRANSLIT = {
     'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y',
     'к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f',
@@ -651,6 +698,8 @@
     groupVariants: groupVariants,
     dedupeVariants: dedupeVariants,
     sanitizeFilename: sanitizeFilename,
+    applyNameTemplate: applyNameTemplate,
+    filenameFromTemplate: filenameFromTemplate,
     toAsciiFilename: toAsciiFilename,
     formatBytes: formatBytes,
     formatTime: formatTime,

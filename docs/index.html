@@ -43,7 +43,7 @@
       "applicationSubCategory": "Browser extension",
       "operatingSystem": "Windows, macOS, Linux",
       "browserRequirements": "Firefox 140+, Chrome / Edge / Яндекс.Браузер 109+",
-      "softwareVersion": "1.4.0",
+      "softwareVersion": "1.5.0",
       "installUrl": "https://addons.mozilla.org/ru/firefox/addon/rutube-tools/",
       "inLanguage": ["ru", "en"],
       "featureList": [
@@ -52,7 +52,8 @@
         "Скачивание плейлистов с очередью и паузой",
         "Докачка после сбоя или перезапуска браузера",
         "Покадровая перемотка и кадры в PNG",
-        "Субтитры SRT, обложка JPG, главы в .txt и .ffmeta"
+        "Субтитры SRT одной галочкой, обложка JPG, главы в .txt и .ffmeta",
+        "Шаблон имени файла и подпапки для плейлистов"
       ],
       "license": "https://github.com/xxnetme/rutube-tools/blob/main/LICENSE",
       "url": "https://xxnetme.github.io/rutube-tools/",
@@ -420,7 +421,7 @@ footer a{color:var(--muted)}
         <a class="btn primary" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Firefox (.xpi)</a>
         <a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Chrome / Edge (.zip)</a>
       </div>
-      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.4.0</span></p>
+      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.5.0</span></p>
     </div>
 
     <div aria-hidden="true">
@@ -485,7 +486,7 @@ footer a{color:var(--muted)}
       <span class="tag">новое</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
       <h3>Докачка</h3>
-      <p>Оборвалось или закрыли браузер — продолжите с нужной части, готовое не качается заново.</p>
+      <p>Оборвалось или закрыли браузер — продолжите с нужной части, готовое не качается заново. Имя файла задаётся шаблоном: <code>{author} — {title} [{quality}]</code>.</p>
     </article>
     <article class="card">
       <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg></div>
@@ -500,7 +501,7 @@ footer a{color:var(--muted)}
     <article class="card w2">
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12.5h5"/></svg></div>
       <h3>Субтитры, обложка и главы</h3>
-      <p>SRT, включая авто-субтитры, обложка в JPG, мини-плеер. Главы — текстом, в <code>.txt</code> или в <code>.ffmeta</code>, чтобы вшить их в MP4 без перекодирования.</p>
+      <p>Галочка в «Скачать» — и <code>.srt</code> лежит рядом с видео с тем же именем: плеер подхватит сам. Обложка в JPG, мини-плеер, главы в <code>.txt</code> или <code>.ffmeta</code>, чтобы вшить их в MP4 без перекодирования.</p>
     </article>
     <article class="card w2">
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
@@ -578,7 +579,7 @@ footer a{color:var(--muted)}
 </div>
 
 <div class="wrap">
-  <p class="hint-scroll">Все кадры сняты на сборке 1.4.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
+  <p class="hint-scroll">Все кадры сняты на сборке 1.5.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
 
 <!-- ============ КЛАВИШИ ============ -->
 <section class="sec" id="keys">
@@ -713,7 +714,7 @@ footer a{color:var(--muted)}
 
 <footer>
   <div class="wrap">
-    <span>RuTube Tools v1.4.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
+    <span>RuTube Tools v1.5.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
     <span><a href="privacy.html">Приватность</a> · Не обходит DRM, скачивайте только то, на что у вас есть право.</span>
   </div>
 </footer>

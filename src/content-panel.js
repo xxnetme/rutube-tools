@@ -18,6 +18,12 @@
     body().innerHTML = html;
   }
 
+  /* Формат вкладки «Скачать»: пока пользователь не переключил его руками,
+   * берём значение из настроек — «видео» или «только звук». */
+  function currentFormat() {
+    return state.format || (RT.settings.defaultFormat === 'audio' ? 'audio' : 'video');
+  }
+
   function variants() {
     return (state.info && state.info.variants) || [];
   }
@@ -146,9 +152,11 @@
         '</label>';
     }).join('');
 
+    var caps = (info.captions || []).filter(function (c) { return c && c.url; });
+    if (state.subs == null) state.subs = !!RT.settings.saveSubs;
     var big = list.some(function (v) { return v.estimatedBytes > 900 * 1024 * 1024; });
     var isPart = state.mode === 'part';
-    var isAudio = state.format === 'audio';
+    var isAudio = currentFormat() === 'audio';
     var light = L.pickAudioVariant(list);
 
     setHTML(
@@ -167,6 +175,19 @@
         '<button data-mode="full" class="' + (!isPart ? 'on' : '') + '">' + esc(t('dl.modeFull')) + '</button>' +
         '<button data-mode="part" class="' + (isPart ? 'on' : '') + '">' + esc(t('dl.modePart')) + '</button>' +
       '</div>' +
+      (!isAudio && caps.length
+        ? '<div class="sw"><span>' + esc(t('dl.subs')) + '</span>' +
+            '<input type="checkbox" data-act="subs"' + (state.subs ? ' checked' : '') + '></div>' +
+          (state.subs && caps.length > 1
+            ? '<div class="field"><span class="lb">' + esc(t('dl.subsLang')) + '</span>' +
+                '<span class="in"><select data-in="subslang">' +
+                  caps.map(function (c, i) {
+                    return '<option value="' + i + '"' + (i === state.subsIndex ? ' selected' : '') + '>' +
+                      esc(c.langTitle || c.lang || ('#' + (i + 1))) + '</option>';
+                  }).join('') +
+                '</select></span></div>'
+            : '')
+        : '') +
       (isPart
         ? '<div class="field"><span class="lb">' + esc(t('dl.from')) + '</span>' +
             '<span class="in"><input type="text" data-in="from" placeholder="0:00" value="' + esc(state.from) + '"></span>' +
@@ -205,6 +226,20 @@
         state.mode = b.getAttribute('data-mode');
         render();
       });
+    });
+
+    var subsBox = $('[data-act="subs"]');
+    if (subsBox) subsBox.addEventListener('change', function () {
+      state.subs = !!subsBox.checked;
+      RT.settings.saveSubs = state.subs;
+      try { RT.api.storage.local.set({ saveSubs: state.subs }); } catch (e) {}
+      render();
+    });
+
+    var subsLang = $('[data-in="subslang"]');
+    if (subsLang) subsLang.addEventListener('change', function () {
+      state.subsIndex = Number(subsLang.value) || 0;
+      render();
     });
 
     $$('.seg button[data-fmt]').forEach(function (b) {
@@ -273,7 +308,7 @@
     // грубая оценка объёма: типичный битрейт RuTube для выбранного качества
     var BITRATE = { '144': 140000, '240': 220000, '360': 380000, '480': 500000, '720': 720000, '1080': 1500000 };
     var chosenQ = state.plChoice || RT.settings.quality;
-    var plAudio = state.format === 'audio';
+    var plAudio = currentFormat() === 'audio';
     // для звука качается самый лёгкий поток (144p), а не выбранное качество
     var kbps = plAudio ? BITRATE['144'] : (BITRATE[chosenQ] || BITRATE['720']);
     var fromIdx = state.pFrom ? Math.max(1, Number(state.pFrom)) : 1;
@@ -604,13 +639,19 @@
       }
     }
 
-    var audio = state.format === 'audio';
+    var audio = currentFormat() === 'audio';
     state.lastRequest = { videoId: id, height: variant ? variant.height : null, from: from, to: to };
     state.result = null;
     state.job = { id: null, kind: 'video', startedAt: Date.now(),
                   quality: audio ? 'M4A' : (variant ? variant.label : ''), phase: 'meta' };
     RT.startKeepalive();
     render();
+
+    var sub = null;
+    if (!audio && state.subs) {
+      var caps = (state.info.captions || []).filter(function (c) { return c && c.url; });
+      sub = caps[Math.min(state.subsIndex || 0, caps.length - 1)] || null;
+    }
 
     RT.sendMessage({
       type: 'rt:start',
@@ -619,7 +660,10 @@
       height: variant ? variant.height : null,
       from: from,
       to: to,
-      maxPartMB: RT.settings.maxPartMB
+      maxPartMB: RT.settings.maxPartMB,
+      nameTemplate: RT.settings.nameTemplate || '',
+      subsUrl: sub ? sub.url : '',
+      subsExt: sub ? (sub.format || 'srt') : ''
     }).then(function (r) {
       if (!r || !r.ok) {
         state.job = null;
@@ -644,11 +688,12 @@
     RT.sendMessage({
       type: 'rt:start-playlist',
       playlistId: plId,
-      audio: state.format === 'audio',
+      audio: currentFormat() === 'audio',
       height: state.plChoice || RT.settings.quality,
       fromIndex: state.pFrom ? Math.max(0, Number(state.pFrom) - 1) : 0,
       toIndex: state.pTo ? Number(state.pTo) : null,
-      maxPartMB: RT.settings.maxPartMB
+      maxPartMB: RT.settings.maxPartMB,
+      nameTemplate: RT.settings.nameTemplate || ''
     }).then(function (r) {
       if (!r || !r.ok) {
         state.job = null;
@@ -739,6 +784,9 @@
         '<div class="muted" style="margin-bottom:8px">' + esc(t('dl.doneSaved')) +
           (r.mode === 'ts' ? esc(t('dl.doneTs')) : '') + '</div>' +
         '<div class="title" style="color:#e7e7ee">' + files + '</div>' +
+        (r.subs && r.subs.length
+          ? '<div class="muted" style="margin-top:4px">' + esc(t('dl.subsDone')) + ' ' + r.subs.map(esc).join(', ') + '</div>'
+          : '') +
         (r.failed && r.failed.length
           ? '<div class="err" style="margin-top:8px">' + esc(t('pl.failed', { n: r.failed.length })) + '</div>'
           : '') +
@@ -845,6 +893,7 @@
       state.result = {
         ok: true,
         files: msg.files || [],
+        subs: msg.subs || [],
         downloadIds: msg.downloadIds || [],
         mode: msg.mode
       };

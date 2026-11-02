@@ -153,6 +153,24 @@
     }
   }
 
+  /**
+   * Сохраняет удалённый файл: сначала пробует отдать ссылку браузеру напрямую,
+   * а если сервер не отдаёт её без заголовков страницы — тянет в blob.
+   * Так работают и субтитры с CDN, и «Скачать» в разделе «Ещё».
+   */
+  async function saveRemote(url, name) {
+    try {
+      return await downloadUrl(url, name);
+    } catch (e) {
+      var resp = await fetch(url, { credentials: 'omit' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var u = URL.createObjectURL(await resp.blob());
+      var dl = await downloadUrl(u, name);
+      retainUrl(u, dl.id);
+      return dl;
+    }
+  }
+
   function retainUrl(url, downloadId) {
     if (downloadId !== undefined && downloadId !== null) urlById.set(downloadId, url);
     else setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 5 * 60000);
@@ -287,7 +305,13 @@
       // звук весит мало и в куски не режется
       var parts = audioOnly ? [{ start: 0, end: segments.length }]
                             : RTLib.planParts(durations, variant.bandwidth, maxPartBytes);
-      var base = RTLib.sanitizeFilename(info.title);
+      var base = RTLib.filenameFromTemplate(opts.nameTemplate, {
+        title: info.title,
+        author: info.author,
+        quality: variant.label,
+        date: new Date().toISOString().slice(0, 10),
+        playlist: opts.playlistTitle || ''
+      });
       if (opts.from != null || opts.to != null) {
         base += ' (' + RTLib.formatTime(realFrom).replace(/:/g, '-') + '-' + RTLib.formatTime(realTo).replace(/:/g, '-') + ')';
       }
@@ -301,7 +325,7 @@
         range: (opts.from != null || opts.to != null) ? { from: realFrom, to: realTo } : null
       });
 
-      var saved = [], savedIds = [];
+      var saved = [], savedIds = [], subs = [];
       var mirrorIndex = media.mirrorIndex || 0;
 
       // докачка: уже сохранённые части пропускаем, если разбиение не изменилось
@@ -348,9 +372,25 @@
         if (opts.pendingId) pendingPatch(opts.pendingId, { nextPart: i + 1, savedFiles: saved.slice() });
       }
 
+      /* Субтитры кладём рядом с видео и с тем же базовым именем — иначе VLC
+       * их не подхватит. Для нарезки это «… — 1/2.srt», как и у частей.
+       * Ошибка субтитров не отменяет уже сохранённое видео. */
+      if (opts.subsUrl && mode !== 'm4a' && saved.length) {
+        var subExt = String(opts.subsExt || 'srt').replace(/^\./, '');
+        for (var si = 0; si < saved.length; si++) {
+          var subName = String(saved[si]).replace(/\.[^.\/]+$/, '') + '.' + subExt;
+          try {
+            var subDl = await saveRemote(opts.subsUrl, subName);
+            subs.push(subDl.name);
+            savedIds.push(subDl.id);
+          } catch (e2) { /* молча: субтитры — дополнение, а не условие */ }
+        }
+      }
+
       post({
         phase: queueInfo ? 'queue-video-done' : 'done',
         files: saved,
+        subs: subs,
         downloadIds: savedIds,
         quality: variant.label,
         mode: mode,
@@ -460,6 +500,8 @@
           height: opts.height,
           audio: opts.audio,
           maxPartMB: opts.maxPartMB,
+          nameTemplate: opts.nameTemplate,
+          playlistTitle: pl.title,
           from: null,
           to: null
         }, queueInfo);
@@ -517,6 +559,7 @@
     pendingUpsert({
       id: job.pendingId, kind: 'video', videoId: p.videoId, height: p.height, audio: !!p.audio,
       from: p.from, to: p.to, maxPartMB: p.maxPartMB,
+      nameTemplate: p.nameTemplate || '', subsUrl: p.subsUrl || '', subsExt: p.subsExt || '',
       title: resume ? resume.title : '', nextPart: resume ? resume.nextPart || 0 : 0,
       partsTotal: resume ? resume.partsTotal || 0 : 0, savedFiles: resume ? resume.savedFiles || [] : [],
       status: 'running', createdAt: resume ? resume.createdAt : Date.now()
@@ -525,6 +568,7 @@
     runVideo(job, {
       videoId: p.videoId, height: p.height, audio: !!p.audio,
       from: p.from, to: p.to, maxPartMB: p.maxPartMB,
+      nameTemplate: p.nameTemplate || '', subsUrl: p.subsUrl || '', subsExt: p.subsExt || '',
       pendingId: job.pendingId,
       startPart: resume ? resume.nextPart || 0 : 0,
       partsTotal: resume ? resume.partsTotal || 0 : 0,
@@ -549,10 +593,12 @@
     pendingUpsert({
       id: job.pendingId, kind: 'playlist', playlistId: p.playlistId, height: p.height, audio: !!p.audio,
       fromIndex: originalFrom, toIndex: p.toIndex || null, nextIndex: startAt, maxPartMB: p.maxPartMB,
+      nameTemplate: p.nameTemplate || '',
       title: resume ? resume.title : '', status: 'running', createdAt: resume ? resume.createdAt : Date.now()
     });
 
     runPlaylist(job, {
+      nameTemplate: p.nameTemplate || '',
       playlistId: p.playlistId, height: p.height, audio: !!p.audio,
       fromIndex: startAt, originalFrom: originalFrom, toIndex: p.toIndex,
       delayMs: p.delayMs || 800, maxPartMB: p.maxPartMB, pendingId: job.pendingId
@@ -637,7 +683,10 @@
           audio: !!msg.audio,
           from: msg.from != null ? msg.from : null,
           to: msg.to != null ? msg.to : null,
-          maxPartMB: msg.maxPartMB
+          maxPartMB: msg.maxPartMB,
+          nameTemplate: msg.nameTemplate || '',
+          subsUrl: msg.subsUrl || '',
+          subsExt: msg.subsExt || ''
         }, tabId, null);
         return { ok: true, jobId: jobId };
       }
@@ -645,6 +694,7 @@
       case 'rt:start-playlist': {
         var tabId2 = sender && sender.tab && sender.tab.id;
         var jobId2 = launchPlaylist({
+          nameTemplate: msg.nameTemplate || '',
           playlistId: msg.playlistId,
           height: msg.height,
           audio: !!msg.audio,
@@ -727,18 +777,7 @@
       case 'rt:save-url': {
         try {
           var name = RTLib.sanitizeFilename(msg.filename || 'file');
-          var dl;
-          try {
-            dl = await downloadUrl(msg.url, name);
-          } catch (e) {
-            // прямое скачивание не прошло — тянем в blob
-            var resp = await fetch(msg.url, { credentials: 'omit' });
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            var b = await resp.blob();
-            var u = URL.createObjectURL(b);
-            dl = await downloadUrl(u, name);
-            retainUrl(u, dl.id);
-          }
+          var dl = await saveRemote(msg.url, name);
           return { ok: true, name: dl.name, id: dl.id };
         } catch (e) {
           return { ok: false, error: (e && e.message) || String(e) };

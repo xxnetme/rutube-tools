@@ -24,6 +24,9 @@
     shotKey: 's',           // s | k | f
     preservePitch: true,
     rememberPos: true,
+    defaultFormat: 'video', // video | audio — с чего открывается вкладка «Скачать»
+    nameTemplate: '{title}',// {title} {author} {quality} {date} {playlist}, «/» — подпапка
+    saveSubs: false,        // класть .srt рядом с видео
     rtDebug: false          // отладочные сообщения в консоли
   };
 

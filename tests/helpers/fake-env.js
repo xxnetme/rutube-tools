@@ -100,7 +100,12 @@ function createServer(videos, opts) {
     if (m) {
       const v = videos[m[1]];
       if (!v) return { ok: false, status: 404 };
-      return json({ title: v.title, duration: v.durationSec * 1000, video_balancer: { default: 'https://cdn.test/' + m[1] + '/master.m3u8' } });
+      return json({
+        title: v.title,
+        author: v.author ? { name: v.author } : undefined,
+        duration: v.durationSec * 1000,
+        video_balancer: { default: 'https://cdn.test/' + m[1] + '/master.m3u8' }
+      });
     }
     m = url.match(/cdn\.test\/([0-9a-f]{32})\/master\.m3u8/);
     if (m) {

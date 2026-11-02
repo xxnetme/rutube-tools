@@ -37,7 +37,9 @@ MP4 download
 — The MP4 button in the lower right corner: 1080p, 720p, 480p and below.
 — Fragment: from 12:30 to 12:45 — no need to download an hour for two minutes.
 — Whole playlist: a queue on /plst/ pages with pause and episode range.
-— Subtitles (.srt, including auto-generated), cover (.jpg), mini player, video details (codec, fps, bitrate).
+— One-click subtitles: the .srt lands next to the video under the same name, so players pick it up by themselves.
+— File name template: {author} — {title} [{quality}], a subfolder per playlist, date in the name.
+— Cover (.jpg), mini player, video details (codec, fps, bitrate).
 — Segments are fetched in parallel and muxed into a regular MP4 inside the browser — no ffmpeg, no external programs.
 — Progress, speed and a cancel button; the percentage is shown on the toolbar icon.
 — Long videos are saved in parts of about 220 MB so the browser does not run out of memory.

@@ -16,7 +16,11 @@ const ID = 'c'.repeat(32);
 
 const INFO = {
   videoId: ID, title: 'Лекция: введение', author: 'Автор', durationSec: 600, fps: 25, isLive: false, drmProtected: false,
-  captions: [], thumbnail: '',
+  captions: [
+    { langTitle: 'Русский • Авто', format: 'srt', url: 'https://c/sub-ru.srt' },
+    { langTitle: 'English • Auto', format: 'vtt', url: 'https://c/sub-en.vtt' }
+  ],
+  thumbnail: '',
   cuepoints: [{ time: 0, title: 'Начало' }, { time: 125, title: 'Главная мысль' }],
   variants: [
     { url: 'https://c/1080.m3u8', mirrors: ['https://c/1080.m3u8'], height: 1080, bandwidth: 1500000, label: '1080p', estimatedBytes: 112e6, compatible: true },
@@ -24,7 +28,7 @@ const INFO = {
   ]
 };
 
-async function openPanel(url, tab) {
+async function openPanel(url, tab, settings) {
   const sent = [];
   const dom = new JSDOM('<!doctype html><body><video></video></body>', { url, runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window;
@@ -43,7 +47,7 @@ async function openPanel(url, tab) {
       onMessage: { addListener() {} },
       getManifest: () => ({ version: 'test' })
     },
-    storage: { local: { get: async () => ({}), set: async () => {} }, onChanged: { addListener() {} } }
+    storage: { local: { get: async () => (settings || {}), set: async () => {} }, onChanged: { addListener() {} } }
   };
   w.eval(read('lib/engine.js'));
   w.eval(read('lib/i18n.js'));
@@ -150,5 +154,46 @@ test('плейлист: выбор формата отключает качес�
   p.body().querySelector('[data-act="go-pl"]').click();
   await p.until(() => p.sent.some((m) => m.type === 'rt:start-playlist'));
   assert.equal(p.sent.find((m) => m.type === 'rt:start-playlist').audio, true);
+  p.close();
+});
+
+test('формат по умолчанию из настроек: панель открывается в режиме звука', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/', null, { defaultFormat: 'audio' });
+  await p.until(() => p.body().querySelector('[data-act="go"]'));
+  assert.equal(p.body().querySelectorAll('input[name="rq"]').length, 0, 'качества скрыты, как в режиме звука');
+  assert.match(p.body().querySelector('[data-act="go"]').textContent, /Скачать звук \(M4A\)/);
+  p.body().querySelector('[data-act="go"]').click();
+  await p.until(() => p.sent.some((m) => m.type === 'rt:start'));
+  assert.equal(p.sent.find((m) => m.type === 'rt:start').audio, true);
+  p.close();
+});
+
+test('субтитры: галочка уходит в rt:start вместе с языком', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/');
+  await p.until(() => p.body().querySelector('[data-act="subs"]'));
+  const box = p.body().querySelector('[data-act="subs"]');
+  assert.equal(box.checked, false, 'по умолчанию выключено');
+
+  box.checked = true;
+  box.dispatchEvent(new p.w.Event('change'));
+  const lang = p.body().querySelector('[data-in="subslang"]');
+  assert.ok(lang, 'при двух дорожках появляется выбор языка');
+  lang.value = '1';
+  lang.dispatchEvent(new p.w.Event('change'));
+
+  p.body().querySelector('[data-act="go"]').click();
+  await p.until(() => p.sent.some((m) => m.type === 'rt:start'));
+  const m = p.sent.find((m2) => m2.type === 'rt:start');
+  assert.equal(m.subsUrl, 'https://c/sub-en.vtt', 'взята выбранная дорожка, а не первая');
+  assert.equal(m.subsExt, 'vtt');
+  p.close();
+});
+
+test('имя файла: шаблон из настроек уходит в rt:start', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/', null, { nameTemplate: '{author} — {title}' });
+  await p.until(() => p.body().querySelector('[data-act="go"]'));
+  p.body().querySelector('[data-act="go"]').click();
+  await p.until(() => p.sent.some((m) => m.type === 'rt:start'));
+  assert.equal(p.sent.find((m) => m.type === 'rt:start').nameTemplate, '{author} — {title}');
   p.close();
 });

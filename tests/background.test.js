@@ -209,3 +209,51 @@ test('rt:pending-resume для несуществующей записи — п�
   const r = await b.call({ type: 'rt:pending-resume', id: 'нет' }, {});
   assert.equal(r.ok, false);
 });
+
+test('имя файла по шаблону: автор и качество подставляются', async () => {
+  createServer(oneVideo([{ height: 720, bandwidth: 80e6, codecs: HEVC, mirrors: ['a.test'], segments: 2 }],
+    { author: 'Автор Видео' }));
+  const b = createBrowser();
+  await b.call({ type: 'rt:start', videoId: ID1, height: 720, nameTemplate: '{author} — {title} [{quality}]' });
+  const done = await b.waitFor((m) => isDone(m) || isErr(m));
+  assert.equal(done.phase, 'done');
+  assert.equal(b.downloads[0].filename, 'Автор Видео — Тестовое видео [720p].ts');
+});
+
+test('шаблон без данных не оставляет висящих разделителей', async () => {
+  createServer(oneVideo([{ height: 720, bandwidth: 80e6, codecs: HEVC, mirrors: ['a.test'], segments: 2 }]));
+  const b = createBrowser();
+  // автора у видео нет — остаётся только название
+  await b.call({ type: 'rt:start', videoId: ID1, height: 720, nameTemplate: '{author} — {title}' });
+  await b.waitFor((m) => isDone(m) || isErr(m));
+  assert.equal(b.downloads[0].filename, 'Тестовое видео.ts');
+});
+
+test('шаблон с косой чертой создаёт подпапку', async () => {
+  createServer(oneVideo([{ height: 720, bandwidth: 80e6, codecs: HEVC, mirrors: ['a.test'], segments: 2 }]));
+  const b = createBrowser();
+  await b.call({ type: 'rt:start', videoId: ID1, height: 720, nameTemplate: 'Ролики/{title}' });
+  await b.waitFor((m) => isDone(m) || isErr(m));
+  assert.equal(b.downloads[0].filename, 'Ролики/Тестовое видео.ts');
+});
+
+test('субтитры: .srt кладётся рядом с видео и называется так же', async () => {
+  createServer(oneVideo([{ height: 720, bandwidth: 80e6, codecs: HEVC, mirrors: ['a.test'], segments: 2 }]));
+  const b = createBrowser();
+  await b.call({ type: 'rt:start', videoId: ID1, height: 720,
+                 subsUrl: 'https://cdn.test/sub/ru.srt', subsExt: 'srt' });
+  const done = await b.waitFor((m) => isDone(m) || isErr(m));
+  assert.equal(done.phase, 'done');
+  assert.deepEqual(done.subs, ['Тестовое видео.srt']);
+  assert.deepEqual(b.downloads.map((d) => d.filename), ['Тестовое видео.ts', 'Тестовое видео.srt']);
+  assert.equal(done.downloadIds.length, 2, 'субтитры тоже доступны по «Показать файл»');
+});
+
+test('субтитры не нужны для звука: M4A сохраняется один', async () => {
+  createServer(oneVideo([{ height: 144, bandwidth: 140000, codecs: AAC, mirrors: ['a.test'], segments: 2, aac: true }]));
+  const b = createBrowser();
+  await b.call({ type: 'rt:start', videoId: ID1, audio: true,
+                 subsUrl: 'https://cdn.test/sub/ru.srt', subsExt: 'srt' });
+  await b.waitFor((m) => isDone(m) || isErr(m));
+  assert.deepEqual(b.downloads.map((d) => d.filename), ['Тестовое видео.m4a']);
+});

@@ -13,10 +13,14 @@
     frameKeys: 'comma',
     shotKey: 's',
     preservePitch: true,
-    rememberPos: true
+    rememberPos: true,
+    defaultFormat: 'video',
+    nameTemplate: '{title}',
+    saveSubs: false
   };
 
-  var SELECTS = ['quality', 'fps', 'maxPartMB', 'frameKeys', 'shotKey', 'lang'];
+  var SELECTS = ['quality', 'fps', 'maxPartMB', 'frameKeys', 'shotKey', 'lang', 'defaultFormat'];
+  var TEXTS = ['nameTemplate'];
   var CHECKS = ['showButton', 'youtubeKeys', 'preservePitch', 'rememberPos'];
 
   function el(id) { return document.getElementById(id); }
@@ -46,6 +50,10 @@
       var node = el(id);
       if (node) node.checked = !!s[id];
     });
+    TEXTS.forEach(function (id) {
+      var node = el(id);
+      if (node) node.value = String(s[id] == null ? '' : s[id]);
+    });
   }
 
   function read() {
@@ -56,6 +64,9 @@
     });
     CHECKS.forEach(function (id) {
       out[id] = el(id).checked;
+    });
+    TEXTS.forEach(function (id) {
+      out[id] = el(id).value;
     });
     return out;
   }
@@ -83,6 +94,18 @@
   SELECTS.concat(CHECKS).forEach(function (id) {
     var node = el(id);
     if (node) node.addEventListener('change', save);
+  });
+
+  /* текстовое поле пишется на каждый ввод, но без спешки — чтобы не дёргать storage */
+  var textTimer = null;
+  TEXTS.forEach(function (id) {
+    var node = el(id);
+    if (!node) return;
+    node.addEventListener('input', function () {
+      clearTimeout(textTimer);
+      textTimer = setTimeout(save, 250);
+    });
+    node.addEventListener('change', save);
   });
 
   el('reset').addEventListener('click', function () {

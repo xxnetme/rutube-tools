@@ -226,3 +226,23 @@ test('downloadPart (m4a): без модуля звука — явная ошиб
   await assert.rejects(L.downloadPart({ segments: ['https://x/s0.ts'], mode: 'm4a' }), /Модуль извлечения звука/);
   globalThis.RTAudio = saved;
 });
+
+test('applyNameTemplate: переменные и пустые значения', () => {
+  const v = { title: 'Название', author: 'Автор', quality: '1080p', date: '2026-11-02', playlist: 'Разбор' };
+  assert.equal(L.applyNameTemplate('{title}', v), 'Название');
+  assert.equal(L.applyNameTemplate('{author} — {title} [{quality}]', v), 'Автор — Название [1080p]');
+  assert.equal(L.applyNameTemplate('{author} — {title}', { title: 'Название' }), 'Название');
+  assert.equal(L.applyNameTemplate('{title} [{quality}]', { title: 'Название' }), 'Название');
+  assert.equal(L.applyNameTemplate('', v), 'Название');
+  assert.equal(L.applyNameTemplate('{нет такой}', v), '');
+});
+
+test('filenameFromTemplate: подпапка, мусор и запасное имя', () => {
+  const v = { title: 'Лекция: введение', author: 'Автор', quality: '720p', playlist: 'Подкаст' };
+  assert.equal(L.filenameFromTemplate('{title}', v), 'Лекция введение');
+  assert.equal(L.filenameFromTemplate('{playlist}/{author} — {title}', v), 'Подкаст/Автор — Лекция введение');
+  assert.equal(L.filenameFromTemplate('../{title}', v), 'Лекция введение');
+  assert.equal(L.filenameFromTemplate('{playlist}/', v), 'Подкаст');
+  assert.equal(L.filenameFromTemplate('{нет}', v), 'Лекция введение', 'пустой шаблон — имя видео');
+  assert.ok(L.filenameFromTemplate('{title}', { title: 'я'.repeat(400) }).length <= 110);
+});

@@ -73,6 +73,14 @@
   }
   input[type=checkbox]:checked::after { transform: translateX(14px); }
 
+  input[type=text] {
+    width: 100%; margin-top: 6px; background: var(--panel-2); color: var(--ink);
+    border: 1px solid var(--line-2); border-radius: 7px; padding: 6px 8px;
+    font: 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    transition: border-color .12s;
+  }
+  input[type=text]:focus { outline: none; border-color: rgba(242, 65, 58, .6); box-shadow: 0 0 0 3px rgba(242, 65, 58, .13); }
+
   kbd {
     background: rgba(255, 255, 255, .09); border: 1px solid var(--line-2); border-bottom-width: 2px;
     border-radius: 4px; padding: 0 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -139,6 +147,20 @@
         <option value="worst" data-i18n="opt.worst"></option>
       </select>
     </label>
+    <label class="row">
+      <span class="label" data-i18n="pop.defaultFormat"></span>
+      <select id="defaultFormat">
+        <option value="video" data-i18n="opt.video"></option>
+        <option value="audio" data-i18n="opt.audio"></option>
+      </select>
+    </label>
+    <div class="row col">
+      <span class="txt">
+        <label class="label" for="nameTemplate" data-i18n="pop.nameTemplate"></label>
+        <span class="hint" data-i18n="pop.nameTemplateHint"></span>
+        <input type="text" id="nameTemplate" spellcheck="false" autocomplete="off">
+      </span>
+    </div>
     <div class="row col">
       <span class="txt">
         <label class="label" for="maxPartMB" data-i18n="pop.parts"></label>
