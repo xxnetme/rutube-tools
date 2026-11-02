@@ -1,19 +1,26 @@
 <div align="center">
 
-<img src="assets/banner.png" alt="RuTube Tools" width="100%">
+<img src="assets/banner.png" alt="RuTube Tools — скачивание, звук и покадровая перемотка в плеере RuTube" width="100%">
 
 <h1>RuTube Tools</h1>
 
-<p><b>Скачивание видео и плейлистов RuTube в MP4, покадровая перемотка, кадры в PNG и субтитры</b></p>
+<p><b>Расширение для RuTube: MP4 и только звук, плейлисты, покадровая перемотка, кадры в PNG и субтитры.</b><br>
+Без рекламы, трекеров и сторонних программ — всё работает локально в браузере.</p>
 
 <a href="https://github.com/xxnetme/rutube-tools/releases/latest"><img src="https://img.shields.io/github/v/release/xxnetme/rutube-tools?style=flat-square&color=f2413a&label=release" alt="Release"></a>
-<a href="https://github.com/xxnetme/rutube-tools/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/xxnetme/rutube-tools/checks.yml?style=flat-square&label=build" alt="Build"></a>
+<a href="https://github.com/xxnetme/rutube-tools/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/xxnetme/rutube-tools/checks.yml?style=flat-square&label=tests" alt="Tests"></a>
 <img src="https://img.shields.io/badge/firefox-140%2B-8a8d95?style=flat-square" alt="Firefox 140+">
 <img src="https://img.shields.io/badge/chromium-mv3-8a8d95?style=flat-square" alt="Chromium MV3">
+<img src="https://img.shields.io/badge/trackers-0-2ea44f?style=flat-square" alt="Без трекеров">
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8a8d95?style=flat-square" alt="MIT"></a>
 
 <p>
-<a href="https://xxnetme.github.io/rutube-tools/">Сайт</a> &nbsp;·&nbsp;
+<a href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><b>Firefox (.xpi)</b></a> &nbsp;·&nbsp;
+<a href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><b>Chrome / Edge (.zip)</b></a> &nbsp;·&nbsp;
+<a href="https://xxnetme.github.io/rutube-tools/">Сайт</a>
+</p>
+
+<p>
 <a href="#установка">Установка</a> &nbsp;·&nbsp;
 <a href="#возможности">Возможности</a> &nbsp;·&nbsp;
 <a href="#клавиши">Клавиши</a> &nbsp;·&nbsp;
@@ -26,13 +33,50 @@
 
 ---
 
+> [!TIP]
+> **Новое в 1.4.0:** режим **«Только звук»** (M4A) для ролика, фрагмента и плейлиста — удобно для подкастов и лекций;
+> **докачка** после сбоя или перезапуска браузера; **экспорт глав** в `.txt` и `.ffmeta`. Полный список — в [CHANGELOG](docs/CHANGELOG.md).
+
 ## Что это
 
-**RuTube Tools** — бесплатное расширение для Firefox, Chrome, Edge и Яндекс.Браузера. Скачивает
-видео и плейлисты RuTube в MP4 (целиком или фрагментом), листает видео по кадрам, сохраняет кадры
-в PNG, субтитры в SRT и обложки. Без рекламы, трекеров и сторонних программ.
+**RuTube Tools** — бесплатное расширение для Firefox, Chrome, Edge и Яндекс.Браузера. Добавляет в плеер RuTube
+небольшую панель: скачать видео или только звук, вырезать фрагмент, забрать весь плейлист, листать видео по кадрам,
+сохранять кадры в PNG, субтитры в SRT и обложки.
 
-<img src="assets/features.png" alt="Возможности" width="100%">
+<img src="assets/features.png" alt="Возможности RuTube Tools" width="100%">
+
+---
+
+## Установка
+
+| | Firefox | Chrome · Edge · Яндекс |
+|---|---|---|
+| **1. Скачать** | [rutube-tools-firefox.xpi](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi) | [rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip), распаковать |
+| **2. Открыть** | `about:debugging#/runtime/this-firefox` | `chrome://extensions` |
+| **3. Подключить** | «Загрузить временное дополнение…» | «Режим разработчика» → «Загрузить распакованное» |
+
+Откройте любое видео RuTube — кнопка **MP4** появится в правом нижнем углу плеера. На странице плейлиста (`/plst/…`) она станет **PL**.
+
+> [!NOTE]
+> **Статус в магазинах.** Заявка отправлена в Firefox (AMO) и ждёт проверки:
+> карточка [addons.mozilla.org/ru/firefox/addon/rutube-tools](https://addons.mozilla.org/ru/firefox/addon/rutube-tools/)
+> (статус `nominated`). Пока её не одобрили, ставить нужно через `about:debugging`: временное дополнение живёт до перезапуска браузера.
+> Chrome Web Store, Edge Add-ons и Opera — сборка готова, подача впереди:
+> файлы, тексты карточек и заметки ревьюерам лежат в [docs/PUBLISH.md](docs/PUBLISH.md) и [docs/store/listing-ru.md](docs/store/listing-ru.md).
+
+<details>
+<summary>Сборка из исходников</summary>
+
+```bash
+git clone https://github.com/xxnetme/rutube-tools.git
+cd rutube-tools
+python3 build.py
+```
+
+Нужен только Python 3: сборка проверяет обязательные файлы, манифест и отсутствие `eval`,
+затем складывает распакованные версии в `build/`, а архивы и `.xpi` — в `release/`.
+
+</details>
 
 ---
 
@@ -43,13 +87,13 @@
 <table>
 <tr>
 <td width="50%"><img src="docs/screenshots/02-download.png" alt="Вкладка «Скачать»"><br>
-<sub><b>Скачать</b> — качества, оценка размера, весь ролик или фрагмент</sub></td>
+<sub><b>Скачать</b> — формат (видео или звук), качества, оценка размера, весь ролик или фрагмент</sub></td>
 <td width="50%"><img src="docs/screenshots/03-frames.png" alt="Вкладка «Кадры»"><br>
 <sub><b>Кадры</b> — шаг по кадрам, переход по номеру, петля A/B, раскадровка</sub></td>
 </tr>
 <tr>
 <td><img src="docs/screenshots/04-more.png" alt="Вкладка «Ещё»"><br>
-<sub><b>Ещё</b> — субтитры, обложка, главы, ссылка .m3u8, мини-плеер</sub></td>
+<sub><b>Ещё</b> — субтитры, обложка, главы (в файл), ссылка .m3u8, мини-плеер</sub></td>
 <td><img src="docs/screenshots/05-info.png" alt="Вкладка «Инфо»"><br>
 <sub><b>Инфо</b> — кодек, fps, битрейт, качества, просмотры, дата</sub></td>
 </tr>
@@ -60,6 +104,8 @@
 <sub><b>Готово</b> — файл в загрузках, «показать файл», «скачать ещё»</sub></td>
 </tr>
 </table>
+
+<sub>Скриншоты сделаны на версии 1.3: переключатель «Видео / Только звук» в них ещё не отражён.</sub>
 
 ---
 
@@ -73,10 +119,10 @@
 | **Только звук (M4A)** | Переключатель «Видео / Только звук». Качается самый лёгкий поток, AAC достаётся без перекодирования, название — в теге файла. Работает для фрагмента и плейлиста (подкасты) |
 | **Фрагмент** | «с 12:30 по 12:45». Кнопка со временем берёт позицию прямо из плеера; фактические границы видны до старта |
 | **Плейлист** | На странице `/plst/…`: очередь с паузой, диапазон серий, отчёт об ошибках по каждому видео |
+| **Докачка** | Закрыли браузер или была ошибка — в окне расширения будет «Незавершённые загрузки» с кнопкой «Продолжить». Уже сохранённые части и серии заново не качаются |
 | **Зеркала CDN** | Каждое качество RuTube отдаёт с двух серверов — при обрыве расширение перечитывает плейлист с резервного |
 | **Длинные файлы** | Автоматическое разбиение по ~220 МБ: `название — 1/3.mp4` |
 | **После сбоя** | «Повторить загрузку» и «Скопировать диагностику» — готовый текст для письма в поддержку |
-| **Докачка** | Закрыли браузер или была ошибка — в окне расширения будет «Незавершённые загрузки» с кнопкой «Продолжить». Уже сохранённые части и серии заново не качаются |
 
 ### Кадры
 
@@ -86,38 +132,20 @@
 
 ### Ещё и Инфо
 
-Субтитры SRT, включая авто-субтитры, обложка в JPG, главы из `cuepoints` (копирование, файл `.txt` и `.ffmeta` для вшивания в MP4), мини-плеер (Picture-in-Picture)
-и ссылка `.m3u8`. Вкладка «Инфо» показывает кодек, fps, битрейт, доступные качества, оценку размера,
-просмотры, дату публикации и автора — с копированием одним нажатием.
-
----
-
-## Установка
-
-**Firefox** — [скачать rutube-tools-firefox.xpi](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi),
-затем `about:debugging#/runtime/this-firefox` → «Загрузить временное дополнение».
-
-**Chrome, Edge, Яндекс.Браузер** — [скачать rutube-tools-chromium.zip](https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip),
-распаковать, затем `chrome://extensions` → «Режим разработчика» → «Загрузить распакованное».
-
-> **Статус в магазинах.** Заявка отправлена в Firefox (AMO) и ждёт проверки:
-> карточка [addons.mozilla.org/ru/firefox/addon/rutube-tools](https://addons.mozilla.org/ru/firefox/addon/rutube-tools/)
-> (статус `nominated`). Пока её не одобрили, ставить нужно через `about:debugging`, как выше.
-> Chrome Web Store, Edge Add-ons и Opera — сборка готова, подача впереди:
-> файлы, тексты карточек и заметки ревьюерам лежат в [docs/PUBLISH.md](docs/PUBLISH.md)
-> и [docs/store/listing-ru.md](docs/store/listing-ru.md).
+Субтитры SRT, включая авто-субтитры, обложка в JPG, главы из `cuepoints` (копирование, файл `.txt` и `.ffmeta`
+для вшивания в MP4), мини-плеер (Picture-in-Picture) и ссылка `.m3u8`. Вкладка «Инфо» показывает кодек, fps, битрейт,
+доступные качества, оценку размера, просмотры, дату публикации и автора — с копированием одним нажатием.
 
 <details>
-<summary>Сборка из исходников</summary>
+<summary>Как вшить главы в MP4</summary>
+
+Сохраните главы кнопкой «Главы → .ffmeta» во вкладке «Ещё», затем:
 
 ```bash
-git clone https://github.com/xxnetme/rutube-tools.git
-cd rutube-tools
-python3 build.py
+ffmpeg -i видео.mp4 -i главы.ffmeta -map_metadata 1 -map_chapters 1 -c copy готово.mp4
 ```
 
-Нужен только Python 3: сборка проверяет обязательные файлы, манифест и отсутствие `eval`,
-затем складывает распакованные версии в `build/`, а архивы и `.xpi` — в `release/`.
+Перекодирования нет: видео и звук копируются как есть.
 
 </details>
 
@@ -141,24 +169,23 @@ python3 build.py
 
 ## Как это работает
 
-```text
-URL видео
-   |
-   +-- rutube.ru/api/play/options/<id>/     качества, длительность, субтитры, обложка
-   |        +-- master.m3u8                 каждое качество x 2 зеркала CDN
-   |                 +-- media.m3u8         фрагменты по 2-4 секунды
-   |
-   +-- параллельная загрузка (5 потоков, повторы, смена зеркала)
-   |
-   +-- видео: mux.js, MPEG-TS -> fMP4 ┐
-   +-- звук:  lib/audio.js, TS -> AAC -> M4A ┴->  Blob  ->  downloads.download()
-                                           |
-                                      Firefox: фоновая страница
-                                      Chromium: offscreen-документ
+```mermaid
+flowchart LR
+    A["Страница RuTube"] --> B["API play/options<br/>качества, длительность,<br/>субтитры, главы"]
+    B --> C["master.m3u8<br/>каждое качество × 2 CDN"]
+    C --> D["media.m3u8<br/>сегменты по 2–4 с"]
+    D --> E["Параллельная загрузка<br/>5 потоков, повторы, смена зеркала"]
+    E -->|видео| F["mux.js<br/>TS → fMP4"]
+    E -->|звук| G["lib/audio.js<br/>TS → AAC → M4A"]
+    F --> H["Blob → downloads.download()"]
+    G --> H
+    H --> I["Папка «Загрузки»"]
 ```
 
-Файл скачивается без перекодирования. Фрагменты попадают в сборщик строго по порядку даже при
-параллельной загрузке, поэтому MP4 получается валидным — проверено `ffprobe`.
+Файл скачивается без перекодирования. Сегменты попадают в сборщик строго по порядку даже при параллельной
+загрузке, поэтому MP4 и M4A получаются валидными — проверено `ffprobe` и декодированием в `ffmpeg`.
+Сборка идёт в фоновой странице Firefox или в offscreen-документе Chromium. Состояние загрузки сохраняется
+в `storage.local`, поэтому её можно продолжить после сбоя.
 
 ---
 
@@ -180,9 +207,35 @@ URL видео
 ## Приватность
 
 Ноль аналитики, телеметрии и рекламы. Расширение работает только на `rutube.ru`, запросы идут
-исключительно к RuTube и его CDN, без cookie. Настройки и позиция просмотра хранятся локально
-в `storage.local`. В манифесте указано `data_collection_permissions: none`.
+исключительно к RuTube и его CDN, без cookie. Настройки, позиция просмотра и записи о незавершённых
+загрузках хранятся локально в `storage.local`. В манифесте указано `data_collection_permissions: none`.
 Подробнее — [страница политики](https://xxnetme.github.io/rutube-tools/privacy.html) или [docs/PRIVACY.md](docs/PRIVACY.md) в репозитории.
+
+---
+
+## Качество
+
+Проект покрыт автотестами (`npm test`, 55 проверок), в CI они идут вместе с ESLint и `addons-linter`:
+
+- разбор HLS, диапазоны, разбиение на части, главы (результат принимает `ffmpeg`);
+- извлечение звука: байт-в-байт сверка кадров, склейка кадров на границах PES и сегментов, настоящий поток от `ffmpeg` и проверка `ffprobe`;
+- сквозные сценарии фона с подменёнными браузером и RuTube: докачка, «перезапуск браузера», зеркала CDN, отмена;
+- смоук-тест панели в jsdom.
+
+Тесты ищут реальные ошибки: код намеренно ломали (потеря хвоста кадра, неверное смещение, докачка с нуля), и тесты падали.
+
+<details>
+<summary>Запуск проверок</summary>
+
+```bash
+npm test                       # нужен Node 20+
+npm run lint                   # ESLint
+npm install --no-save jsdom    # по желанию: включает тест панели
+```
+
+Тесты звука используют `ffmpeg`/`ffprobe`, если они установлены, и пропускают эти проверки, если нет.
+
+</details>
 
 ---
 
@@ -193,19 +246,19 @@ rutube-tools/
 ├── src/
 │   ├── manifest.firefox.json    MV3, background.scripts
 │   ├── manifest.chromium.json   MV3, service_worker + offscreen
-│   ├── background.js            загрузки, очередь, обрезка, зеркала, диагностика
+│   ├── background.js            загрузки, очередь, докачка, обрезка, зеркала, диагностика
 │   ├── content-core.js          кнопка, панель, вкладки, клавиши, кадры, PiP
 │   ├── content-panel.js         Скачать / Кадры / Ещё / Инфо
 │   ├── lib/engine.js            HLS, диапазоны, плейлисты, склейка, главы
 │   ├── lib/audio.js             TS → AAC → M4A (режим «только звук»)
 │   ├── lib/i18n.js              русский и английский
 │   ├── lib/mux-mp4.min.js       mux.js, Apache 2.0
-│   ├── popup.html, popup.js     настройки
-│   └── offscreen.html, .js      сборка MP4 для Chromium
+│   ├── popup.html, popup.js     настройки и незавершённые загрузки
+│   └── offscreen.html, .js      сборка файла для Chromium
 ├── tests/                       npm test: движок, звук, фон, панель (jsdom)
 ├── build.py                     сборка и проверки, только stdlib
 ├── eslint.config.js, package.json   только для тестов и линтера
-├── docs/                        лендинг, privacy.html, CHANGELOG, FEATURES, PUBLISH, скриншоты
+├── docs/                        сайт, privacy.html, CHANGELOG, FEATURES, PUBLISH, скриншоты
 ├── assets/                      баннеры и обложка, исходники в SVG
 └── .github/workflows/           checks и release по тегу
 ```
@@ -221,6 +274,8 @@ rutube-tools/
 - PNG-кадры и раскадровка, петля A/B не выходит за границы
 - Переключение RU/EN на лету, консоль без ошибок
 
+<sub>Режимы «только звук» и докачка (1.4.0) проверены автотестами на потоках `ffmpeg` и подменённом RuTube; прогон на живом сайте — перед публикацией релиза.</sub>
+
 ---
 
 ## Вопросы и ответы
@@ -230,6 +285,22 @@ rutube-tools/
 
 Откройте страницу видео, нажмите кнопку **MP4** в правом нижнем углу, выберите качество и нажмите
 «Скачать MP4». Файл соберётся в браузере и появится в папке «Загрузки».
+
+</details>
+
+<details>
+<summary><b>Как скачать только звук?</b></summary>
+
+Во вкладке «Скачать» переключите формат на «Только звук». Расширение возьмёт самый лёгкий поток (обычно 144p),
+вытащит из него AAC и сохранит `.m4a` без перекодирования. Так же работает фрагмент и плейлист — удобно для подкастов и лекций.
+
+</details>
+
+<details>
+<summary><b>Загрузка оборвалась — что делать?</b></summary>
+
+Откройте окно расширения (иконка в панели браузера): в блоке «Незавершённые загрузки» нажмите «Продолжить».
+Уже сохранённые части видео или серии плейлиста заново не качаются. Записи хранятся 14 дней.
 
 </details>
 
@@ -244,7 +315,7 @@ rutube-tools/
 <details>
 <summary><b>Как скачать весь плейлист RuTube?</b></summary>
 
-Откройте страницу плейлиста (`/plst/…`) — кнопка станет **PL**. Выберите качество и диапазон серий,
+Откройте страницу плейлиста (`/plst/…`) — кнопка станет **PL**. Выберите формат, качество и диапазон серий,
 затем «Скачать плейлист». Видео загружаются по очереди с паузой; очередь можно поставить на паузу или отменить.
 
 </details>
@@ -258,10 +329,10 @@ rutube-tools/
 </details>
 
 <details>
-<summary><b>Как скачать субтитры с RuTube?</b></summary>
+<summary><b>Как скачать субтитры и главы?</b></summary>
 
 Вкладка «Ещё» → «Субтитры» → «Скачать». Сохраняется файл `.srt`, включая авто-субтитры RuTube.
-Там же обложка в JPG, главы и ссылка `.m3u8`.
+Там же обложка в JPG, ссылка `.m3u8` и главы: копирование текстом, файл `.txt` или `.ffmeta` для вшивания в MP4.
 
 </details>
 
@@ -270,6 +341,7 @@ rutube-tools/
 
 Так бывает с кодеками HEVC и AV1: собрать из них MP4 в браузере нельзя без перекодирования.
 Файл сохраняется как `.ts` и открывается в VLC. Видео в H.264 всегда собираются в обычный MP4.
+Режим «Только звук» от кодека видео не зависит.
 
 </details>
 
@@ -285,7 +357,7 @@ rutube-tools/
 <summary><b>Расширение что-то отправляет на серверы?</b></summary>
 
 Нет. Ни аналитики, ни рекламы, ни собственных серверов: запросы идут только к RuTube и его CDN,
-без cookie. Настройки и позиция просмотра хранятся локально в браузере.
+без cookie. Настройки, позиция просмотра и список незавершённых загрузок хранятся локально в браузере.
 
 </details>
 

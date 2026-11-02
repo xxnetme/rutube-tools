@@ -1,43 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="RuTube Tools">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#111115"/><stop offset="1" stop-color="#09090b"/>
-    </linearGradient>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
-    </pattern>
-    <radialGradient id="glow" cx="0.5" cy="0.28" r="0.55">
-      <stop offset="0" stop-color="#f2413a" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#f2413a" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff5b46"/><stop offset="1" stop-color="#d92d24"/>
-    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15151b"/><stop offset="1" stop-color="#09090b"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.38" r="0.5"><stop offset="0" stop-color="#f2413a" stop-opacity="0.28"/><stop offset="1" stop-color="#f2413a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5b46"/><stop offset="1" stop-color="#d92d24"/></linearGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#fff" fill-opacity="0.05"/></pattern>
   </defs>
-
-  <rect width="1280" height="640" fill="url(#bg)"/>
-  <rect width="1280" height="640" fill="url(#grid)"/>
-  <rect width="1280" height="640" fill="url(#glow)"/>
-
-  <g transform="translate(568,132)">
-    <rect width="144" height="144" rx="34" fill="url(#iconBg)"/>
-    <rect x="0.5" y="0.5" width="143" height="143" rx="33.5" fill="none" stroke="#ffffff" stroke-opacity="0.18"/>
-    <g fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M72 42v50"/><path d="M52 74l20 20 20-20"/><path d="M48 104h48"/>
-    </g>
+  <rect width="1280" height="640" fill="url(#bg)"/><rect width="1280" height="640" fill="url(#dots)"/><rect width="1280" height="640" fill="url(#glow)"/>
+  <g transform="translate(552,96)">
+    <rect width="176" height="176" rx="44" fill="url(#lg)"/>
+    <rect x="1" y="1" width="174" height="174" rx="43" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="2"/>
+    <g fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><path d="M88 50v58"/><path d="M61 85l27 27 27-27"/><path d="M56 133h64"/></g>
   </g>
-
-  <text x="640" y="368" text-anchor="middle" font-family="Inter" font-size="68" font-weight="700" letter-spacing="-2.4" fill="#f5f6f8">RuTube Tools</text>
-  <text x="640" y="410" text-anchor="middle" font-family="Inter" font-size="21" font-weight="400" fill="#9d9ea7">Покадровая перемотка · PNG-кадры · скачивание в MP4</text>
-
-  <g font-family="JetBrains Mono" font-size="13" letter-spacing="0.6" text-anchor="middle" fill="#6e6f78">
-    <text x="640" y="482">FIREFOX 140+ &#183; CHROMIUM MV3 &#183; MIT</text>
+  <text x="640" y="362" text-anchor="middle" font-family="Inter" font-size="78" font-weight="700" letter-spacing="-3" fill="#f4f5f7">RuTube Tools</text>
+  <text x="640" y="418" text-anchor="middle" font-family="Inter" font-size="30" fill="#a2a3ad">MP4 и звук · плейлисты · покадровая перемотка</text>
+  <g transform="translate(-42,0)" font-family="Inter" font-size="20" font-weight="500" text-anchor="middle" fill="#e2e4e8">
+    <rect x="354" y="458" width="150" height="46" rx="23" fill="#fff" fill-opacity="0.06" stroke="#fff" stroke-opacity="0.12"/><text x="429" y="488">MP4</text>
+    <rect x="516" y="458" width="170" height="46" rx="23" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.5"/><text x="601" y="488" fill="#ffb3ad">Звук · M4A</text>
+    <rect x="698" y="458" width="150" height="46" rx="23" fill="#fff" fill-opacity="0.06" stroke="#fff" stroke-opacity="0.12"/><text x="773" y="488">Кадры PNG</text>
+    <rect x="860" y="458" width="150" height="46" rx="23" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.5"/><text x="935" y="488" fill="#ffb3ad">Докачка</text>
   </g>
-
-  <g stroke="#1e1e24" stroke-width="1">
-    <line x1="440" y1="520" x2="840" y2="520"/>
-  </g>
-  <g font-family="Inter" font-size="14" text-anchor="middle" fill="#8d8e97">
-    <text x="640" y="552">github.com/xxnetme/rutube-tools</text>
-  </g>
+  <text x="640" y="580" text-anchor="middle" font-family="JetBrains Mono" font-size="17" letter-spacing="1.5" fill="#6f7079">FIREFOX 140+ · CHROMIUM MV3 · MIT · github.com/xxnetme/rutube-tools</text>
 </svg>
