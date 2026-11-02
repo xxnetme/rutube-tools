@@ -143,6 +143,32 @@
     throw new Error('offscreen-not-responding');
   }
 
+  /* Chrome передаёт сообщения через JSON, поэтому Uint8Array теряется по дороге
+   * в offscreen. Обложку отправляем строкой base64 — она переживает и это. */
+  function toBase64(u8) {
+    var s = '';
+    for (var i = 0; i < u8.length; i += 0x8000) {
+      s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    }
+    var enc = globalThis.btoa;
+    if (typeof enc === 'function') return enc(s);
+    return Buffer.from(u8).toString('base64');
+  }
+
+  /** Обложка для тега M4A: тянем превью один раз, ошибку глотаем — теги важнее картинки. */
+  async function fetchCover(url) {
+    if (!url) return null;
+    try {
+      var r = await fetch(url, { credentials: 'omit' });
+      if (!r.ok) return null;
+      var buf = new Uint8Array(await r.arrayBuffer());
+      if (!buf.length || buf.length > 2 * 1024 * 1024) return null;
+      return toBase64(buf);
+    } catch (e) {
+      return null;
+    }
+  }
+
   async function downloadUrl(url, filename) {
     try {
       return { id: await api.downloads.download({ url: url, filename: filename, conflictAction: 'uniquify' }), name: filename };
@@ -198,7 +224,7 @@
       var runId = job.jobId + ':' + (job.partIndex || 0);
       var res = await sendExt({
         type: 'rt:offscreen-run',
-        cfg: { runId: runId, segments: segments, mode: mode, concurrency: 5, title: job.title }
+        cfg: { runId: runId, segments: segments, mode: mode, concurrency: 5, title: job.title, tags: job.tags }
       });
       if (!res || !res.ok) {
         var err = new Error((res && res.error) || 'build-failed');
@@ -213,6 +239,7 @@
       muxjs: globalThis.muxjs,
       audio: globalThis.RTAudio,
       title: job.title,
+      tags: job.tags,
       concurrency: 5,
       signal: job.controller.signal,
       onProgress: job.onProgress
@@ -314,6 +341,18 @@
       });
       if (opts.from != null || opts.to != null) {
         base += ' (' + RTLib.formatTime(realFrom).replace(/:/g, '-') + '-' + RTLib.formatTime(realTo).replace(/:/g, '-') + ')';
+      }
+
+      if (audioOnly) {
+        job.tags = {
+          title: info.title,
+          artist: info.author,
+          album: (queueInfo && queueInfo.playlist) || opts.playlistTitle || '',
+          track: queueInfo ? queueInfo.index : 0,
+          total: queueInfo ? queueInfo.total : 0,
+          date: new Date().toISOString().slice(0, 10),
+          cover: await fetchCover(info.thumbnail)
+        };
       }
 
       post({

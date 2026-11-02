@@ -43,12 +43,12 @@
       "applicationSubCategory": "Browser extension",
       "operatingSystem": "Windows, macOS, Linux",
       "browserRequirements": "Firefox 140+, Chrome / Edge / Яндекс.Браузер 109+",
-      "softwareVersion": "1.5.0",
+      "softwareVersion": "1.6.0",
       "installUrl": "https://addons.mozilla.org/ru/firefox/addon/rutube-tools/",
       "inLanguage": ["ru", "en"],
       "featureList": [
         "Скачивание видео RuTube в MP4 целиком или фрагментом",
-        "Только звук в M4A без перекодирования",
+        "Только звук в M4A без перекодирования, с обложкой и тегами подкаста",
         "Скачивание плейлистов с очередью и паузой",
         "Докачка после сбоя или перезапуска браузера",
         "Покадровая перемотка и кадры в PNG",
@@ -414,14 +414,14 @@ footer a{color:var(--muted)}
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.4</b> Только звук, докачка и экспорт глав <span aria-hidden="true">→</span></a>
+      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.6</b> Теги в M4A: обложка, альбом, номер серии <span aria-hidden="true">→</span></a>
       <h1>Всё для RuTube — <em>прямо в плеере</em></h1>
       <p class="lead">Скачивайте видео и плейлисты в MP4 или только звук в M4A, вырезайте фрагменты, листайте по кадрам, сохраняйте PNG и субтитры. Без рекламы, трекеров и сторонних программ.</p>
       <div class="cta">
         <a class="btn primary" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Firefox (.xpi)</a>
         <a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Chrome / Edge (.zip)</a>
       </div>
-      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.5.0</span></p>
+      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.6.0</span></p>
     </div>
 
     <div aria-hidden="true">
@@ -452,8 +452,8 @@ footer a{color:var(--muted)}
   <div class="stats reveal">
     <div class="stat"><b>0</b><span>трекеров и аналитики</span></div>
     <div class="stat"><b>100%</b><span>работает локально</span></div>
-    <div class="stat"><b>55</b><span>автотестов в CI</span></div>
-    <div class="stat"><b>≈92 КБ</b><span>весь пакет для Firefox</span></div>
+    <div class="stat"><b>71</b><span>автотестов в CI</span></div>
+    <div class="stat"><b>≈96 КБ</b><span>весь пакет для Firefox</span></div>
   </div>
 </div>
 
@@ -480,7 +480,7 @@ footer a{color:var(--muted)}
     <article class="card">
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
       <h3>Плейлисты</h3>
-      <p>Очередь с паузой, диапазоном серий и отчётом по каждому видео. В MP4 или в звук.</p>
+      <p>Очередь с паузой и диапазоном серий. В MP4 или в звук — с тегами: альбом, автор, номер серии и обложка.</p>
     </article>
     <article class="card hot">
       <span class="tag">новое</span>
@@ -579,7 +579,7 @@ footer a{color:var(--muted)}
 </div>
 
 <div class="wrap">
-  <p class="hint-scroll">Все кадры сняты на сборке 1.5.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
+  <p class="hint-scroll">Все кадры сняты на сборке 1.6.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
 
 <!-- ============ КЛАВИШИ ============ -->
 <section class="sec" id="keys">
@@ -714,7 +714,7 @@ footer a{color:var(--muted)}
 
 <footer>
   <div class="wrap">
-    <span>RuTube Tools v1.5.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
+    <span>RuTube Tools v1.6.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
     <span><a href="privacy.html">Приватность</a> · Не обходит DRM, скачивайте только то, на что у вас есть право.</span>
   </div>
 </footer>

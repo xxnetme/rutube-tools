@@ -434,7 +434,7 @@
       });
     }
 
-    if (mode === 'm4a') extractor = audioLib.createExtractor({ title: cfg.title });
+    if (mode === 'm4a') extractor = audioLib.createExtractor({ title: cfg.title, tags: cfg.tags });
 
     function emit() {
       onProgress({

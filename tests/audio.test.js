@@ -113,6 +113,42 @@ test('сегменты без звука (пустой push) не ломают �
   assert.equal(parseM4a(toBuf(ex.finish().chunks)).frames.length, 8);
 });
 
+test('теги: название, автор, альбом, дата, номер серии и обложка попадают в ilst', () => {
+  const frames = makeFrames(8);
+  const cover = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x11, 0x22, 0x33, 0xFF, 0xD9]);
+  const out = extract([buildTs([concat(frames)])], {
+    tags: { title: 'Серия 3', artist: 'Автор', album: 'Подкаст', track: 3, total: 12,
+            date: '2026-11-02', cover: new Uint8Array(cover) }
+  });
+  const buf = toBuf(out.chunks);
+  const latin = buf.toString('latin1');
+
+  for (const atom of ['\u00a9nam', '\u00a9ART', 'aART', '\u00a9alb', '\u00a9day', 'trkn', 'covr']) {
+    assert.ok(latin.includes(atom), 'нет атома ' + atom);
+  }
+  for (const value of ['Серия 3', 'Автор', 'Подкаст', '2026-11-02']) {
+    assert.ok(buf.includes(Buffer.from(value, 'utf8')), 'нет значения ' + value);
+  }
+
+  // trkn: 0,0,номер,всего — ровно шесть байт
+  const t = buf.indexOf(Buffer.from('trkn', 'latin1'));
+  assert.ok(t > 0);
+  const payload = buf.subarray(t + 4 + 8 + 8, t + 4 + 8 + 8 + 6);   // header(4)+data header(8+8)
+  assert.deepEqual([...payload], [0, 0, 0, 3, 0, 12]);
+
+  // covr: тип 13 — JPEG, байты обложки внутри
+  const c = buf.indexOf(Buffer.from('covr', 'latin1'));
+  assert.ok(c > 0);
+  assert.ok(buf.subarray(c).includes(cover), 'байты обложки в файле');
+});
+
+test('без тегов файл собирается как раньше: ни udta, ни мусора', () => {
+  const out = extract([buildTs([concat(makeFrames(4))])], {});
+  const latin = toBuf(out.chunks).toString('latin1');
+  assert.ok(!latin.includes('udta'));
+  assert.ok(parseM4a(toBuf(out.chunks)).frames.length === 4);
+});
+
 /* ------------------------------------------------ реальный ffmpeg (если есть) */
 
 const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0 && spawnSync('ffprobe', ['-version']).status === 0;
@@ -143,5 +179,51 @@ test('реальный HLS от ffmpeg: ffprobe видит AAC, файл дек�
     const dec = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-f', 'null', '-']);
     assert.equal(dec.status, 0);
     assert.equal(String(dec.stderr).trim(), '', 'ffmpeg ничего не ругает при декодировании');
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+test('теги видны ffprobe: автор, альбом, номер серии, обложка как картинка',
+  { skip: !hasFfmpeg && 'ffmpeg не установлен' }, () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-tags-'));
+    const gen = spawnSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=3',
+      '-c:a', 'aac', '-b:a', '64k', '-f', 'hls', '-hls_time', '1',
+      '-hls_segment_filename', path.join(dir, 's%d.ts'), path.join(dir, 'o.m3u8')]);
+    assert.equal(gen.status, 0, String(gen.stderr));
+    const coverFile = path.join(dir, 'cover.jpg');
+    const jpg = spawnSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=#f2413a:s=320x320:d=1',
+      '-frames:v', '1', coverFile]);
+    assert.equal(jpg.status, 0, String(jpg.stderr));
+
+    const segs = fs.readdirSync(dir).filter((f) => /^s\d+\.ts$/.test(f)).sort()
+      .map((f) => fs.readFileSync(path.join(dir, f)));
+    const out = extract(segs, {
+      tags: {
+        title: 'Серия 3 — Разбор', artist: 'xxnetme', album: 'Подкаст «Разбор»',
+        track: 3, total: 12, date: '2026-11-02',
+        cover: new Uint8Array(fs.readFileSync(coverFile))
+      }
+    });
+    const file = path.join(dir, 'tagged.m4a');
+    fs.writeFileSync(file, toBuf(out.chunks));
+
+    const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries',
+      'stream=codec_name,codec_type,width,height:format_tags=title,artist,album,album_artist,track,date',
+      '-of', 'json', file]);
+    const info = JSON.parse(probe.stdout);
+    const tags = info.format.tags;
+    assert.equal(tags.title, 'Серия 3 — Разбор');
+    assert.equal(tags.artist, 'xxnetme');
+    assert.equal(tags.album_artist, 'xxnetme');
+    assert.equal(tags.album, 'Подкаст «Разбор»');
+    assert.equal(tags.track, '3/12');
+    assert.equal(tags.date, '2026-11-02');
+
+    const pic = info.streams.find((st) => st.codec_type === 'video');
+    assert.ok(pic, 'обложка видна как отдельный поток');
+    assert.deepEqual([pic.codec_name, pic.width, pic.height], ['mjpeg', 320, 320]);
+
+    const dec = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-map', '0:a', '-f', 'null', '-']);
+    assert.equal(dec.status, 0);
+    assert.equal(String(dec.stderr).trim(), '', 'звук декодируется без ругани');
     fs.rmSync(dir, { recursive: true, force: true });
   });

@@ -163,15 +163,61 @@
     return fullBox('esds', 0, 0, [0x03, es.length], es);
   }
 
-  function metadata(title) {
-    if (!title) return [];
-    var data = fullBox('data', 0, 1, u32(0), utf8(title));
-    var nam = box('\xa9nam', data);                  // тип «©nam»: 0xA9 в Latin-1
-    var hdlr = fullBox('hdlr', 0, 0, u32(0), ascii('mdir'), ascii('appl'), u32(0), u32(0), [0]);
-    return box('udta', fullBox('meta', 0, 0, hdlr, box('ilst', nam)));
+  function dataAtom(type, payload) {
+    return fullBox('data', 0, type, u32(0), payload);   // null-локаль и тип значения
   }
 
-  function buildHead(cfg, sizes, title, totalBytes) {
+  function textAtom(name, value) {
+    return value ? box(name, dataAtom(1, utf8(String(value)))) : [];   // тип 1 — UTF-8
+  }
+
+  /** base64 → байты: обложка приходит из фона строкой, чтобы пережить sendMessage. */
+  function base64Bytes(str) {
+    var dec = global.atob;
+    if (typeof dec === 'function') {
+      var bin = dec(str), out = new Array(bin.length);
+      for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+    return Array.prototype.slice.call(Buffer.from(str, 'base64'));
+  }
+
+  /** Обложка: 13 — JPEG, 14 — PNG. Больше двух мегабайт в тег не кладём. */
+  function coverAtom(bytes) {
+    if (!bytes) return [];
+    if (typeof bytes === 'string') bytes = base64Bytes(bytes);
+    if (!bytes.length) return [];
+    var png = bytes[0] === 0x89 && bytes[1] === 0x50;
+    var arr = Array.prototype.slice.call(bytes);
+    return box('covr', dataAtom(png ? 14 : 13, arr));
+  }
+
+  /**
+   * Теги itunes-совместимого вида: название, автор, альбом, дата, номер серии
+   * из {track}/{total} и обложка. Именно так их читают VLC, mpv, foobar2000
+   * и подкаст-клиенты.
+   */
+  function metadata(tags) {
+    if (typeof tags === 'string') tags = { title: tags };   // старый вызов с одним названием
+    tags = tags || {};
+    var track = Number(tags.track) || 0;
+    var total = Number(tags.total) || 0;
+    var items = [].concat(
+      textAtom('\xa9nam', tags.title),                    // ©nam
+      textAtom('\xa9ART', tags.artist),                   // ©ART — исполнитель
+      textAtom('aART', tags.artist),                      // aART — исполнитель альбома
+      textAtom('\xa9alb', tags.album),                    // ©alb
+      textAtom('\xa9day', tags.date),                     // ©day
+      track ? box('trkn', dataAtom(0, [0, 0, (track >> 8) & 255, track & 255,
+                                        (total >> 8) & 255, total & 255])) : [],
+      coverAtom(tags.cover)
+    );
+    if (!items.length) return [];
+    var hdlr = fullBox('hdlr', 0, 0, u32(0), ascii('mdir'), ascii('appl'), u32(0), u32(0), [0]);
+    return box('udta', fullBox('meta', 0, 0, hdlr, box('ilst', items)));
+  }
+
+  function buildHead(cfg, sizes, tags, totalBytes) {
     var n = sizes.length;
     var duration = n * SAMPLES_PER_FRAME;
     var seconds = duration / cfg.sampleRate;
@@ -211,7 +257,7 @@
       u32(0), u32(0), u32(0), u32(0), u32(0), u32(0), u32(2));
     var ftyp = box('ftyp', ascii('M4A '), u32(0), ascii('M4A '), ascii('mp42'), ascii('isom'));
 
-    var moov = box('moov', mvhd, trak, metadata(title));
+    var moov = box('moov', mvhd, trak, metadata(tags));
     var mdatOffset = ftyp.length + moov.length + 8;
 
     // подставляем смещение первого чанка в stco: это последние 4 байта внутри stbl
@@ -276,7 +322,7 @@
             ? 'В потоке не нашлось AAC-кадров'
             : 'В потоке нет звуковой дорожки AAC');
         }
-        var built = buildHead(config, sizes, opts.title, bytes);
+        var built = buildHead(config, sizes, opts.tags || { title: opts.title }, bytes);
         var head = new Uint8Array(built.head.length + 8);
         head.set(built.head, 0);
         head.set(u32(bytes + 8), built.head.length);

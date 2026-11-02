@@ -103,6 +103,7 @@ function createServer(videos, opts) {
       return json({
         title: v.title,
         author: v.author ? { name: v.author } : undefined,
+        thumbnail_url: v.thumbnail ? 'https://cdn.test/' + m[1] + '/cover.jpg' : undefined,
         duration: v.durationSec * 1000,
         video_balancer: { default: 'https://cdn.test/' + m[1] + '/master.m3u8' }
       });
@@ -124,6 +125,13 @@ function createServer(videos, opts) {
     if (m) {
       const x = videos[m[2]].variants.find((q) => String(q.height) === m[3]);
       return body(segmentBuffer(x, Number(m[4])));
+    }
+    m = url.match(/^https:\/\/cdn\.test\/([0-9a-f]{32})\/cover\.jpg$/);
+    if (m && videos[m[1]].thumbnail) {
+      return { ok: true, status: 200, arrayBuffer: async () => {
+        const b = Buffer.from('\xff\xd8\xff\xe0test-jpeg\xff\xd9', 'latin1');
+        return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+      } };
     }
     m = url.match(/playlist\/custom\/(\w+)\/videos\/\?limit=(\d+)&offset=(\d+)/);
     if (m) {

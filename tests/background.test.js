@@ -257,3 +257,48 @@ test('субтитры не нужны для звука: M4A сохраняет
   await b.waitFor((m) => isDone(m) || isErr(m));
   assert.deepEqual(b.downloads.map((d) => d.filename), ['Тестовое видео.m4a']);
 });
+
+test('теги в M4A: серия подкаста получает альбом, номер и автора', async () => {
+  const mk = (id, t) => ({ title: t, author: 'Автор', durationSec: 8,
+    variants: [{ height: 144, bandwidth: 140000, codecs: AAC, mirrors: ['a.test'], segments: 2, aac: true }] });
+  const videos = { [ID1]: mk(ID1, 'Серия 1'), [ID2]: mk(ID2, 'Серия 2') };
+  createServer(videos, { playlists: { 555: { title: 'Подкаст', videos: [ID1, ID2] } } });
+  const b = createBrowser();
+  await b.call({ type: 'rt:start-playlist', playlistId: '555', audio: true, delayMs: 1 });
+  await b.waitFor((m) => m.phase === 'queue-done', 15000);
+
+  const texts = b.downloads.map(async (d) => Buffer.from(await resolveObjectURL(d.url).arrayBuffer()));
+  for (let i = 0; i < texts.length; i++) {
+    const buf = await texts[i];
+    assert.ok(buf.includes(Buffer.from('Подкаст', 'utf8')), 'альбом = название плейлиста');
+    assert.ok(buf.includes(Buffer.from('Автор', 'utf8')), 'исполнитель = автор видео');
+    const t = buf.indexOf(Buffer.from('trkn', 'latin1'));
+    assert.ok(t > 0, 'номер серии на месте');
+    assert.equal(buf[t + 4 + 8 + 8 + 3], i + 1, 'номер серии по порядку');
+    assert.equal(buf[t + 4 + 8 + 8 + 5], 2, 'всего серий');
+  }
+});
+
+test('теги в M4A: обложка тянется с CDN и попадает в covr', async () => {
+  createServer(oneVideo([{ height: 144, bandwidth: 140000, codecs: AAC, mirrors: ['a.test'], segments: 2, aac: true }],
+    { author: 'Автор', thumbnail: true }));
+  const b = createBrowser();
+  await b.call({ type: 'rt:start', videoId: ID1, audio: true });
+  await b.waitFor((m) => isDone(m) || isErr(m), 15000);
+  const buf = Buffer.from(await resolveObjectURL(b.downloads[0].url).arrayBuffer());
+  const c = buf.indexOf(Buffer.from('covr', 'latin1'));
+  assert.ok(c > 0, 'атом covr на месте');
+  assert.ok(buf.includes(Buffer.from('\xff\xd8\xff\xe0test-jpeg\xff\xd9', 'latin1')), 'байты обложки внутри');
+});
+
+test('обложка не пришла — файл всё равно с тегами', async () => {
+  createServer(oneVideo([{ height: 144, bandwidth: 140000, codecs: AAC, mirrors: ['a.test'], segments: 2, aac: true }],
+    { author: 'Автор' }));
+  const b = createBrowser();
+  await b.call({ type: 'rt:start', videoId: ID1, audio: true });
+  const done = await b.waitFor((m) => isDone(m) || isErr(m), 15000);
+  assert.equal(done.phase, 'done');
+  const buf = Buffer.from(await resolveObjectURL(b.downloads[0].url).arrayBuffer());
+  assert.equal(buf.indexOf(Buffer.from('covr', 'latin1')), -1, 'covr нет');
+  assert.ok(buf.includes(Buffer.from('Автор', 'utf8')), 'автор на месте');
+});

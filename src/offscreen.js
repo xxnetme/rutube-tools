@@ -25,6 +25,7 @@
         muxjs: globalThis.muxjs,
         audio: globalThis.RTAudio,
         title: cfg.title,
+        tags: cfg.tags,
         signal: ctrl.signal,
         onProgress: function (p) {
           post({
