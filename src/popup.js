@@ -184,6 +184,64 @@
   refreshPending();
   setInterval(refreshPending, 1500);
 
+  /* --------------------------------------------------------- история файлов */
+
+  function renderHistory(items) {
+    var wrap = el('historyWrap'), list = el('historyList');
+    wrap.hidden = !items.length;
+    while (list.firstChild) list.removeChild(list.firstChild);
+    items.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'pend';
+
+      var txt = document.createElement('div');
+      txt.className = 'txt';
+      var ttl = document.createElement('div');
+      ttl.className = 'ttl';
+      ttl.textContent = r.name || '—';
+      var st = document.createElement('div');
+      st.className = 'st';
+      st.textContent = I.t('pop.historyWhen', { t: when(r.at) });
+      txt.appendChild(ttl);
+      txt.appendChild(st);
+      row.appendChild(txt);
+
+      var go = document.createElement('button');
+      go.className = 'go';
+      go.textContent = I.t('pop.showFile');
+      go.addEventListener('click', function () {
+        go.disabled = true;
+        send({ type: 'rt:show-download', id: r.id }).then(function (res) {
+          go.disabled = false;
+          if (!res || !res.ok) st.textContent = I.t('pop.showFail');
+        });
+      });
+      row.appendChild(go);
+      list.appendChild(row);
+    });
+  }
+
+  /** «5 мин назад», «вчера», «02.11» — короче, чем полная дата. */
+  function when(ts) {
+    var diff = Math.max(0, Date.now() - (ts || 0));
+    if (diff < 60000) return I.t('pop.now');
+    if (diff < 3600000) return I.t('pop.minAgo', { n: Math.round(diff / 60000) });
+    if (diff < 86400000) return I.t('pop.hourAgo', { n: Math.round(diff / 3600000) });
+    var d = new Date(ts);
+    return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2);
+  }
+
+  function refreshHistory() {
+    return send({ type: 'rt:history-list' }).then(function (r) {
+      if (r && r.ok) renderHistory(r.items || []);
+    });
+  }
+  refreshHistory();
+
+  el('historyClear').addEventListener('click', function () {
+    send({ type: 'rt:history-clear' }).then(refreshHistory);
+  });
+
   try {
     el('ver').textContent = 'v' + api.runtime.getManifest().version;
   } catch (e) {}

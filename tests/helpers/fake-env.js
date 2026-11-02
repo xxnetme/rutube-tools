@@ -12,6 +12,7 @@ function createBrowser(store) {
   const downloads = [];
   const tabMsgs = [];
   const tabRemoved = [];
+  const downloadListeners = [];
   const api = {
     runtime: {
       getManifest: () => ({ version: 'test' }),
@@ -27,7 +28,7 @@ function createBrowser(store) {
     },
     downloads: {
       download: async (o) => { downloads.push(o); return downloads.length; },
-      onChanged: { addListener() {} },
+      onChanged: { addListener: (f) => downloadListeners.push(f) },
       show() {}
     },
     tabs: {
@@ -49,6 +50,8 @@ function createBrowser(store) {
       return new Promise((resolve) => listeners[0](msg, sender || { tab: { id: 7 } }, resolve));
     },
     closeTab(id) { tabRemoved.forEach((f) => f(id)); },
+    completeDownload(id) { downloadListeners.forEach((f) => f({ id, state: { current: 'complete' } })); },
+    completeDownloadWith(id) { this.completeDownload(id); },
     pending() { return (store.rtPending || []).slice(); },
     async waitFor(pred, ms) {
       const until = Date.now() + (ms || 8000);

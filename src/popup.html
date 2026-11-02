@@ -94,6 +94,9 @@
   .pend .ttl { color: #d6d8dd; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pend .st { color: var(--faint); font-size: 10.5px; line-height: 1.4; margin-top: 2px; }
   .pend button { margin-left: 0; padding: 4px 8px; font-size: 11px; }
+  .lnk { float: right; background: none; border: 0; padding: 0; color: var(--faint); font: inherit; font-size: 9.5px;
+         text-transform: uppercase; letter-spacing: .1em; cursor: pointer; }
+  .lnk:hover { color: var(--ink); }
   .pend button.go { color: var(--ink); border-color: var(--acc); }
   .foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
   .author { display: flex; align-items: center; gap: 9px; }
@@ -132,6 +135,14 @@
   <div id="pendingWrap" hidden>
     <div class="group-label" data-i18n="pop.pending"></div>
     <div class="group" id="pendingList"></div>
+  </div>
+
+  <div id="historyWrap" hidden>
+    <div class="group-label">
+      <span data-i18n="pop.history"></span>
+      <button id="historyClear" class="lnk" data-i18n="pop.historyClear"></button>
+    </div>
+    <div class="group" id="historyList"></div>
   </div>
 
   <div class="group-label" data-i18n="pop.secDownload"></div>

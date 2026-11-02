@@ -382,6 +382,25 @@
     };
   }
 
+  /**
+   * Страницы, которые нужно прочитать, чтобы показать место для серий
+   * [fromIndex, toIndex) — индексы с нуля, как их понимает фон.
+   * Возвращает [start, totalLength] для каждой страницы. Ограничено 500
+   * сериями, как и предохранитель в фоновой очереди.
+   */
+  function playlistPages(fromIndex, toIndex, pageSize) {
+    var size = Math.max(1, Number(pageSize) || 50);
+    var start = Math.max(0, Number(fromIndex) || 0);
+    var end = Number(toIndex);
+    if (!isFinite(end) || end <= start) end = start + 1;
+    if (end - start > 500) end = start + 500;
+    var pages = [];
+    for (var offset = Math.floor(start / size) * size; offset < end; offset += size) {
+      pages.push([offset, Math.min(size, end - offset)]);
+    }
+    return pages;
+  }
+
   /* --------------------------------------------------------------- parts */
 
   function planParts(durations, bandwidth, maxPartBytes) {
@@ -683,6 +702,7 @@
     getVideoMeta: getVideoMeta,
     getPlaylistInfo: getPlaylistInfo,
     getPlaylistVideos: getPlaylistVideos,
+    playlistPages: playlistPages,
     getSegments: getSegments,
     getSegmentsWithMirrors: getSegmentsWithMirrors,
     pickVariant: pickVariant,

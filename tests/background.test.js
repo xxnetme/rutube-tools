@@ -302,3 +302,68 @@ test('обложка не пришла — файл всё равно с тег�
   assert.equal(buf.indexOf(Buffer.from('covr', 'latin1')), -1, 'covr нет');
   assert.ok(buf.includes(Buffer.from('Автор', 'utf8')), 'автор на месте');
 });
+
+test('выбор галочками: качаются только выбранные серии, по порядку', async () => {
+  const srv = playlistSetup();
+  const b = createBrowser();
+  await b.call({ type: 'rt:start-playlist', playlistId: '555', audio: true, delayMs: 1, indices: [2, 0] });
+  const done = await b.waitFor((m) => m.phase === 'queue-done', 15000);
+  assert.deepEqual(done.failed, []);
+  assert.deepEqual(b.downloads.map((d) => d.filename), ['Серия 1.m4a', 'Серия 3.m4a'], 'сортировка по порядку, без серии 2');
+  assert.equal(srv.segmentFetches(ID2, 144).length, 0, 'вторую серию не трогали');
+});
+
+test('выбор галочками: номер серии в тегах идёт по счёту загрузки, а не по индексу', async () => {
+  playlistSetup();
+  const b = createBrowser();
+  await b.call({ type: 'rt:start-playlist', playlistId: '555', audio: true, delayMs: 1, indices: [2] });
+  const done = await b.waitFor((m) => m.phase === 'queue-done', 15000);
+  assert.equal(done.files.length, 1);
+  const buf = Buffer.from(await resolveObjectURL(b.downloads[0].url).arrayBuffer());
+  const t = buf.indexOf(Buffer.from('trkn', 'latin1'));
+  assert.equal(buf[t + 20 + 3], 1, 'единственная выбранная серия — первая в очереди');
+  assert.equal(buf[t + 20 + 5], 1, 'всего серий в этой загрузке — одна');
+});
+
+test('пустой выбор: ничего не качается, ошибки нет', async () => {
+  playlistSetup();
+  const b = createBrowser();
+  await b.call({ type: 'rt:start-playlist', playlistId: '555', audio: true, delayMs: 1, indices: [] });
+  await b.waitFor((m) => m.phase === 'queue-done', 15000);
+  assert.deepEqual(b.downloads, []);
+});
+
+test('история: завершённая загрузка попадает в rtHistory с именем файла', async () => {
+  createServer(oneVideo([{ height: 720, bandwidth: 80e6, codecs: HEVC, mirrors: ['a.test'], segments: 2 }]));
+  const b = createBrowser();
+  await b.call({ type: 'rt:start', videoId: ID1, height: 720 });
+  await b.waitFor((m) => isDone(m) || isErr(m));
+
+  // браузер сообщает о завершении загрузки
+  b.completeDownload(1);
+  await b.idle(() => (b.store.rtHistory || []).length === 1);
+
+  const items = (await b.call({ type: 'rt:history-list' })).items;
+  assert.equal(items.length, 1);
+  assert.equal(items[0].name, 'Тестовое видео.ts');
+  assert.ok(items[0].at > 0);
+
+  await b.call({ type: 'rt:history-clear' }, {});
+  assert.deepEqual((await b.call({ type: 'rt:history-list' })).items, []);
+});
+
+test('история: новый файл встаёт сверху, а самая старая запись вытесняется', async () => {
+  createServer(oneVideo([{ height: 720, bandwidth: 80e6, codecs: HEVC, mirrors: ['a.test'], segments: 2 }]));
+  const old = Array.from({ length: 30 }, (_, i) => ({ id: 100 + i, name: 'Старый ' + i + '.ts', at: 1000 + i }));
+  const b = createBrowser({ rtHistory: old });
+
+  await b.call({ type: 'rt:start', videoId: ID1, height: 720 });
+  await b.waitFor((m) => isDone(m) || isErr(m));
+  b.completeDownload(1);
+  await b.idle(() => (b.store.rtHistory || [])[0].id === 1);
+
+  const hist = b.store.rtHistory;
+  assert.equal(hist.length, 30, 'больше 30 записей не копим');
+  assert.equal(hist[0].name, 'Тестовое видео.ts');
+  assert.equal(hist.filter((r) => r.id === 129).length, 0, 'самая старая вытеснена');
+});

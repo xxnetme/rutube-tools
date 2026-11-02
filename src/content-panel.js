@@ -18,6 +18,30 @@
     body().innerHTML = html;
   }
 
+  /* Какие серии плейлиста качать. null — все; иначе список номеров с нуля,
+   * как их понимает фон. */
+  function plSelected() {
+    return state.plPick;
+  }
+
+  /* null — «все», но первая же снятая галочка материализует список:
+   * иначе снять одну серию из «всех» было бы нечем. */
+  function plToggle(i, on) {
+    var set;
+    if (state.plPick) {
+      set = state.plPick.slice();
+    } else {
+      var total = (state.playlist && state.playlist.videosCount) || 0;
+      set = [];
+      for (var k = 0; k < Math.min(total, 500); k++) set.push(k);
+    }
+    var at = set.indexOf(i);
+    if (on && at === -1) set.push(i);
+    if (!on && at !== -1) set.splice(at, 1);
+    set.sort(function (a, b) { return a - b; });
+    state.plPick = set;
+  }
+
   /* Формат вкладки «Скачать»: пока пользователь не переключил его руками,
    * берём значение из настроек — «видео» или «только звук». */
   function currentFormat() {
@@ -305,44 +329,67 @@
     if (!state.playlist) { loadPlaylist(); return setHTML(spinner(t('pl.loading'))); }
 
     var pl = state.playlist;
+    var audio = currentFormat() === 'audio';
+    var pick = plSelected();
+    var chosen = pick || null;
+    var count = chosen ? chosen.length : pl.videosCount;
+
     // грубая оценка объёма: типичный битрейт RuTube для выбранного качества
     var BITRATE = { '144': 140000, '240': 220000, '360': 380000, '480': 500000, '720': 720000, '1080': 1500000 };
     var chosenQ = state.plChoice || RT.settings.quality;
-    var plAudio = currentFormat() === 'audio';
     // для звука качается самый лёгкий поток (144p), а не выбранное качество
-    var kbps = plAudio ? BITRATE['144'] : (BITRATE[chosenQ] || BITRATE['720']);
-    var fromIdx = state.pFrom ? Math.max(1, Number(state.pFrom)) : 1;
-    var toIdx = state.pTo ? Math.min(Number(state.pTo), pl.videosCount) : Math.min(pl.videosCount, fromIdx + (pl.videos.length || 50) - 1);
-    var estimate = 0;
-    if (toIdx >= fromIdx) {
-      var known = pl.videos.slice(fromIdx - 1, toIdx);
-      var secs = known.reduce(function (sum, v) { return sum + (v.durationSec || 0); }, 0);
-      var avg = known.length ? secs / known.length : 900;
-      estimate = (avg * (toIdx - fromIdx + 1)) * kbps / 8;
-    }
+    var kbps = audio ? BITRATE['144'] : (BITRATE[chosenQ] || BITRATE['720']);
+    var known = pl.videos || [];
+    var knownSecs = known.reduce(function (sum, v) { return sum + (v.durationSec || 0); }, 0);
+    var avg = known.length ? knownSecs / known.length : 900;
+    var estimate = count * avg * kbps / 8;
+
     var qualityOptions = ['best', '1080', '720', '480', '360', 'worst'].map(function (q) {
       var label = q === 'best' ? t('opt.best') : (q === 'worst' ? t('opt.worst') : q + 'p');
       return '<option value="' + q + '"' + ((state.plChoice || RT.settings.quality) === q ? ' selected' : '') + '>' + label + '</option>';
     }).join('');
+
+    /* Список серий: названия есть только для загруженной страницы, остальные
+     * показываем номерами — галочка всё равно работает, фон читает нужную
+     * страницу сам. Длинный плейлист прокручивается внутри блока. */
+    var rows = [];
+    var byIndex = state.plMeta || {};
+    for (var i = 0; i < pl.videosCount; i++) {
+      var meta = byIndex[i] || known[i];
+      var on = pick ? pick.indexOf(i) !== -1 : true;
+      var label = meta && meta.title ? meta.title : t('pl.item', { i: i + 1, n: pl.videosCount });
+      var dur = meta && meta.durationSec ? L.formatTime(meta.durationSec) : '';
+      rows.push(
+        '<label class="pl-row">' +
+          '<input type="checkbox" data-pl="' + i + '"' + (on ? ' checked' : '') + '>' +
+          '<span class="pl-n">' + (i + 1) + '</span>' +
+          '<span class="pl-t">' + esc(label) + '</span>' +
+          (dur ? '<span class="pl-d">' + esc(dur) + '</span>' : '') +
+        '</label>'
+      );
+    }
 
     setHTML(
       '<div class="title">' + esc(pl.title) + '</div>' +
       '<div class="muted" style="margin-bottom:10px">' + esc(t('pl.count', { n: pl.videosCount })) + '</div>' +
       '<div class="field"><span class="lb">' + esc(t('dl.format')) + '</span>' +
         '<span class="in"><select data-sel="fmt">' +
-          '<option value="video"' + (plAudio ? '' : ' selected') + '>' + esc(t('dl.fmtVideo')) + '</option>' +
-          '<option value="audio"' + (plAudio ? ' selected' : '') + '>' + esc(t('dl.fmtAudio')) + '</option>' +
+          '<option value="video"' + (audio ? '' : ' selected') + '>' + esc(t('dl.fmtVideo')) + '</option>' +
+          '<option value="audio"' + (audio ? ' selected' : '') + '>' + esc(t('dl.fmtAudio')) + '</option>' +
         '</select></span></div>' +
       '<div class="field"><span class="lb">' + esc(t('info.qualities')) + '</span>' +
-        '<span class="in"><select data-sel="q"' + (plAudio ? ' disabled' : '') + '>' + qualityOptions + '</select></span></div>' +
-      '<div class="field"><span class="lb">' + esc(t('pl.range')) + '</span>' +
-        '<span class="in"><input type="number" min="1" max="' + pl.videosCount + '" data-in="pfrom" placeholder="1" value="' + esc(state.pFrom || '') + '"></span>' +
-        '<span class="in"><input type="number" min="1" max="' + pl.videosCount + '" data-in="pto" placeholder="' + pl.videosCount + '" value="' + esc(state.pTo || '') + '"></span></div>' +
+        '<span class="in"><select data-sel="q"' + (audio ? ' disabled' : '') + '>' + qualityOptions + '</select></span></div>' +
+      '<div class="pl-head">' +
+        '<span>' + esc(t('pl.selected', { n: count, total: pl.videosCount })) + '</span>' +
+        '<button class="btn ghost small" data-act="pl-all">' + esc(t('pl.all')) + '</button>' +
+        '<button class="btn ghost small" data-act="pl-none">' + esc(t('pl.none')) + '</button>' +
+      '</div>' +
+      '<div class="pl-list">' + rows.join('') + '</div>' +
       '<div class="row" style="margin-top:10px">' +
-        '<button class="btn" data-act="go-pl">' + esc(t('pl.start')) + '</button>' +
+        '<button class="btn" data-act="go-pl"' + (count ? '' : ' disabled') + '>' + esc(t('pl.start')) + '</button>' +
       '</div>' +
       '<div class="hint">' + esc(t('pl.delay', { s: 1 })) +
-        (estimate ? ' · ' + esc(t('info.size')) + ': ~' + esc(L.formatBytes(estimate)) : '') + '</div>'
+        (count ? ' · ' + esc(t('info.size')) + ': ~' + esc(L.formatBytes(estimate)) : '') + '</div>'
     );
 
     var sel = $('[data-sel="q"]');
@@ -351,11 +398,32 @@
     var fmt = $('[data-sel="fmt"]');
     if (fmt) fmt.addEventListener('change', function () { state.format = fmt.value; render(); });
 
-    $$('[data-in]').forEach(function (inp) {
-      inp.addEventListener('input', function () {
-        if (inp.getAttribute('data-in') === 'pfrom') state.pFrom = inp.value;
-        else state.pTo = inp.value;
+    var list = $('.pl-list');
+    if (list) list.addEventListener('scroll', function () {
+      var bottom = list.scrollTop + list.clientHeight;
+      if (bottom < list.scrollHeight - 90) return;
+      if (state.plMetaLoading) return;
+      loadMissingMeta();
+    });
+
+    $$('[data-pl]').forEach(function (box) {
+      box.addEventListener('change', function () {
+        plToggle(Number(box.getAttribute('data-pl')), box.checked);
+        render();
+        return;
       });
+    });
+
+    var all = $('[data-act="pl-all"]');
+    if (all) all.addEventListener('click', function () {
+      state.plPick = null;
+      render();
+    });
+
+    var none = $('[data-act="pl-none"]');
+    if (none) none.addEventListener('click', function () {
+      state.plPick = [];
+      render();
     });
 
     var go = $('[data-act="go-pl"]');
@@ -679,19 +747,23 @@
   function startPlaylist() {
     var plId = RT.getPlaylistId();
     if (!plId || !state.playlist) return;
+    if (state.plPick && !state.plPick.length) return;
     state.lastRequest = { playlistId: plId, height: state.plChoice || RT.settings.quality };
     state.result = null;
     state.job = { id: null, kind: 'playlist', startedAt: Date.now(), phase: 'queue-load' };
     RT.startKeepalive();
     render();
 
+    var pick = state.plPick;
+    var full = !pick;                       // null — весь плейлист
     RT.sendMessage({
       type: 'rt:start-playlist',
       playlistId: plId,
       audio: currentFormat() === 'audio',
       height: state.plChoice || RT.settings.quality,
-      fromIndex: state.pFrom ? Math.max(0, Number(state.pFrom) - 1) : 0,
-      toIndex: state.pTo ? Number(state.pTo) : null,
+      fromIndex: full ? 0 : pick[0],
+      toIndex: full ? null : pick[pick.length - 1] + 1,
+      indices: full ? null : pick,
       maxPartMB: RT.settings.maxPartMB,
       nameTemplate: RT.settings.nameTemplate || ''
     }).then(function (r) {
@@ -704,6 +776,44 @@
       }
       if (state.job) state.job.id = r.jobId;
     });
+  }
+
+  /* Названия серий за пределами загруженной страницы: грузим по одной
+   * странице, когда список долистали, и перерисовываем строки. */
+  function loadMissingMeta() {
+    var pl = state.playlist;
+    if (!pl || !pl.videosCount) return;
+    var byIndex = state.plMeta || (state.plMeta = {});
+    var missing = [];
+    for (var i = 0; i < pl.videosCount; i++) if (!byIndex[i] && !(pl.videos && pl.videos[i])) missing.push(i);
+    if (!missing.length) return;
+
+    var offset = Math.floor(missing[0] / (pl.pageSize || 50)) * (pl.pageSize || 50);
+    state.plMetaLoading = true;
+    RT.sendMessage({ type: 'rt:playlist-videos', playlistId: pl.id, offset: offset, limit: pl.pageSize || 50 })
+      .then(function (r) {
+        state.plMetaLoading = false;
+        if (!r || !r.ok) return;
+        // обновляем строки на месте: полная перерисовка сбросила бы прокрутку
+        (r.videos || []).forEach(function (v, k) {
+          var idx = offset + k;
+          byIndex[idx] = v;
+          var box = body().querySelector('[data-pl="' + idx + '"]');
+          var row = box && box.parentNode;
+          if (!row) return;
+          var t = row.querySelector('.pl-t');
+          if (t && v.title) t.textContent = v.title;
+          var d = row.querySelector('.pl-d');
+          if (d && v.durationSec != null) {
+            if (!d) {
+              d = document.createElement('span');
+              d.className = 'pl-d';
+              row.appendChild(d);
+            }
+            d.textContent = L.formatTime(v.durationSec);
+          }
+        });
+      });
   }
 
   function cancelJob() {

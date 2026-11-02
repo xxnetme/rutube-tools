@@ -144,6 +144,49 @@ test('вкладка «Ещё»: главы сохраняются в .txt и .f
   p.close();
 });
 
+test('плейлист: галочки серий — «Ни одной» блокирует старт, «Все» шлёт полный диапазон', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/plst/9/');
+  await p.until(() => p.body().querySelector('[data-pl]'));
+
+  const boxes = () => p.body().querySelectorAll('[data-pl]');
+  assert.equal(boxes().length, 3, 'по галочке на каждую серию');
+  assert.ok([...boxes()].every((b) => b.checked), 'по умолчанию выбрано всё');
+  assert.match(p.body().querySelector('.pl-head').textContent, /Выбрано 3 из 3/);
+
+  p.body().querySelector('[data-act="pl-none"]').click();
+  assert.match(p.body().querySelector('.pl-head').textContent, /Выбрано 0 из 3/);
+  assert.equal(p.body().querySelector('[data-act="go-pl"]').disabled, true, 'пустой выбор не запускается');
+
+  p.body().querySelector('[data-act="pl-all"]').click();
+  assert.match(p.body().querySelector('.pl-head').textContent, /Выбрано 3 из 3/);
+  p.body().querySelector('[data-act="go-pl"]').click();
+  await p.until(() => p.sent.some((m) => m.type === 'rt:start-playlist'));
+  const m = p.sent.find((x) => x.type === 'rt:start-playlist');
+  assert.equal(m.indices, null, 'весь плейлист — без списка');
+  assert.deepEqual([m.fromIndex, m.toIndex], [0, null]);
+  p.close();
+});
+
+test('плейлист: снятая галочка уходит в indices списком номеров', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/plst/9/');
+  await p.until(() => p.body().querySelector('[data-pl]'));
+
+  const second = p.body().querySelectorAll('[data-pl]')[1];
+  second.checked = false;
+  second.dispatchEvent(new p.w.Event('change'));
+
+  const state = [...p.body().querySelectorAll('[data-pl]')].map((b) => b.checked);
+  assert.deepEqual(state, [true, false, true], 'панель перерисовалась с новым выбором');
+  assert.match(p.body().querySelector('.pl-head').textContent, /Выбрано 2 из 3/);
+
+  p.body().querySelector('[data-act="go-pl"]').click();
+  await p.until(() => p.sent.some((m) => m.type === 'rt:start-playlist'));
+  const m = p.sent.find((x) => x.type === 'rt:start-playlist');
+  assert.deepEqual(Array.from(m.indices), [0, 2]);   // массив из другого realm
+  assert.deepEqual([m.fromIndex, m.toIndex], [0, 3], 'диапазон покрывает выбор');
+  p.close();
+});
+
 test('плейлист: выбор формата отключает качество и уходит в rt:start-playlist', { skip }, async () => {
   const p = await openPanel('https://rutube.ru/plst/9/');
   await p.until(() => p.body().querySelector('[data-sel="fmt"]'));

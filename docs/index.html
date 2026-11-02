@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>RuTube Tools — скачать видео и звук с RuTube, кадры, субтитры, плейлисты</title>
-<meta name="description" content="Бесплатное расширение для Firefox, Chrome и Edge: скачивание видео и плейлистов RuTube в MP4, только звук в M4A, докачка, покадровая перемотка, кадры в PNG, субтитры SRT. Без рекламы и трекеров.">
+<meta name="description" content="Бесплатное расширение для Firefox, Chrome и Edge: скачивание видео и плейлистов RuTube в MP4, только звук в M4A с тегами, выбор серий галочками, докачка и история файлов, покадровая перемотка, кадры в PNG, субтитры SRT. Без рекламы и трекеров.">
 <link rel="canonical" href="https://xxnetme.github.io/rutube-tools/">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="author" content="xxnetme">
@@ -20,14 +20,14 @@
 <meta property="og:locale" content="ru_RU">
 <meta property="og:url" content="https://xxnetme.github.io/rutube-tools/">
 <meta property="og:title" content="RuTube Tools — видео, звук, кадры и плейлисты для RuTube">
-<meta property="og:description" content="Расширение для Firefox и Chromium: MP4 и M4A, плейлисты, докачка, покадровая перемотка, PNG, SRT. Без рекламы и трекеров.">
+<meta property="og:description" content="Расширение для Firefox и Chromium: MP4 и M4A с тегами, плейлисты галочками, докачка и история файлов, кадры в PNG, SRT. Без рекламы и трекеров.">
 <meta property="og:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="RuTube Tools — расширение для RuTube">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="RuTube Tools — расширение для RuTube">
-<meta name="twitter:description" content="MP4 и звук, плейлисты, докачка, кадры в PNG, субтитры. Без рекламы и трекеров.">
+<meta name="twitter:description" content="MP4 и звук с тегами, плейлисты галочками, докачка и история файлов, кадры в PNG, субтитры. Без рекламы и трекеров.">
 <meta name="twitter:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
 
 <script type="application/ld+json">
@@ -43,17 +43,18 @@
       "applicationSubCategory": "Browser extension",
       "operatingSystem": "Windows, macOS, Linux",
       "browserRequirements": "Firefox 140+, Chrome / Edge / Яндекс.Браузер 109+",
-      "softwareVersion": "1.6.0",
+      "softwareVersion": "1.7.0",
       "installUrl": "https://addons.mozilla.org/ru/firefox/addon/rutube-tools/",
       "inLanguage": ["ru", "en"],
       "featureList": [
         "Скачивание видео RuTube в MP4 целиком или фрагментом",
         "Только звук в M4A без перекодирования, с обложкой и тегами подкаста",
-        "Скачивание плейлистов с очередью и паузой",
+        "Плейлисты: выбор серий галочками, очередь и пауза",
         "Докачка после сбоя или перезапуска браузера",
         "Покадровая перемотка и кадры в PNG",
         "Субтитры SRT одной галочкой, обложка JPG, главы в .txt и .ffmeta",
-        "Шаблон имени файла и подпапки для плейлистов"
+        "Шаблон имени файла и подпапки для плейлистов",
+        "История сохранённых файлов с кнопкой «Показать файл»"
       ],
       "license": "https://github.com/xxnetme/rutube-tools/blob/main/LICENSE",
       "url": "https://xxnetme.github.io/rutube-tools/",
@@ -88,12 +89,17 @@
         {
           "@type": "Question",
           "name": "Как скачать весь плейлист RuTube?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Откройте страницу плейлиста /plst/…, кнопка станет PL. Выберите формат, качество и диапазон серий, затем «Скачать плейлист». Видео загружаются по очереди с паузой." }
+          "acceptedAnswer": { "@type": "Answer", "text": "Откройте страницу плейлиста /plst/…, кнопка станет PL. Отметьте галочками нужные серии — в списке видны названия и длительность, рядом счётчик «Выбрано 10 из 12». Затем «Скачать плейлист»: видео загружаются по очереди с паузой." }
         },
         {
           "@type": "Question",
           "name": "Как сохранить кадр в PNG?",
           "acceptedAnswer": { "@type": "Answer", "text": "Нажмите S — кадр текущего момента сохранится картинкой с таймкодом в имени файла. Для серии кадров откройте вкладку «Кадры» и задайте интервал раскадровки." }
+        },
+        {
+          "@type": "Question",
+          "name": "Где найти сохранённый файл?",
+          "acceptedAnswer": { "@type": "Answer", "text": "В папке «Загрузки». В окне расширения есть блок «Сохранённые файлы» — последние 30 загрузок с кнопкой «Показать файл», которая открывает папку в проводнике. В Firefox это работает всегда; в Chrome и Edge браузер может запретить открытие папки без флага запуска, тогда расширение так и сообщает." }
         },
         {
           "@type": "Question",
@@ -324,16 +330,18 @@ h2{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.03em;font-w
 #t-ff:focus-visible~.tabbar label[for=t-ff],#t-cr:focus-visible~.tabbar label[for=t-cr]{outline:2px solid var(--acc);outline-offset:3px}
 .tab-panel{display:none}
 #t-ff:checked~.p-ff,#t-cr:checked~.p-cr{display:grid}
-.install{grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media(max-width:860px){.install{grid-template-columns:1fr}}
-.istep{display:flex;gap:16px;padding:18px 0;border-top:1px solid var(--line)}
+.install{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+@media(max-width:860px){.install{grid-template-columns:minmax(0,1fr)}}
+.install>.card{min-width:0}
+.istep{display:flex;gap:16px;padding:18px 0;border-top:1px solid var(--line);min-width:0}
 .istep:first-child{border-top:0;padding-top:0}
 .istep:last-child{padding-bottom:0}
 .num{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--acc-soft);border:1px solid var(--acc-line);color:var(--acc-2);font-weight:800;font-size:14px}
 .istep b{display:block;font-weight:650;margin-bottom:3px}
 .istep p{color:var(--muted);font-size:15px}
+.istep a{overflow-wrap:anywhere}
 .copy{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-.copy code{font-size:13.5px;padding:6px 12px}
+.copy code{font-size:13.5px;padding:6px 12px;overflow-wrap:anywhere}
 .copy button{font:600 12.5px var(--font);color:var(--text);background:var(--surface-2);border:1px solid var(--line-2);border-radius:8px;padding:6px 12px;cursor:pointer;transition:background .2s}
 .copy button:hover{background:var(--surface)}
 .notice{margin-top:18px;display:flex;gap:14px;padding:18px 22px;border-radius:var(--r);background:var(--acc-soft);border:1px solid var(--acc-line);color:var(--muted);font-size:15px}
@@ -414,14 +422,14 @@ footer a{color:var(--muted)}
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.6</b> Теги в M4A: обложка, альбом, номер серии <span aria-hidden="true">→</span></a>
+      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.7</b> Выбор серий галочками и история загрузок <span aria-hidden="true">→</span></a>
       <h1>Всё для RuTube — <em>прямо в плеере</em></h1>
       <p class="lead">Скачивайте видео и плейлисты в MP4 или только звук в M4A, вырезайте фрагменты, листайте по кадрам, сохраняйте PNG и субтитры. Без рекламы, трекеров и сторонних программ.</p>
       <div class="cta">
         <a class="btn primary" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Firefox (.xpi)</a>
         <a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Chrome / Edge (.zip)</a>
       </div>
-      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.6.0</span></p>
+      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.7.0</span></p>
     </div>
 
     <div aria-hidden="true">
@@ -452,8 +460,8 @@ footer a{color:var(--muted)}
   <div class="stats reveal">
     <div class="stat"><b>0</b><span>трекеров и аналитики</span></div>
     <div class="stat"><b>100%</b><span>работает локально</span></div>
-    <div class="stat"><b>71</b><span>автотестов в CI</span></div>
-    <div class="stat"><b>≈96 КБ</b><span>весь пакет для Firefox</span></div>
+    <div class="stat"><b>78</b><span>автотестов в CI</span></div>
+    <div class="stat"><b>≈100 КБ</b><span>весь пакет для Firefox</span></div>
   </div>
 </div>
 
@@ -471,22 +479,22 @@ footer a{color:var(--muted)}
       <h3>MP4 целиком и фрагментом</h3>
       <p>От 1080p до 144p. «С 12:30 по 12:45» — кнопка со временем берёт позицию прямо из плеера. Фрагменты качаются параллельно и склеиваются в обычный MP4 в браузере.</p>
     </article>
-    <article class="card hot w2">
-      <span class="tag">новое</span>
+    <article class="card w2">
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></div>
       <h3>Только звук · M4A</h3>
       <p>Подкасты и лекции без лишнего трафика: берётся самый лёгкий поток, AAC достаётся без перекодирования, название попадает в тег файла.</p>
     </article>
-    <article class="card">
+    <article class="card hot">
+      <span class="tag">новое</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
       <h3>Плейлисты</h3>
-      <p>Очередь с паузой и диапазоном серий. В MP4 или в звук — с тегами: альбом, автор, номер серии и обложка.</p>
+      <p>Серии галочками: названия, длительность, «Все» и «Ни одной», счётчик выбора.</p>
     </article>
     <article class="card hot">
       <span class="tag">новое</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
-      <h3>Докачка</h3>
-      <p>Оборвалось или закрыли браузер — продолжите с нужной части, готовое не качается заново. Имя файла задаётся шаблоном: <code>{author} — {title} [{quality}]</code>.</p>
+      <h3>Докачка и история</h3>
+      <p>Продолжение с нужной части. В окне — история файлов с кнопкой «Показать файл».</p>
     </article>
     <article class="card">
       <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg></div>
@@ -521,7 +529,7 @@ footer a{color:var(--muted)}
       <ul class="ticks">
         <li><span><b>Минимум трафика.</b> Звук у всех качеств одинаковый, поэтому качается поток 144p, а не 1080p.</span></li>
         <li><span><b>Без перекодирования.</b> AAC извлекается из потока как есть и собирается в M4A: качество не страдает, процессор не греется.</span></li>
-        <li><span><b>Плейлист — в подкаст.</b> Весь плейлист сохраняется набором <code>.m4a</code> с названиями серий в тегах.</span></li>
+        <li><span><b>Плейлист — в подкаст.</b> Выбранные серии сохраняются набором <code>.m4a</code> с названиями в тегах и общим альбомом.</span></li>
       </ul>
     </div>
     <div class="card compare reveal">
@@ -571,7 +579,7 @@ footer a{color:var(--muted)}
 <div class="gallery" tabindex="0" aria-label="Скриншоты интерфейса: прокрутите вбок">
             <figure class="shot"><img src="screenshots/02-download.png" alt="Вкладка «Скачать»: переключатель «Видео MP4 / Только звук», качества от 1080p до 144p с размерами" width="1280" height="800" loading="lazy"><figcaption>Скачать — видео или только звук, качества и размеры</figcaption></figure>
     <figure class="shot"><img src="screenshots/03-frames.png" alt="Вкладка «Кадры»: сохранение PNG, переход по номеру кадра, петля A/B, раскадровка" width="1280" height="800" loading="lazy"><figcaption>Кадры — PNG, переход по номеру, петля A/B, раскадровка</figcaption></figure>
-    <figure class="shot"><img src="screenshots/08-playlist.png" alt="Вкладка плейлиста: формат, качество, диапазон серий" width="1280" height="800" loading="lazy"><figcaption>Плейлист — формат, качество, серии</figcaption></figure>
+    <figure class="shot"><img src="screenshots/08-playlist.png" alt="Вкладка плейлиста: список серий с галочками, названиями и длительностью, счётчик «Выбрано 10 из 12»" width="1280" height="800" loading="lazy"><figcaption>Плейлист — галочки, названия, счётчик</figcaption></figure>
     <figure class="shot"><img src="screenshots/04-more.png" alt="Вкладка «Ещё»: субтитры SRT, обложка, главы, ссылка m3u8, мини-плеер" width="1280" height="800" loading="lazy"><figcaption>Ещё — субтитры, обложка, главы, ссылка m3u8</figcaption></figure>
     <figure class="shot"><img src="screenshots/06-progress.png" alt="Загрузка в процессе: 43%, 108 из 252 фрагментов, 79 МБ и скорость" width="1280" height="800" loading="lazy"><figcaption>Прогресс — сегменты, мегабайты, скорость</figcaption></figure>
     <figure class="shot"><img src="screenshots/09-popup.png" alt="Окно расширения: незавершённые загрузки и настройки" width="1280" height="800" loading="lazy"><figcaption>Окно расширения — докачка и настройки</figcaption></figure>
@@ -579,7 +587,7 @@ footer a{color:var(--muted)}
 </div>
 
 <div class="wrap">
-  <p class="hint-scroll">Все кадры сняты на сборке 1.6.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
+  <p class="hint-scroll">Все кадры сняты на сборке 1.7.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
 
 <!-- ============ КЛАВИШИ ============ -->
 <section class="sec" id="keys">
@@ -668,10 +676,12 @@ footer a{color:var(--muted)}
       <p>Во вкладке «Скачать» переключите формат на «Только звук». Расширение возьмёт самый лёгкий поток (обычно 144p), вытащит из него AAC и сохранит <code>.m4a</code> без перекодирования. Так же работают фрагмент и плейлист — удобно для подкастов и лекций.</p></details>
     <details><summary>Загрузка оборвалась. Можно ли продолжить?</summary>
       <p>Да. Откройте окно расширения (иконка в панели браузера): в блоке «Незавершённые загрузки» нажмите «Продолжить». Уже сохранённые части видео или серии плейлиста заново не качаются. Продолжение идёт с границы части, не с середины; записи хранятся 14 дней.</p></details>
+    <details><summary>Где найти сохранённый файл?</summary>
+      <p>В папке «Загрузки» — там же, куда браузер сохраняет всё остальное. В окне расширения есть блок <b>«Сохранённые файлы»</b>: последние 30 загрузок с именем, временем и кнопкой «Показать файл», которая открывает папку. В Firefox это работает всегда; в Chrome и Edge браузер может не разрешить открытие папки без флага запуска — тогда расширение честно пишет об этом, а файл всё равно лежит в «Загрузках».</p></details>
     <details><summary>Можно ли скачать только фрагмент видео?</summary>
       <p>Да. Во вкладке «Скачать» переключитесь на «Фрагмент» и укажите начало и конец, например <code>12:30</code> и <code>12:45</code>. Кнопка с часами подставит время из плеера. Границы привязываются к фрагментам потока (2–4 секунды), поэтому файл может начинаться на пару секунд раньше.</p></details>
     <details><summary>Как скачать весь плейлист RuTube?</summary>
-      <p>Откройте страницу плейлиста (<code>/plst/…</code>) — кнопка станет <b>PL</b>. Выберите формат, качество и диапазон серий, затем «Скачать плейлист». Видео загружаются по очереди с паузой, очередь можно поставить на паузу или отменить.</p></details>
+      <p>Откройте страницу плейлиста (<code>/plst/…</code>) — кнопка станет <b>PL</b>. Отметьте галочками нужные серии: в списке видно название и длительность каждой, рядом счётчик «Выбрано 10 из 12», а кнопки «Все» и «Ни одной» снимают рутину с длинных сезонов. Затем «Скачать плейлист» — видео загружаются по очереди с паузой, очередь можно поставить на паузу или отменить.</p></details>
     <details><summary>Как сохранить кадр в PNG?</summary>
       <p>Нажмите <kbd>s</kbd> — кадр текущего момента сохранится картинкой с таймкодом в имени файла. Для серии кадров откройте вкладку «Кадры» и задайте интервал раскадровки (до 120 кадров).</p></details>
     <details><summary>Как скачать субтитры и главы?</summary>
@@ -714,7 +724,7 @@ footer a{color:var(--muted)}
 
 <footer>
   <div class="wrap">
-    <span>RuTube Tools v1.6.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
+    <span>RuTube Tools v1.7.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
     <span><a href="privacy.html">Приватность</a> · Не обходит DRM, скачивайте только то, на что у вас есть право.</span>
   </div>
 </footer>

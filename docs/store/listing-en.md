@@ -18,7 +18,7 @@ RuTube Tools — frames & MP4
 ## Summary (до 250 символов)
 
 ```
-Download RuTube videos and playlists to MP4, step through video frame by frame, save stills as PNG, grab subtitles and covers.
+Download RuTube videos and playlists to MP4, audio to M4A, step through video frame by frame, save stills as PNG, grab subtitles and covers.
 ```
 
 ## Description
@@ -36,8 +36,10 @@ Frame by frame
 MP4 download
 — The MP4 button in the lower right corner: 1080p, 720p, 480p and below.
 — Fragment: from 12:30 to 12:45 — no need to download an hour for two minutes.
-— Whole playlist: a queue on /plst/ pages with pause and episode range.
+— Playlist by checkboxes: tick the episodes you need on /plst/ pages — titles and durations in the list, a live counter, All and None buttons, and a queue with pause.
 — One-click subtitles: the .srt lands next to the video under the same name, so players pick it up by themselves.
+— Audio only (M4A): the lightest stream is fetched and its AAC is saved without re-encoding; cover, artist, album and track number go into the tags, so a playlist arrives sorted in any player.
+— Saved files: the extension popup keeps the last 30 downloads with a Show file button that opens the folder.
 — File name template: {author} — {title} [{quality}], a subfolder per playlist, date in the name.
 — Cover (.jpg), mini player, video details (codec, fps, bitrate).
 — Segments are fetched in parallel and muxed into a regular MP4 inside the browser — no ffmpeg, no external programs.

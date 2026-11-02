@@ -25,7 +25,7 @@ RuTube Tools не собирает, не хранит и не передаёт �
 ```
 RuTube Tools does not collect, store or transmit personal data.
 
-Everything runs in your browser. Only extension settings (quality, frame rate, key set) and playback position are stored locally in browser storage. Nothing leaves your device except requests to RuTube and its CDN — the same servers that deliver the video you are watching; those requests are made without cookies.
+Everything runs in your browser. Only extension settings (quality, frame rate, key set), unfinished downloads, the list of the last 30 saved files (name and time) and playback position are stored locally in browser storage. Nothing leaves your device except requests to RuTube and its CDN — the same servers that deliver the video you are watching; those requests are made without cookies.
 
 No analytics, telemetry, ads or trackers. No own servers. No access to other sites: the content script runs on rutube.ru only.
 

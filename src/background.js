@@ -37,6 +37,31 @@
   /* ------------------------------------------------ незавершённые загрузки */
 
   var PENDING_KEY = 'rtPending';
+  var HISTORY_KEY = 'rtHistory';
+  var HISTORY_MAX = 30;
+
+  /* История сохранённых файлов. Пишем только свои загрузки: downloadUrl()
+   * помечает id, а onChanged дописывает имя, когда файл дошёл до конца. */
+  var historyNames = new Map();      // downloadId -> имя, как его видел пользователь
+  var historyChain = Promise.resolve();
+
+  function historyMutate(fn) {
+    historyChain = historyChain.then(async function () {
+      var got = await api.storage.local.get({ rtHistory: [] });
+      var list = Array.isArray(got[HISTORY_KEY]) ? got[HISTORY_KEY] : [];
+      var next = (fn(list) || list).slice(0, HISTORY_MAX);
+      await api.storage.local.set({ rtHistory: next });
+      return next;
+    }).catch(function () {});
+    return historyChain;
+  }
+
+  function historyAdd(rec) {
+    return historyMutate(function (list) {
+      var rest = list.filter(function (r) { return r.id !== rec.id; });
+      return [rec].concat(rest);
+    });
+  }
   var PENDING_TTL = 14 * 24 * 3600 * 1000;
   var pendingChain = Promise.resolve();
 
@@ -170,13 +195,16 @@
   }
 
   async function downloadUrl(url, filename) {
+    var res;
     try {
-      return { id: await api.downloads.download({ url: url, filename: filename, conflictAction: 'uniquify' }), name: filename };
+      res = { id: await api.downloads.download({ url: url, filename: filename, conflictAction: 'uniquify' }), name: filename };
     } catch (e) {
       var ascii = RTLib.toAsciiFilename(filename);
       if (ascii === filename) throw e;
-      return { id: await api.downloads.download({ url: url, filename: ascii, conflictAction: 'uniquify' }), name: ascii };
+      res = { id: await api.downloads.download({ url: url, filename: ascii, conflictAction: 'uniquify' }), name: ascii };
     }
+    if (res.id !== undefined && res.id !== null) historyNames.set(res.id, res.name);
+    return res;
   }
 
   /**
@@ -206,6 +234,11 @@
     api.downloads.onChanged.addListener(function (d) {
       if (!d.state) return;
       var st = d.state.current;
+      if (st === 'complete' && historyNames.has(d.id)) {
+        var seen = historyNames.get(d.id);
+        historyNames.delete(d.id);
+        historyAdd({ id: d.id, name: seen, at: Date.now() });
+      }
       if (st === 'complete' || st === 'interrupted') {
         var u = urlById.get(d.id);
         if (u) {
@@ -493,6 +526,33 @@
       var endIndex = opts.toIndex && opts.toIndex > 0 ? Math.min(opts.toIndex, total) : total;
       if (endIndex - startIndex > 500) endIndex = startIndex + 500; // предохранитель
       if (endIndex <= startIndex) throw new Error('playlist-empty');
+      /* Выбор галочками приходит списком номеров: превращаем его в диапазоны
+       * внутри этого плейлиста и заводим на каждый отдельную очередь. */
+      var ranges = [];
+      if (opts.indices != null && !opts.indices.length) {
+        // выбор пуст — просто нечего делать, это не ошибка
+        post({ phase: 'queue-done', files: [], failed: [], queue: { index: 0, total: 0, title: pl.title, done: true } });
+        setBadge('');
+        if (opts.pendingId) pendingRemove(opts.pendingId);
+        return;
+      }
+      if (opts.indices && opts.indices.length) {
+        var sorted = opts.indices
+          .map(function (n) { return Math.floor(Number(n)); })
+          .filter(function (n) { return n >= 0 && n < total; })
+          .sort(function (a, b) { return a - b; });
+        for (var ri = 0; ri < sorted.length; ri++) {
+          var last = ranges[ranges.length - 1];
+          if (last && sorted[ri] === last[1]) last[1] = sorted[ri] + 1;
+          else ranges.push([sorted[ri], sorted[ri] + 1]);
+        }
+        ranges = ranges
+          .map(function (r) { return [Math.max(r[0], startIndex), Math.min(r[1], endIndex)]; })
+          .filter(function (r) { return r[1] > r[0]; });
+      } else {
+        ranges.push([startIndex, endIndex]);
+      }
+      if (!ranges.length) throw new Error('playlist-empty');
       if (opts.pendingId) pendingPatch(opts.pendingId, { title: pl.title, total: endIndex - (opts.originalFrom != null ? opts.originalFrom : startIndex), status: 'running' });
 
       var cache = {};                       // offset страницы -> массив видео
@@ -510,9 +570,12 @@
       }
 
       var saved = [], failed = [];
-      var count = endIndex - startIndex;
+      var count = ranges.reduce(function (n, r) { return n + (r[1] - r[0]); }, 0);
+      var doneSoFar = 0;
 
-      for (var i = startIndex; i < endIndex; i++) {
+      for (var rg = 0; rg < ranges.length; rg++) {
+      for (var i = ranges[rg][0]; i < ranges[rg][1]; i++) {
+        doneSoFar++;
         if (job.controller.signal.aborted) throw new Error('cancelled');
         await waitIfPaused(job);
         if (job.controller.signal.aborted) throw new Error('cancelled');
@@ -521,7 +584,7 @@
         if (!v) break;
 
         var queueInfo = {
-          index: i - startIndex + 1,
+          index: doneSoFar,
           total: count,
           title: v.title,
           videoId: v.id,
@@ -548,9 +611,10 @@
         if (r.ok) saved = saved.concat(r.files);
         else if (job.controller.signal.aborted) throw new Error('cancelled');
         else failed.push({ title: v.title, error: r.error });
-        if (opts.pendingId) pendingPatch(opts.pendingId, { nextIndex: i + 1 });
+        if (opts.pendingId) pendingPatch(opts.pendingId, { nextIndex: i + 1, doneCount: doneSoFar });
 
         if (opts.delayMs) await new Promise(function (res) { setTimeout(res, opts.delayMs); });
+      }
       }
 
       post({
@@ -633,11 +697,13 @@
       id: job.pendingId, kind: 'playlist', playlistId: p.playlistId, height: p.height, audio: !!p.audio,
       fromIndex: originalFrom, toIndex: p.toIndex || null, nextIndex: startAt, maxPartMB: p.maxPartMB,
       nameTemplate: p.nameTemplate || '',
+      indices: resume ? (resume.indices || null) : (p.indices || null),
       title: resume ? resume.title : '', status: 'running', createdAt: resume ? resume.createdAt : Date.now()
     });
 
     runPlaylist(job, {
       nameTemplate: p.nameTemplate || '',
+      indices: resume ? (resume.indices || null) : (p.indices || null),
       playlistId: p.playlistId, height: p.height, audio: !!p.audio,
       fromIndex: startAt, originalFrom: originalFrom, toIndex: p.toIndex,
       delayMs: p.delayMs || 800, maxPartMB: p.maxPartMB, pendingId: job.pendingId
@@ -714,6 +780,17 @@
         }
       }
 
+      case 'rt:playlist-videos': {
+        /* Названия серий за пределами первой страницы: панель просит их,
+         * когда пользователь долистал список до незнакомых номеров. */
+        try {
+          var vids = await RTLib.getPlaylistVideos(msg.playlistId, msg.offset || 0, msg.limit || 50);
+          return { ok: true, offset: msg.offset || 0, videos: vids };
+        } catch (e) {
+          return { ok: false, error: (e && e.message) || String(e) };
+        }
+      }
+
       case 'rt:start': {
         var tabId = sender && sender.tab && sender.tab.id;
         var jobId = launchVideo({
@@ -739,11 +816,22 @@
           audio: !!msg.audio,
           fromIndex: msg.fromIndex,
           toIndex: msg.toIndex,
+          indices: msg.indices,
           delayMs: msg.delayMs || 800,
           maxPartMB: msg.maxPartMB
         }, tabId2, null);
         return { ok: true, jobId: jobId2 };
       }
+
+      case 'rt:history-list': {
+        var gotH = await api.storage.local.get({ rtHistory: [] });
+        var listH = Array.isArray(gotH[HISTORY_KEY]) ? gotH[HISTORY_KEY] : [];
+        return { ok: true, items: listH };
+      }
+
+      case 'rt:history-clear':
+        await historyMutate(function () { return []; });
+        return { ok: true };
 
       case 'rt:pending-list':
         return { ok: true, items: await listPending() };
@@ -889,10 +977,10 @@
       return false;
     }
 
-    var handled = ['rt:ping', 'rt:keepalive', 'rt:info', 'rt:playlist-info', 'rt:start',
+    var handled = ['rt:ping', 'rt:keepalive', 'rt:info', 'rt:playlist-info', 'rt:playlist-videos', 'rt:start',
       'rt:start-playlist', 'rt:pause', 'rt:resume', 'rt:cancel', 'rt:show-download',
       'rt:diagnostics', 'rt:save-url', 'rt:save-data-url',
-      'rt:pending-list', 'rt:pending-resume', 'rt:pending-discard'];
+      'rt:pending-list', 'rt:pending-resume', 'rt:pending-discard', 'rt:history-list', 'rt:history-clear'];
     if (handled.indexOf(msg.type) === -1) return false;
 
     route(msg, sender).then(sendResponse, function (e) {
