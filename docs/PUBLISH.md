@@ -34,7 +34,7 @@
 | Минимальный Firefox | 140.0 — с этой версии поле выше поддерживается. Одно предупреждение линтера остаётся: оно про Android 142, на десктоп не влияет (см. §9) |
 | Широкие разрешения | убраны: `optional_host_permissions` нигде не использовался |
 | Политика конфиденциальности (публичный URL) | `docs/privacy.html` → `https://xxnetme.github.io/rutube-tools/privacy.html` |
-| Скриншоты 1280×800 | `docs/screenshots/01-frame-step.png … 09-settings.png` |
+| Скриншоты 1280×800 | `docs/screenshots/01-frame-step.png … 09-popup.png` |
 | Иконки карточки | `docs/store/icon-300.png` (300×300), `icon-128/48/32.png` (64 магазинам не нужен, AMO генерирует сам) |
 | Промо-плитки | `docs/store/promo-marquee.png` (1400×560), `docs/store/promo-small.png` (440×280) |
 | Баннер AMO | `docs/store/banner-1280x400.png` |
@@ -199,7 +199,7 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' python3 tools/amo-apply-all.py
    * **Privacy policy:** включить галочку и вставить `https://xxnetme.github.io/rutube-tools/privacy.html`
    * **Icon:** `docs/store/icon-300.png`
    * **Screenshots:** по порядку `01-frame-step`, `02-download`, `03-frames`, `04-more`,
-     `05-info`, `06-progress`, `07-done`, `08-playlist`, `09-settings`
+     `05-info`, `06-progress`, `07-done`, `08-playlist`, `09-popup`
 6. В поле **Notes to reviewer** вставьте английский текст «Заметка ревьюеру» из
    `docs/store/listing-ru.md` — он снимает половину вопросов о загрузке потоков.
 7. **Submit Version for Review**.
