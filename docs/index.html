@@ -356,7 +356,7 @@ h2{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.03em;font-w
 
 /* ---------- автор и футер ---------- */
 .author{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.author .mark{width:54px;height:54px;border-radius:15px;display:grid;place-items:center;flex:none;background:linear-gradient(150deg,var(--surface-2),var(--surface));border:1px solid var(--line-2);font:700 15px var(--mono)}
+.author .mark{width:54px;height:54px;border-radius:50%;flex:none;object-fit:cover;border:1px solid var(--line-2);background:var(--surface-2);display:block}
 .author .who b{display:block;font-size:18px;letter-spacing:-.01em}
 .author .who span{color:var(--muted);font-size:14px}
 .author .links{margin-left:auto;display:flex;gap:22px;flex-wrap:wrap;font-weight:600;font-size:15px}
@@ -698,7 +698,7 @@ footer a{color:var(--muted)}
 
 <section class="sec" id="author" style="padding-top:clamp(48px,7vw,80px)">
   <div class="card author">
-    <div class="mark" aria-hidden="true">xx</div>
+    <img class="mark" src="assets/avatar.png" alt="Аватар xxnetme" width="256" height="256" loading="lazy" decoding="async">
     <div class="who"><b>xxnetme</b><span>Разработчик и автор проекта</span></div>
     <div class="links">
       <a href="https://github.com/xxnetme/rutube-tools">GitHub</a>

@@ -376,7 +376,7 @@ rutube-tools/
 
 <table>
 <tr>
-<td width="56"><img src="assets/logo.png" width="48" alt=""></td>
+<td width="72"><img src="assets/avatar.png" width="64" height="64" alt="Аватар xxnetme" style="border-radius:50%"></td>
 <td>
 
 **xxnetme** — разработчик и автор проекта<br>
