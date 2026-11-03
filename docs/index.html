@@ -140,6 +140,7 @@
   --text:#f4f5f7; --muted:#a6a7b1; --faint:#7a7b86;
   --acc:#f2413a; --acc-2:#ff7a70; --acc-soft:rgba(242,65,58,.14); --acc-line:rgba(242,65,58,.45);
   --glow:rgba(242,65,58,.22); --shadow:0 24px 60px rgba(0,0,0,.5); --spot:rgba(242,65,58,.13);
+  --hero-spot:rgba(255,120,95,.16); --edge:rgba(255,255,255,.06);
   --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
   --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --r:20px; --ease:cubic-bezier(.2,.7,.2,1);
@@ -151,6 +152,7 @@
     --text:#111116; --muted:#555660; --faint:#7d7e89;
     --acc:#e5322b; --acc-2:#c8231c; --acc-soft:rgba(229,50,43,.09); --acc-line:rgba(229,50,43,.4);
     --glow:rgba(229,50,43,.13); --shadow:0 20px 50px rgba(20,20,40,.12); --spot:rgba(229,50,43,.07);
+    --hero-spot:rgba(255,120,95,.14); --edge:rgba(255,255,255,.9);
   }
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -186,7 +188,7 @@ kbd{font-size:.82em;background:var(--surface-2);border:1px solid var(--line-2);b
 .top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 78%,transparent);
   backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
   border-bottom:1px solid transparent;transition:border-color .25s}
-.top.stuck{border-bottom-color:var(--line)}
+.top.stuck{border-bottom-color:var(--line);box-shadow:0 14px 34px -26px rgba(0,0,0,.75)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:66px}
 .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:17px;color:var(--text)}
 .brand:hover{text-decoration:none}
@@ -228,6 +230,9 @@ kbd{font-size:.82em;background:var(--surface-2);border:1px solid var(--line-2);b
   background:radial-gradient(ellipse 50% 60% at 22% 30%,var(--glow),transparent 70%),
              radial-gradient(ellipse 40% 50% at 85% 10%,rgba(255,138,91,.10),transparent 70%);
   animation:aurora 24s ease-in-out infinite alternate}
+.hero-spot{position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity .6s var(--ease);
+  background:radial-gradient(440px circle at var(--sx,50%) var(--sy,32%),var(--hero-spot),transparent 72%)}
+.hero:hover .hero-spot{opacity:1}
 .hero::after{content:"";position:absolute;inset:-40px 0 auto;height:min(760px,92vh);z-index:-1;pointer-events:none;opacity:.5;
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
   background-size:68px 68px;background-position:center top;
@@ -248,7 +253,7 @@ h1 em{display:block;font-style:normal;padding-bottom:.06em;
 .micro span::before{content:"✓";color:var(--acc-2);margin-right:7px;font-weight:700}
 
 /* макет окна с панелью */
-.tilt{perspective:1200px}
+.tilt{perspective:1200px;transform:translate3d(0,var(--py,0px),0);will-change:transform}
 .win-3d{transform-style:preserve-3d;will-change:transform;transition:transform .6s var(--ease)}
 .win{border-radius:18px;background:#101014;border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow),0 0 0 1px rgba(0,0,0,.2);overflow:hidden;color:#f4f5f7;
   animation:rise .9s .15s var(--ease) both}
@@ -315,10 +320,11 @@ h2{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.03em;font-w
 .sec-head{margin-bottom:clamp(28px,4vw,44px)}
 
 .card{--mx:50%;--my:0%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px;position:relative;
+  box-shadow:inset 0 1px 0 var(--edge);
   transition:transform .3s var(--ease),border-color .3s,box-shadow .3s,background .3s}
 .card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s;
   background:radial-gradient(240px circle at var(--mx) var(--my),var(--spot),transparent 68%)}
-.card:hover{transform:translateY(-4px);border-color:var(--line-2);box-shadow:var(--shadow)}
+.card:hover{transform:translateY(-4px);border-color:var(--line-2);box-shadow:var(--shadow),inset 0 1px 0 var(--edge)}
 .card:hover::after{opacity:1}
 .card h3{font-size:19px;letter-spacing:-.015em;font-weight:700;margin-bottom:8px}
 .card p{color:var(--muted);font-size:15.5px;line-height:1.6}
@@ -369,7 +375,6 @@ h2{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.03em;font-w
   scrollbar-width:none;cursor:grab;touch-action:pan-x pan-y}
 .gallery::-webkit-scrollbar{display:none}
 .gallery.dragging,.gallery.gliding{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
-.gallery.dragging .shot{pointer-events:none}
 .gallery.dragging{user-select:none;-webkit-user-select:none}
 .shot{flex:0 0 min(780px,86%);scroll-snap-align:center;margin:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#0f0f14;
   display:flex;flex-direction:column;transition:border-color .35s,box-shadow .35s,transform .5s var(--ease)}
@@ -378,6 +383,13 @@ h2{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.03em;font-w
 .shot img{display:block;width:100%;aspect-ratio:16/10;object-fit:contain;background:#0f0f14;
   -webkit-user-drag:none;user-select:none;transition:transform .7s var(--ease)}
 .shot:hover img{transform:scale(1.014)}
+.shot img{cursor:zoom-in}
+.shot-open{position:absolute;top:12px;right:12px;z-index:2;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9px;
+  font:600 11.5px var(--font);color:#fff;background:rgba(12,12,16,.62);border:1px solid rgba(255,255,255,.18);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;transform:translateY(-4px);transition:opacity .25s,transform .25s}
+.shot:hover .shot-open{opacity:1;transform:none}
+.shot-open svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+@media(hover:none){.shot-open{display:none}}
 .shot figcaption{margin-top:auto;padding:13px 18px;font-size:14px;color:#a6a7b1;border-top:1px solid rgba(255,255,255,.08);background:#121217}
 .g-arrow{position:absolute;top:46%;z-index:3;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;
   background:color-mix(in srgb,var(--bg) 70%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
@@ -399,6 +411,60 @@ h2{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.03em;font-w
 @media(hover:hover) and (pointer:fine){.g-tip{display:inline-flex}}
 .g-tip svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .hint-scroll{margin-top:10px;font-size:13px;color:var(--faint)}
+
+/* ---------- лента миниатюр ---------- */
+.g-strip{display:flex;gap:8px;margin-top:16px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;scroll-snap-type:x proximity}
+.g-strip::-webkit-scrollbar{display:none}
+.g-thumb{flex:0 0 auto;width:108px;padding:0;border:1px solid var(--line);border-radius:11px;background:var(--surface-2);
+  cursor:pointer;overflow:hidden;opacity:.6;text-align:left;scroll-snap-align:start;
+  transition:opacity .25s,border-color .25s,transform .3s var(--ease),box-shadow .3s}
+.g-thumb img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;background:#0f0f14}
+.g-thumb span{display:block;padding:6px 9px;font-size:11.5px;line-height:1.3;color:var(--muted);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;border-top:1px solid var(--line)}
+.g-thumb:hover{opacity:1;transform:translateY(-2px);border-color:var(--line-2)}
+.g-thumb.on{opacity:1;border-color:var(--acc);box-shadow:0 0 0 1px var(--acc-line),0 12px 26px -16px var(--glow)}
+.g-thumb.on span{color:var(--text);background:var(--acc-soft)}
+.g-thumb:focus-visible{opacity:1}
+@media(max-width:560px){.g-thumb{width:92px}}
+
+/* ---------- просмотр кадра ---------- */
+.lightbox{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:clamp(12px,3vw,40px)}
+.lightbox.open{display:flex}
+.lb-backdrop{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 80%,#000);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);animation:fadein .28s ease both}
+.lb-fig{position:relative;margin:0;max-width:min(1180px,94vw);animation:pop .38s var(--ease) both}
+.lb-fig img{display:block;width:100%;height:auto;max-height:calc(100vh - 148px);object-fit:contain;border-radius:16px;border:1px solid var(--line-2);
+  background:#0f0f14;box-shadow:0 40px 90px rgba(0,0,0,.55);cursor:zoom-out;touch-action:pan-y}
+.lb-fig figcaption{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:14px;font-size:14.5px;color:var(--muted)}
+.lb-count{font:600 13px var(--mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.lb-count b{color:var(--text)}
+.lb-btn,.lb-close{display:grid;place-items:center;cursor:pointer;color:var(--text);
+  background:color-mix(in srgb,var(--bg) 62%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:1px solid var(--line-2);transition:background .2s,color .2s,border-color .2s,transform .25s var(--ease)}
+.lb-btn:hover,.lb-close:hover{background:var(--acc);border-color:var(--acc);color:#fff}
+.lb-btn{position:absolute;top:50%;width:52px;height:52px;border-radius:50%;transform:translateY(-50%)}
+.lb-btn:disabled{opacity:.3;cursor:default}
+.lb-btn.prev{left:clamp(8px,2vw,26px)}
+.lb-btn.next{right:clamp(8px,2vw,26px)}
+.lb-btn.prev:hover,.lb-btn.next:hover{transform:translateY(-50%) scale(1.06)}
+.lb-close{position:absolute;top:clamp(10px,2vw,22px);right:clamp(10px,2vw,22px);width:44px;height:44px;border-radius:50%}
+.lb-btn svg,.lb-close svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:720px){.lb-btn{display:none}}
+html.lb-open,html.lb-open body{overflow:hidden}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.975) translateY(12px)}to{opacity:1;transform:none}}
+
+/* ---------- каскадное появление ---------- */
+html.js .stagger>*{opacity:0;transform:translateY(18px);transition:opacity .65s var(--ease),transform .65s var(--ease)}
+html.js .stagger.in>*{opacity:1;transform:none}
+html.js .stagger.in>*:nth-child(1){transition-delay:.03s}
+html.js .stagger.in>*:nth-child(2){transition-delay:.09s}
+html.js .stagger.in>*:nth-child(3){transition-delay:.15s}
+html.js .stagger.in>*:nth-child(4){transition-delay:.21s}
+html.js .stagger.in>*:nth-child(5){transition-delay:.27s}
+html.js .stagger.in>*:nth-child(6){transition-delay:.33s}
+html.js .stagger.in>*:nth-child(7){transition-delay:.39s}
+html.js .stagger.in>*:nth-child(8){transition-delay:.45s}
 
 /* ---------- клавиши ---------- */
 .keys{display:grid;grid-template-columns:1fr 1fr;gap:0 48px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:8px 30px}
@@ -485,8 +551,15 @@ h2{font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.03em;font-w
 .author .who span{color:var(--muted);font-size:14px}
 .author .links{margin-left:auto;display:flex;gap:22px;flex-wrap:wrap;font-weight:600;font-size:15px}
 @media(max-width:640px){.author .links{margin-left:0;width:100%}}
-.final{margin-top:clamp(72px,10vw,128px);text-align:center;padding:clamp(40px,7vw,80px) 24px;border-radius:28px;border:1px solid var(--acc-line);
-  background:radial-gradient(ellipse 60% 90% at 50% 0%,var(--glow),transparent 70%),var(--surface)}
+.final{position:relative;margin-top:clamp(72px,10vw,128px);text-align:center;padding:clamp(40px,7vw,80px) 24px;border-radius:28px;border:1px solid var(--acc-line);
+  background:radial-gradient(ellipse 60% 90% at 50% 0%,var(--glow),transparent 70%),var(--surface);overflow:hidden}
+.final::before{content:"";position:absolute;inset:-60%;z-index:0;pointer-events:none;opacity:.5;
+  background:conic-gradient(from 0deg,transparent 0 72%,var(--acc) 82%,transparent 90%);
+  animation:spin 14s linear infinite;
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,transparent 55%,#000 62%);
+  mask-image:radial-gradient(circle at 50% 50%,transparent 55%,#000 62%)}
+.final>*{position:relative;z-index:1}
+@keyframes spin{to{transform:rotate(1turn)}}
 .final h2{max-width:720px;margin:0 auto}
 .final .sub{margin:14px auto 0}
 .final .cta{justify-content:center}
@@ -543,6 +616,7 @@ footer a{color:var(--muted)}
 
 <main id="main">
 <section class="hero">
+  <div class="hero-spot" aria-hidden="true"></div>
   <div class="wrap hero-grid">
     <div>
       <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.7</b> Выбор серий галочками и история загрузок <span aria-hidden="true">→</span></a>
@@ -627,7 +701,7 @@ footer a{color:var(--muted)}
     <h2>Один плеер — все инструменты</h2>
     <p class="sub">Четыре вкладки в аккуратной панели. Никаких настроек, чтобы начать.</p>
   </div>
-  <div class="bento">
+  <div class="bento" data-stagger>
     <article class="card w2">
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></div>
       <h3>MP4 целиком и фрагментом</h3>
@@ -712,7 +786,7 @@ footer a{color:var(--muted)}
     <h2>Всё в вашем браузере</h2>
     <p class="sub">Никакого сервера-посредника: расширение говорит только с RuTube и его CDN.</p>
   </div>
-  <div class="steps">
+  <div class="steps" data-stagger>
     <article class="card step"><h3>Находит потоки</h3><p>Берёт из API RuTube список качеств и сегментов: каждое качество — с двух зеркал.</p></article>
     <article class="card step"><h3>Качает параллельно</h3><p>Пять потоков, повторы и смена зеркала при сбое. Сегменты идут в сборку строго по порядку.</p></article>
     <article class="card step"><h3>Собирает файл</h3><p>Видео — в MP4 через mux.js, звук — в M4A собственным модулем. Без перекодирования.</p></article>
@@ -733,24 +807,33 @@ footer a{color:var(--muted)}
 <div class="g-stage">
   <button class="g-arrow prev" type="button" aria-label="Предыдущий скриншот"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button class="g-arrow next" type="button" aria-label="Следующий скриншот"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-  <div class="gallery" tabindex="0" aria-label="Скриншоты интерфейса: тяните мышью, листайте стрелками или клавишами влево и вправо">
-            <figure class="shot"><img draggable="false" src="screenshots/02-download.png" alt="Вкладка «Скачать»: переключатель «Видео MP4 / Только звук», качества от 1080p до 144p с размерами" width="1280" height="800" loading="lazy"><figcaption>Скачать — видео или только звук, качества и размеры</figcaption></figure>
-    <figure class="shot"><img draggable="false" src="screenshots/03-frames.png" alt="Вкладка «Кадры»: сохранение PNG, переход по номеру кадра, петля A/B, раскадровка" width="1280" height="800" loading="lazy"><figcaption>Кадры — PNG, переход по номеру, петля A/B, раскадровка</figcaption></figure>
-    <figure class="shot"><img draggable="false" src="screenshots/08-playlist.png" alt="Вкладка плейлиста: список серий с галочками, названиями и длительностью, счётчик «Выбрано 10 из 12»" width="1280" height="800" loading="lazy"><figcaption>Плейлист — галочки, названия, счётчик</figcaption></figure>
-    <figure class="shot"><img draggable="false" src="screenshots/04-more.png" alt="Вкладка «Ещё»: субтитры SRT, обложка, главы, ссылка m3u8, мини-плеер" width="1280" height="800" loading="lazy"><figcaption>Ещё — субтитры, обложка, главы, ссылка m3u8</figcaption></figure>
-    <figure class="shot"><img draggable="false" src="screenshots/06-progress.png" alt="Загрузка в процессе: 43%, 108 из 252 фрагментов, 79 МБ и скорость" width="1280" height="800" loading="lazy"><figcaption>Прогресс — сегменты, мегабайты, скорость</figcaption></figure>
-    <figure class="shot"><img draggable="false" src="screenshots/09-popup.png" alt="Окно расширения: незавершённые загрузки и настройки" width="1280" height="800" loading="lazy"><figcaption>Окно расширения — докачка и настройки</figcaption></figure>
-    <figure class="shot"><img draggable="false" src="screenshots/05-info.png" alt="Вкладка «Инфо»: автор, кодек, битрейт, качества, просмотры" width="1280" height="800" loading="lazy"><figcaption>Инфо — кодек, fps, битрейт, просмотры</figcaption></figure>
+  <div class="gallery" tabindex="0" aria-label="Скриншоты интерфейса: тяните мышью, листайте колесом, стрелками или клавишами; клик по кадру открывает его во весь экран">
+            <figure class="shot"><img draggable="false" src="screenshots/02-download.png" alt="Вкладка «Скачать»: переключатель «Видео MP4 / Только звук», качества от 1080p до 144p с размерами" width="1280" height="800" loading="lazy"><figcaption>Скачать — видео или только звук, качества и размеры</figcaption><span class="shot-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/></svg>открыть</span></figure>
+    <figure class="shot"><img draggable="false" src="screenshots/03-frames.png" alt="Вкладка «Кадры»: сохранение PNG, переход по номеру кадра, петля A/B, раскадровка" width="1280" height="800" loading="lazy"><figcaption>Кадры — PNG, переход по номеру, петля A/B, раскадровка</figcaption><span class="shot-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/></svg>открыть</span></figure>
+    <figure class="shot"><img draggable="false" src="screenshots/08-playlist.png" alt="Вкладка плейлиста: список серий с галочками, названиями и длительностью, счётчик «Выбрано 10 из 12»" width="1280" height="800" loading="lazy"><figcaption>Плейлист — галочки, названия, счётчик</figcaption><span class="shot-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/></svg>открыть</span></figure>
+    <figure class="shot"><img draggable="false" src="screenshots/04-more.png" alt="Вкладка «Ещё»: субтитры SRT, обложка, главы, ссылка m3u8, мини-плеер" width="1280" height="800" loading="lazy"><figcaption>Ещё — субтитры, обложка, главы, ссылка m3u8</figcaption><span class="shot-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/></svg>открыть</span></figure>
+    <figure class="shot"><img draggable="false" src="screenshots/06-progress.png" alt="Загрузка в процессе: 43%, 108 из 252 фрагментов, 79 МБ и скорость" width="1280" height="800" loading="lazy"><figcaption>Прогресс — сегменты, мегабайты, скорость</figcaption><span class="shot-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/></svg>открыть</span></figure>
+    <figure class="shot"><img draggable="false" src="screenshots/09-popup.png" alt="Окно расширения: незавершённые загрузки и настройки" width="1280" height="800" loading="lazy"><figcaption>Окно расширения — докачка и настройки</figcaption><span class="shot-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/></svg>открыть</span></figure>
+    <figure class="shot"><img draggable="false" src="screenshots/05-info.png" alt="Вкладка «Инфо»: автор, кодек, битрейт, качества, просмотры" width="1280" height="800" loading="lazy"><figcaption>Инфо — кодек, fps, битрейт, просмотры</figcaption><span class="shot-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/></svg>открыть</span></figure>
   </div>
 </div>
 
 <div class="wrap">
   <div class="g-under">
     <div class="g-rail" aria-hidden="true"><i></i></div>
-    <span class="g-tip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11V6.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 11V7.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5A6.5 6.5 0 0 1 4 14.5V12a1.5 1.5 0 0 1 3 0"/></svg>тяните мышью</span>
+    <span class="g-tip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11V6.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 11V7.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5A6.5 6.5 0 0 1 4 14.5V12a1.5 1.5 0 0 1 3 0"/></svg>тяните мышью · колесо листает</span>
     <span class="g-count" aria-hidden="true"><b>1</b> / <span class="g-total">7</span></span>
   </div>
-  <p class="hint-scroll">Все кадры сняты на сборке 1.7.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
+  <div class="g-strip" role="group" aria-label="Перейти к кадру">
+  <button type="button" class="g-thumb" data-i="0" aria-label="Скачать: открыть кадр 1"><img draggable="false" src="screenshots/thumbs/02-download.jpg" alt="" width="320" height="200" loading="lazy" decoding="async"><span>Скачать</span></button>
+  <button type="button" class="g-thumb" data-i="1" aria-label="Кадры: открыть кадр 2"><img draggable="false" src="screenshots/thumbs/03-frames.jpg" alt="" width="320" height="200" loading="lazy" decoding="async"><span>Кадры</span></button>
+  <button type="button" class="g-thumb" data-i="2" aria-label="Плейлист: открыть кадр 3"><img draggable="false" src="screenshots/thumbs/08-playlist.jpg" alt="" width="320" height="200" loading="lazy" decoding="async"><span>Плейлист</span></button>
+  <button type="button" class="g-thumb" data-i="3" aria-label="Ещё: открыть кадр 4"><img draggable="false" src="screenshots/thumbs/04-more.jpg" alt="" width="320" height="200" loading="lazy" decoding="async"><span>Ещё</span></button>
+  <button type="button" class="g-thumb" data-i="4" aria-label="Прогресс: открыть кадр 5"><img draggable="false" src="screenshots/thumbs/06-progress.jpg" alt="" width="320" height="200" loading="lazy" decoding="async"><span>Прогресс</span></button>
+  <button type="button" class="g-thumb" data-i="5" aria-label="Окно: открыть кадр 6"><img draggable="false" src="screenshots/thumbs/09-popup.jpg" alt="" width="320" height="200" loading="lazy" decoding="async"><span>Окно</span></button>
+  <button type="button" class="g-thumb" data-i="6" aria-label="Инфо: открыть кадр 7"><img draggable="false" src="screenshots/thumbs/05-info.jpg" alt="" width="320" height="200" loading="lazy" decoding="async"><span>Инфо</span></button>
+  </div>
+  <p class="hint-scroll">Клик по кадру открывает его во весь экран — там работают ←/→, колесо и Esc. Все кадры сняты на сборке 1.7.0. Качества и размеры — из настоящего API RuTube; страница видео и плейлист — локальная имитация, чтобы снимки были одинаковыми.</p>
 
 <!-- ============ КЛАВИШИ ============ -->
 <section class="sec" id="keys">
@@ -906,6 +989,17 @@ footer a{color:var(--muted)}
 </div>
 </main>
 
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Просмотр скриншота">
+  <div class="lb-backdrop" data-lb-close></div>
+  <figure class="lb-fig">
+    <img id="lb-img" src="screenshots/02-download.png" alt="" width="1280" height="800" draggable="false">
+    <figcaption><span id="lb-cap"></span><span class="lb-count"><b id="lb-i">1</b> / <span id="lb-n">7</span></span></figcaption>
+  </figure>
+  <button class="lb-btn prev" type="button" aria-label="Предыдущий скриншот"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="lb-btn next" type="button" aria-label="Следующий скриншот"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button class="lb-close" type="button" data-lb-close aria-label="Закрыть просмотр"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+
 <button class="totop" type="button" aria-label="Наверх страницы"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6"/><path d="M6 12l6-6 6 6"/></svg></button>
 
 <footer>
@@ -1060,6 +1154,55 @@ footer a{color:var(--muted)}
     stats.forEach(function (el) { so.observe(el); });
   }
 
+  /* пятно света в hero за курсором */
+  var heroEl = document.querySelector('.hero');
+  var spotEl = document.querySelector('.hero-spot');
+  if (heroEl && spotEl && fine && !reduce) {
+    var sRaf = 0, sX = 0, sY = 0;
+    heroEl.addEventListener('pointermove', function (e) {
+      var r = heroEl.getBoundingClientRect();
+      sX = e.clientX - r.left; sY = e.clientY - r.top;
+      if (sRaf) return;
+      sRaf = raf(function () {
+        sRaf = 0;
+        spotEl.style.setProperty('--sx', sX + 'px');
+        spotEl.style.setProperty('--sy', sY + 'px');
+      });
+    }, { passive: true });
+  }
+
+  /* лёгкий параллакс макета при прокрутке */
+  var tiltWrap = document.querySelector('.tilt');
+  if (tiltWrap && !reduce) {
+    var pRaf = 0;
+    function parallax() {
+      pRaf = 0;
+      var r = tiltWrap.getBoundingClientRect();
+      var vh = window.innerHeight || 800;
+      var k = (r.top + r.height / 2 - vh / 2) / vh;
+      tiltWrap.style.setProperty('--py', (Math.max(-1, Math.min(1, k)) * -26).toFixed(1) + 'px');
+    }
+    window.addEventListener('scroll', function () {
+      if (!pRaf) pRaf = raf(parallax);
+    }, { passive: true });
+    parallax();
+  }
+
+  /* каскадное появление карточек */
+  var staggers = Array.prototype.slice.call(document.querySelectorAll('[data-stagger]'));
+  if (staggers.length) {
+    if (reduce || !window.IntersectionObserver) {
+      staggers.forEach(function (el) { el.classList.add('stagger', 'in'); });
+    } else {
+      var stIO = new IntersectionObserver(function (es) {
+        es.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add('in'); stIO.unobserve(en.target); }
+        });
+      }, { threshold: 0.1 });
+      staggers.forEach(function (el) { el.classList.add('stagger'); stIO.observe(el); });
+    }
+  }
+
   /* демо покадровой перемотки: клавиши , . и стрелки, плюс кнопки */
   var demo = document.getElementById('demo');
   if (demo) {
@@ -1118,6 +1261,7 @@ footer a{color:var(--muted)}
     var total = document.querySelector('.g-total');
     if (total) total.textContent = String(shots.length);
     var settleId = 0, glideId = 0;
+    var thumbs = [], gStrip = g;
 
     function posOf(el) {
       return el.getBoundingClientRect().left - g.getBoundingClientRect().left + g.scrollLeft;
@@ -1145,9 +1289,15 @@ footer a{color:var(--muted)}
         rail.style.width = w.toFixed(2) + '%';
         rail.style.left = (k * (100 - w)).toFixed(2) + '%';
       }
-      if (counter) counter.textContent = String(Math.min(shots.length || 1, Math.max(1, indexAt(g.scrollLeft) + 1)));
+      var cur = indexAt(g.scrollLeft);
+      if (counter) counter.textContent = String(Math.min(shots.length || 1, Math.max(1, cur + 1)));
       if (prev) prev.disabled = g.scrollLeft < 8;
       if (next) next.disabled = max <= 0 || g.scrollLeft > max - 8;
+      for (var ti = 0; ti < thumbs.length; ti++) thumbs[ti].classList.toggle('on', ti === cur);
+      if (thumbs[cur] && thumbs[cur].scrollIntoView) {
+        var tr = thumbs[cur].getBoundingClientRect(), gr = gStrip.getBoundingClientRect();
+        if (tr.left < gr.left || tr.right > gr.right) thumbs[cur].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
     }
     var mTick = false;
     g.addEventListener('scroll', function () {
@@ -1181,6 +1331,23 @@ footer a{color:var(--muted)}
     if (prev) prev.addEventListener('click', function () { by(-1); });
     if (next) next.addEventListener('click', function () { by(1); });
 
+    /* колесо мыши: один «щелчок» — один кадр; на краях отдаём прокрутку странице */
+    var wheelAcc = 0, wheelAt = 0, wheelLock = 0;
+    g.addEventListener('wheel', function (e) {
+      if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      var max = g.scrollWidth - g.clientWidth;
+      var dir = e.deltaY > 0 ? 1 : -1;
+      var canGo = dir > 0 ? g.scrollLeft < max - 2 : g.scrollLeft > 2;
+      if (!canGo || max <= 0) return;
+      e.preventDefault();
+      var now = performance.now();
+      if (now - wheelAt > 220) wheelAcc = 0;
+      wheelAt = now;
+      if (now < wheelLock) return;
+      wheelAcc += e.deltaY;
+      if (Math.abs(wheelAcc) >= 40) { by(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; wheelLock = now + 620; }
+    }, { passive: false });
+
     g.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowRight') { e.preventDefault(); by(1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); by(-1); }
@@ -1191,7 +1358,7 @@ footer a{color:var(--muted)}
     g.addEventListener('dragstart', function (e) { e.preventDefault(); });
 
     var down = false, startX = 0, startLeft = 0, lastX = 0, lastT = 0, vel = 0, moved = 0;
-    var suppress = false;
+    var suppress = false, captured = false;
 
     g.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'touch' || e.button !== 0) return;
@@ -1202,13 +1369,19 @@ footer a{color:var(--muted)}
       if (settleId) { clearTimeout(settleId); settleId = 0; }
       g.classList.remove('gliding');
       g.classList.add('dragging');
-      try { g.setPointerCapture(e.pointerId); } catch (err) {}
+      captured = false;
     });
 
     g.addEventListener('pointermove', function (e) {
       if (!down) return;
       var dx = e.clientX - startX;
       if (Math.abs(dx) > Math.abs(moved)) moved = dx;
+      /* захват указателя включаем только когда пошло перетаскивание:
+         иначе клик по кадру приходит не в кадр, а в саму ленту */
+      if (!captured && Math.abs(moved) > 4) {
+        captured = true;
+        try { g.setPointerCapture(e.pointerId); } catch (err) {}
+      }
       g.scrollLeft = startLeft - dx;
       var now = performance.now(), dt = now - lastT;
       if (dt > 0) { vel = (e.clientX - lastX) / dt; lastX = e.clientX; lastT = now; }
@@ -1232,7 +1405,7 @@ footer a{color:var(--muted)}
       if (!down) return;
       down = false;
       g.classList.remove('dragging');
-      try { g.releasePointerCapture(e.pointerId); } catch (err) {}
+      if (captured) { try { g.releasePointerCapture(e.pointerId); } catch (err) {} captured = false; }
       if (Math.abs(moved) > 6) {
         suppress = true;
         setTimeout(function () { suppress = false; }, 80);
@@ -1251,6 +1424,122 @@ footer a{color:var(--muted)}
     g.addEventListener('click', function (e) {
       if (suppress) { e.preventDefault(); e.stopPropagation(); }
     }, true);
+
+    thumbs = Array.prototype.slice.call(document.querySelectorAll('.g-thumb'));
+    gStrip = document.querySelector('.g-strip') || g;
+    thumbs.forEach(function (t, i) {
+      t.addEventListener('click', function () { goIndex(i, true); });
+    });
+
+    /* окно просмотра: клик по кадру, клавиши, колесо, стрелки */
+    var lb = document.getElementById('lightbox');
+    if (lb) {
+      var lbImg = document.getElementById('lb-img');
+      var lbCap = document.getElementById('lb-cap');
+      var lbI = document.getElementById('lb-i');
+      var lbN = document.getElementById('lb-n');
+      var lbPrev = lb.querySelector('.lb-btn.prev');
+      var lbNext = lb.querySelector('.lb-btn.next');
+      var lbCloseBtn = lb.querySelector('.lb-close');
+      var lbIndex = 0, lbReturn = null, lbWheel = 0, lbWheelAt = 0, lbWheelLock = 0;
+      lbN.textContent = String(shots.length);
+
+      function lbShow(i, animate) {
+        lbIndex = Math.max(0, Math.min(shots.length - 1, i));
+        var fig = shots[lbIndex];
+        var img = fig.querySelector('img');
+        var cap = fig.querySelector('figcaption');
+        lbImg.src = img.getAttribute('src');
+        lbImg.alt = img.getAttribute('alt') || '';
+        lbCap.textContent = cap ? cap.textContent : '';
+        lbI.textContent = String(lbIndex + 1);
+        lbPrev.disabled = lbIndex === 0;
+        lbNext.disabled = lbIndex === shots.length - 1;
+        if (animate && !reduce) {
+          lbImg.style.animation = 'none';
+          void lbImg.offsetWidth;
+          lbImg.style.animation = 'pop .3s var(--ease) both';
+        }
+        goIndex(lbIndex, true);
+      }
+      function lbOpen(i, from) {
+        lbReturn = from || null;
+        lbShow(i, false);
+        lb.classList.add('open');
+        root.classList.add('lb-open');
+        lbCloseBtn.focus({ preventScroll: true });
+      }
+      function lbClose() {
+        lb.classList.remove('open');
+        root.classList.remove('lb-open');
+        lbImg.style.animation = '';
+        if (lbReturn && lbReturn.focus) lbReturn.focus({ preventScroll: true });
+        lbReturn = null;
+      }
+      shots.forEach(function (fig, i) {
+        fig.setAttribute('tabindex', '0');
+        fig.setAttribute('role', 'button');
+        fig.addEventListener('click', function (e) {
+          if (suppress || (e.target.closest && e.target.closest('a,button'))) return;
+          lbOpen(i, fig);
+        });
+        fig.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); lbOpen(i, fig); }
+        });
+      });
+      lbPrev.addEventListener('click', function () { if (lbIndex > 0) lbShow(lbIndex - 1, true); });
+      lbNext.addEventListener('click', function () { if (lbIndex < shots.length - 1) lbShow(lbIndex + 1, true); });
+      Array.prototype.forEach.call(lb.querySelectorAll('[data-lb-close]'), function (el) {
+        el.addEventListener('click', lbClose);
+      });
+      /* клик по самому кадру и свайпы на телефоне */
+      lbImg.addEventListener('click', lbClose);
+      var tX = 0, tY = 0, tOn = false;
+      lbImg.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'touch') return;
+        tOn = true; tX = e.clientX; tY = e.clientY;
+      });
+      lbImg.addEventListener('pointerup', function (e) {
+        if (!tOn || e.pointerType !== 'touch') return;
+        tOn = false;
+        var dx = e.clientX - tX, dy = e.clientY - tY;
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0 && lbIndex < shots.length - 1) lbShow(lbIndex + 1, true);
+          else if (dx > 0 && lbIndex > 0) lbShow(lbIndex - 1, true);
+        } else if (dy > 70) {
+          lbClose();
+        }
+      });
+      document.addEventListener('keydown', function (e) {
+        if (!lb.classList.contains('open')) return;
+        if (e.key === 'Escape') { e.preventDefault(); lbClose(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); if (lbIndex < shots.length - 1) lbShow(lbIndex + 1, true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); if (lbIndex > 0) lbShow(lbIndex - 1, true); }
+        else if (e.key === 'Home') { e.preventDefault(); lbShow(0, true); }
+        else if (e.key === 'End') { e.preventDefault(); lbShow(shots.length - 1, true); }
+        else if (e.key === 'Tab') {
+          var f = [lbCloseBtn, lbPrev, lbNext].filter(function (b) { return b && b.offsetParent !== null && !b.disabled; });
+          if (!f.length) return;
+          var first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      });
+      lb.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        var now = performance.now();
+        if (now - lbWheelAt > 220) lbWheel = 0;
+        lbWheelAt = now;
+        if (now < lbWheelLock) return;
+        lbWheel += e.deltaY;
+        if (Math.abs(lbWheel) >= 40) {
+          var d = lbWheel > 0 ? 1 : -1;
+          lbWheel = 0; lbWheelLock = now + 380;
+          if (d > 0 && lbIndex < shots.length - 1) lbShow(lbIndex + 1, true);
+          else if (d < 0 && lbIndex > 0) lbShow(lbIndex - 1, true);
+        }
+      }, { passive: false });
+    }
 
     measure();
     setTimeout(measure, 400);
