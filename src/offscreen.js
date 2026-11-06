@@ -33,6 +33,8 @@
         audio: globalThis.RTAudio,
         title: cfg.title,
         tags: cfg.tags,
+        validate: true,
+        expectedDurationSec: cfg.expectedDurationSec,
         signal: ctrl.signal,
         onProgress: function (p) {
           post({

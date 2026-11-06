@@ -20,7 +20,7 @@ python3 build.py            # сборка + проверки
 
 ```bash
 npm ci
-npm test        # 104 проверки: движок, звук, фон, панель
+npm test        # 111 проверок: движок, звук, фон, панель, менеджер
 npm run lint    # ESLint + no-unsanitized
 npm run typecheck
 python3 -m unittest discover -s tests -p 'test_*.py' -v   # 15 тестов инфраструктуры

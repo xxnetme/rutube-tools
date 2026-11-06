@@ -187,12 +187,23 @@
   function pendingStatus(r) {
     var kind = r.audio ? ' · ' + I.t('pop.pendingAudio') : '';
     if (r.running) {
-      var pr = r.progress && typeof r.progress.percent === 'number' ? r.progress.percent : 0;
-      return I.t('pop.pendingRunning', { p: pr }) + kind;
+      if (r.paused) return I.t('pop.pausedShort') + kind;
+      var progress = r.progress || {};
+      var pr = typeof progress.percent === 'number' ? progress.percent : 0;
+      var text = I.t('pop.pendingRunning', { p: pr }) + kind;
+      if (progress.bytes > 0 && progress.ms > 500) {
+        var speed = progress.bytes / (1024 * 1024) / (progress.ms / 1000);
+        text += ' · ' + I.t('pop.speed', { v: speed.toFixed(1) });
+      }
+      return text;
     }
     var pos = r.kind === 'playlist'
       ? I.t('pop.pendingPlaylist', { n: Math.max(0, (r.nextIndex || 0) - (r.fromIndex || 0)) + 1, total: r.total || '?' })
       : I.t('pop.pendingVideo', { n: (r.nextPart || 0) + 1, total: r.partsTotal || '?' });
+    if (r.status === 'paused') return pos + kind + ' · ' + I.t('pop.pendingPaused');
+    if (r.status === 'error' && r.error) {
+      return pos + kind + ' · ' + I.t('pop.pendingError') + ': ' + String(r.error).slice(0, 80);
+    }
     return pos + kind + ' · ' + I.t('pop.pendingBroken');
   }
 
@@ -216,7 +227,16 @@
       txt.appendChild(st);
       row.appendChild(txt);
 
-      if (!r.running) {
+      if (r.running) {
+        var pause = document.createElement('button');
+        pause.textContent = I.t(r.paused ? 'pop.resume' : 'dl.pause');
+        pause.disabled = r.kind !== 'playlist' && r.paused;
+        pause.addEventListener('click', function () {
+          pause.disabled = true;
+          send({ type: r.paused ? 'rt:resume' : 'rt:pause', jobId: r.jobId }).then(refreshPending);
+        });
+        row.appendChild(pause);
+      } else {
         var go = document.createElement('button');
         go.className = 'go';
         go.textContent = I.t('pop.resume');

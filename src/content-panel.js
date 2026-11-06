@@ -909,7 +909,13 @@
 
   function cancelJob() {
     if (!state.job) return;
-    if (state.job.id) RT.sendMessage({ type: 'rt:cancel', jobId: state.job.id });
+    if (state.job.id) {
+      if (state.job.paused) {
+        RT.sendMessage({ type: 'rt:pending-discard', id: state.job.pendingId || state.job.id });
+      } else {
+        RT.sendMessage({ type: 'rt:cancel', jobId: state.job.id });
+      }
+    }
     state.job = null;
     RT.stopKeepalive();
     state.result = { ok: false, code: 'cancelled' };
@@ -917,10 +923,33 @@
   }
 
   function togglePause() {
-    if (!state.job || !state.job.id || state.job.kind !== 'playlist') return;
-    var paused = !state.job.paused;
-    state.job.paused = paused;
-    RT.sendMessage({ type: paused ? 'rt:pause' : 'rt:resume', jobId: state.job.id });
+    var job = state.job;
+    if (!job || !job.id || job.pauseRequested) return;
+    if (job.kind === 'playlist') {
+      job.paused = !job.paused;
+      RT.sendMessage({ type: job.paused ? 'rt:pause' : 'rt:resume', jobId: job.id });
+      render();
+      return;
+    }
+    if (job.paused) {
+      RT.sendMessage({ type: 'rt:pending-resume', id: job.pendingId || job.id }).then(function (r) {
+        if (!r || !r.ok || !state.job) return;
+        state.job.id = r.jobId || state.job.id;
+        state.job.paused = false;
+        state.job.pauseRequested = false;
+        state.progress = { phase: 'meta', pendingId: state.job.pendingId };
+        RT.startKeepalive();
+        render();
+      });
+      return;
+    }
+    job.pauseRequested = true;
+    RT.sendMessage({ type: 'rt:pause', jobId: job.id }).then(function (r) {
+      if ((!r || !r.ok) && state.job) {
+        state.job.pauseRequested = false;
+        render();
+      }
+    });
     render();
   }
 
@@ -967,9 +996,9 @@
         D.h('span', { text: meta })
       ),
       D.h('div', { class: 'row', style: 'margin-top:11px' },
-        isPlaylist ? btn(j.paused ? t('dl.resume') : t('dl.pause'), {
-          class: 'btn ghost', 'data-act': 'pause'
-        }) : null,
+        btn(j.paused ? t('dl.resume') : t('dl.pause'), {
+          class: 'btn ghost', 'data-act': 'pause', disabled: !!j.pauseRequested
+        }),
         btn(t('dl.cancel'), { class: 'btn ghost', 'data-act': 'cancel', style: 'flex:1' })
       )
     );
@@ -1087,6 +1116,16 @@
     if (!state.job) return;
     if (msg.jobId && state.job.id && msg.jobId !== state.job.id) return;
     if (!state.job.id && msg.jobId) state.job.id = msg.jobId;
+    if (msg.pendingId) state.job.pendingId = msg.pendingId;
+
+    if (msg.phase === 'paused') {
+      state.job.paused = true;
+      state.job.pauseRequested = false;
+      state.progress = Object.assign({}, state.progress || {}, msg);
+      RT.stopKeepalive();
+      render();
+      return;
+    }
 
     if (msg.phase === 'queue-item' && msg.queue) {
       state.job.paused = false;

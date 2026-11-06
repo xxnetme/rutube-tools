@@ -74,6 +74,8 @@
    * @property {any} [audio]
    * @property {string} [title]
    * @property {Object} [tags]
+   * @property {boolean} [validate]
+   * @property {number} [expectedDurationSec]
    */
 
   /**
@@ -532,6 +534,166 @@
 
   /* ------------------------------------------------------------ downloading */
 
+  /* -------------------------------------------------------- проверка MP4/M4A */
+
+  function invalidOutput(message) {
+    /** @type {Error & {code?: string}} */
+    var err = new Error('Проверка результата: ' + message);
+    err.code = 'invalid-output';
+    return err;
+  }
+
+  function readU32(bytes, offset) {
+    if (offset < 0 || offset + 4 > bytes.byteLength) throw invalidOutput('повреждены MP4-боксы');
+    return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(offset);
+  }
+
+  function readU64(bytes, offset) {
+    return readU32(bytes, offset) * 4294967296 + readU32(bytes, offset + 4);
+  }
+
+  function findBoxes(probe, bytes, path) {
+    try {
+      return probe.findBox(bytes, path) || [];
+    } catch (e) {
+      throw invalidOutput('не удалось разобрать MP4-боксы');
+    }
+  }
+
+  function headerDuration(probe, head) {
+    var result = 0;
+    findBoxes(probe, head, ['moov', 'trak', 'mdia', 'mdhd']).forEach(function (box) {
+      var version = box[0];
+      var timeOffset = version === 1 ? 20 : 12;
+      var durationOffset = version === 1 ? 24 : 16;
+      var scale = readU32(box, timeOffset);
+      var duration = version === 1 ? readU64(box, durationOffset) : readU32(box, durationOffset);
+      // В fMP4 mux.js записывает unknown duration как 0xffffffff.
+      if (scale > 0 && duration > 0 && duration < 0xffffffff) result = Math.max(result, duration / scale);
+    });
+    return result;
+  }
+
+  function fragmentDefaults(probe, head) {
+    var defaults = {};
+    findBoxes(probe, head, ['moov', 'mvex', 'trex']).forEach(function (box) {
+      defaults[readU32(box, 4)] = readU32(box, 12);
+    });
+    return defaults;
+  }
+
+  function fragmentDuration(probe, bytes, defaults, scales, totals) {
+    findBoxes(probe, bytes, ['moof', 'traf']).forEach(function (traf) {
+      var tfhd = findBoxes(probe, traf, ['tfhd'])[0];
+      if (!tfhd) throw invalidOutput('во фрагменте нет tfhd');
+      var flags = (tfhd[1] << 16) | (tfhd[2] << 8) | tfhd[3];
+      var trackId = readU32(tfhd, 4);
+      var cursor = 8;
+      var defaultDuration = defaults[trackId] || 0;
+      if (flags & 0x1) cursor += 8;
+      if (flags & 0x2) cursor += 4;
+      if (flags & 0x8) { defaultDuration = readU32(tfhd, cursor); cursor += 4; }
+      if (flags & 0x10) cursor += 4;
+      if (flags & 0x20) cursor += 4;
+      var sum = 0;
+      findBoxes(probe, traf, ['trun']).forEach(function (trun) {
+        var trunFlags = (trun[1] << 16) | (trun[2] << 8) | trun[3];
+        var count = readU32(trun, 4);
+        var pos = 8;
+        if (trunFlags & 0x1) pos += 4;
+        if (trunFlags & 0x4) pos += 4;
+        for (var i = 0; i < count; i++) {
+          var duration = defaultDuration;
+          if (trunFlags & 0x100) { duration = readU32(trun, pos); pos += 4; }
+          if (trunFlags & 0x200) pos += 4;
+          if (trunFlags & 0x400) pos += 4;
+          if (trunFlags & 0x800) pos += 4;
+          if (!(duration > 0)) throw invalidOutput('у фрагмента нет длительности samples');
+          sum += duration;
+        }
+      });
+      if (sum > 0) {
+        if (!(scales[trackId] > 0)) throw invalidOutput('у дорожки нет timescale');
+        totals[trackId] = (totals[trackId] || 0) + sum / scales[trackId];
+      }
+    });
+  }
+
+  /**
+   * Проверяет собранный контейнер до создания браузерного download.
+   * chunks не объединяются: init и media fragments разбираются по месту.
+   * @param {{chunks: Uint8Array[], mode: string, muxjs: any, expectedDurationSec?: number}} cfg
+   * @return {{bytes: number, durationSec: number, tracks: Object[]}}
+   */
+  function validatePart(cfg) {
+    var chunks = cfg.chunks || [];
+    var mode = cfg.mode || 'mp4';
+    var muxjs = cfg.muxjs;
+    var bytes = chunks.reduce(function (sum, chunk) { return sum + (chunk ? chunk.byteLength : 0); }, 0);
+    if (!bytes) throw invalidOutput('пустой файл');
+    if (!muxjs || !muxjs.probe || typeof muxjs.probe.tracks !== 'function' ||
+        typeof muxjs.probe.findBox !== 'function' || typeof muxjs.probe.timescale !== 'function') {
+      throw invalidOutput('bundled mux.js probe не загружен');
+    }
+    var probe = muxjs.probe;
+    var head = chunks[0];
+    if (!head || head.byteLength < 8) throw invalidOutput('нет init-сегмента');
+    var tracks;
+    try {
+      tracks = probe.tracks(head);
+    } catch (e) {
+      throw invalidOutput('не удалось разобрать дорожки');
+    }
+    if (!Array.isArray(tracks) || !tracks.length) throw invalidOutput('не найдены дорожки');
+    var video = tracks.filter(function (track) { return track.type === 'video'; });
+    var audio = tracks.filter(function (track) { return track.type === 'audio'; });
+    if (mode === 'mp4' && !video.length) throw invalidOutput('в MP4 нет видеодорожки');
+    if (mode === 'm4a' && !audio.length) throw invalidOutput('в M4A нет аудиодорожки');
+    tracks.forEach(function (track) {
+      if (track.type === 'video' && !/^avc[13]/i.test(track.codec || '')) {
+        throw invalidOutput('неподдерживаемый видеокодек ' + (track.codec || 'unknown'));
+      }
+      if (track.type === 'audio' && !/^mp4a/i.test(track.codec || '')) {
+        throw invalidOutput('неподдерживаемый аудиокодек ' + (track.codec || 'unknown'));
+      }
+    });
+
+    var durationSec = 0;
+    if (mode === 'm4a') {
+      durationSec = headerDuration(probe, head);
+    } else if (mode === 'mp4') {
+      var scales;
+      try {
+        scales = probe.timescale(head);
+      } catch (e) {
+        throw invalidOutput('не удалось разобрать timescale');
+      }
+      var defaults = fragmentDefaults(probe, head);
+      var totals = {};
+      var mediaChunks = chunks.length > 1 ? chunks.slice(1) : chunks;
+      var hasData = false;
+      mediaChunks.forEach(function (chunk) {
+        if (findBoxes(probe, chunk, ['mdat']).some(function (box) { return box.byteLength > 0; })) hasData = true;
+        fragmentDuration(probe, chunk, defaults, scales, totals);
+      });
+      if (!hasData) throw invalidOutput('в MP4 нет media data');
+      Object.keys(totals).forEach(function (id) { durationSec = Math.max(durationSec, totals[id]); });
+      // Некоторые совместимые упаковщики пишут обычный MP4 без moof.
+      if (!durationSec) durationSec = headerDuration(probe, head);
+    } else {
+      return { bytes: bytes, durationSec: 0, tracks: tracks };
+    }
+    if (!(durationSec > 0) || !isFinite(durationSec)) throw invalidOutput('длительность не определена');
+    var expected = Number(cfg.expectedDurationSec);
+    if (expected > 0 && isFinite(expected)) {
+      var tolerance = Math.max(0.75, expected * 0.05);
+      if (Math.abs(durationSec - expected) > tolerance) {
+        throw invalidOutput('длительность ' + durationSec.toFixed(2) + ' с вместо ожидаемых ' + expected.toFixed(2) + ' с');
+      }
+    }
+    return { bytes: bytes, durationSec: durationSec, tracks: tracks };
+  }
+
   /**
    * Скачивает сегменты параллельно, но подаёт в muxer строго по порядку.
    * @param {RtDownloadPartConfig} cfg
@@ -574,6 +736,13 @@
     }
 
     if (mode === 'm4a') extractor = audioLib.createExtractor({ title: cfg.title, tags: cfg.tags });
+
+    function checked(result) {
+      if (cfg.validate && mode !== 'ts') {
+        validatePart({ chunks: result.chunks, mode: mode, muxjs: muxjs, expectedDurationSec: cfg.expectedDurationSec });
+      }
+      return result;
+    }
 
     function emit() {
       onProgress({
@@ -629,6 +798,7 @@
       if (signal && signal.aborted) throw new Error('Отменено пользователем');
       var res = await window_.get(nextToFeed);
       window_.delete(nextToFeed);
+      if (signal && signal.aborted) throw new Error('Отменено пользователем');
       if (!res.ok) throw res.err;
       receivedBytes += res.buf.byteLength;
       if (mode === 'mp4') {
@@ -647,15 +817,15 @@
 
     if (mode === 'm4a') {
       var audio = extractor.finish();
-      return { chunks: audio.chunks, mime: 'audio/mp4', ext: 'm4a', bytes: audio.bytes,
-               durationSec: audio.durationSec };
+      return checked({ chunks: audio.chunks, mime: 'audio/mp4', ext: 'm4a', bytes: audio.bytes,
+               durationSec: audio.durationSec });
     }
     if (mode === 'mp4') {
       transmuxer.flush();
       if (!initSegment) throw new Error('mux.js не смог собрать MP4 (возможно, неподдерживаемый кодек)');
       chunks.unshift(initSegment);
-      return { chunks: chunks, mime: 'video/mp4', ext: 'mp4',
-               bytes: chunks.reduce(function (s, c) { return s + c.byteLength; }, 0) };
+      return checked({ chunks: chunks, mime: 'video/mp4', ext: 'mp4',
+               bytes: chunks.reduce(function (s, c) { return s + c.byteLength; }, 0) });
     }
     return { chunks: chunks, mime: 'video/mp2t', ext: 'ts',
              bytes: chunks.reduce(function (s, c) { return s + c.byteLength; }, 0) };
@@ -916,6 +1086,7 @@
     segmentRange: segmentRange,
     segmentOffsets: segmentOffsets,
     downloadPart: downloadPart,
+    validatePart: validatePart,
     parseMaster: parseMaster,
     parseMediaPlaylist: parseMediaPlaylist,
     groupVariants: groupVariants,

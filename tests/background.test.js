@@ -43,10 +43,10 @@ test('только звук: качается самый лёгкий поток
 test('только звук: фрагмент по таймкодам', async () => {
   createServer(oneVideo([{ height: 144, bandwidth: 140000, codecs: AAC, mirrors: ['a.rtbcdn.ru'], segments: 4, aac: true }]));
   const b = createBrowser();
-  await b.call({ type: 'rt:start', videoId: ID1, audio: true, from: 4, to: 12 });
+  await b.call({ type: 'rt:start', videoId: ID1, audio: true, from: 0.19, to: 0.55 });
   const done = await b.waitFor((m) => isDone(m) || isErr(m));
   assert.equal(done.phase, 'done');
-  assert.match(b.downloads[0].filename, /\(0-04-0-12\)\.m4a$/);
+  assert.match(b.downloads[0].filename, /\(0-00-0-00\)\.m4a$/);
   const m4a = parseM4a(Buffer.from(await resolveObjectURL(b.downloads[0].url).arrayBuffer()));
   assert.equal(m4a.frames.length, 16, 'сегменты 2 и 3');
 });
@@ -187,6 +187,65 @@ test('плейлист: после «перезапуска» докачка и�
   await b.idle(() => b.pending().length === 0, 15000);
   assert.deepEqual(b.downloads.map((d) => d.filename), ['Серия 3.m4a'], 'серии 1–2 заново не качаются');
   assert.equal(srv.segmentFetches(ID1, 144).length, 0);
+});
+
+test('плейлист: упавшая серия получает отдельную запись и повторяется без остальных', async () => {
+  const srv = playlistSetup();
+  srv.failures.add(ID2 + '/144/seg0.ts');
+  const b = createBrowser();
+  await b.call({ type: 'rt:start-playlist', playlistId: '555', audio: true, delayMs: 1 });
+  const queued = await b.waitFor((m) => m.phase === 'queue-done', 20000);
+  assert.equal(queued.failed.length, 1);
+  assert.equal(queued.failed[0].videoId, ID2);
+
+  const items = (await b.call({ type: 'rt:pending-list' })).items;
+  assert.equal(items.length, 1, 'общая запись завершена, осталась только ошибка серии');
+  assert.equal(items[0].kind, 'video');
+  assert.equal(items[0].videoId, ID2);
+  assert.equal(items[0].status, 'error');
+  assert.equal(items[0].title, 'Серия 2');
+
+  srv.failures.clear();
+  b.tabMsgs.length = 0;
+  const resumed = await b.call({ type: 'rt:pending-resume', id: items[0].id });
+  assert.equal(resumed.ok, true);
+  await b.waitFor(isDone, 10000);
+  await b.idle(() => b.pending().length === 0);
+  assert.deepEqual(b.downloads.map((d) => d.filename), ['Серия 1.m4a', 'Серия 3.m4a', 'Серия 2.m4a']);
+});
+
+test('одиночное видео: пауза сохраняет запись, продолжение перезапускает текущую часть', async () => {
+  const srv = createServer(oneVideo([
+    { height: 720, bandwidth: 80e6, codecs: HEVC, mirrors: ['a.rtbcdn.ru'], segments: 2 }
+  ]));
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const response = await originalFetch(url, init);
+    if (String(url).includes('/720/seg0.ts')) await new Promise((resolve) => setTimeout(resolve, 150));
+    return response;
+  };
+  const b = createBrowser();
+  const started = await b.call({ type: 'rt:start', videoId: ID1, height: 720, maxPartMB: 50 });
+  await b.idle(() => srv.segmentFetches(ID1, 720).some((u) => u.includes('/seg0.ts')));
+  const pausedResponse = await b.call({ type: 'rt:pause', jobId: started.jobId });
+  assert.equal(pausedResponse.ok, true);
+  const paused = await b.waitFor((m) => m.phase === 'paused', 5000);
+  assert.equal(paused.pendingId, started.jobId);
+  await b.idle(async () => {
+    const items = (await b.call({ type: 'rt:pending-list' })).items;
+    return items.length === 1 && !items[0].running && items[0].status === 'paused';
+  });
+  assert.equal(b.downloads.length, 0, 'незавершённая часть не сохранена');
+
+  const rec = (await b.call({ type: 'rt:pending-list' })).items[0];
+  b.tabMsgs.length = 0;
+  const resumed = await b.call({ type: 'rt:pending-resume', id: rec.id });
+  assert.equal(resumed.ok, true);
+  await b.waitFor(isDone, 10000);
+  await b.idle(() => b.pending().length === 0);
+  assert.equal(b.downloads.length, 2);
+  assert.ok(srv.segmentFetches(ID1, 720).filter((u) => u.includes('/seg0.ts')).length >= 2,
+    'первый сегмент прерванной части запрошен заново');
 });
 
 test('rt:pending-discard убирает запись', async () => {
@@ -387,6 +446,18 @@ test('чужие URL обложки и субтитров не получают 
   assert.equal(b.downloads.length, 2);
   assert.equal(b.downloads[1].filename, 'Тестовое видео.mp4');
   assert.ok(!srv.log.some((url) => url.includes('evil.example')), 'ни обложка, ни субтитры не запрашивались');
+});
+
+test('повреждённый MP4 не сохраняется и остаётся ошибкой для повтора', async () => {
+  createServer(oneVideo([{ height: 144, bandwidth: 140000, codecs: AAC, mirrors: ['a.rtbcdn.ru'], segments: 1, aac: true }]));
+  const b = createBrowser(null, { corruptMp4: true });
+  await b.call({ type: 'rt:start', videoId: ID1, height: 144 });
+  const done = await b.waitFor((m) => isDone(m) || isErr(m));
+  assert.equal(done.phase, 'error');
+  assert.match(done.error, /Проверка результата/);
+  assert.equal(b.downloads.length, 0, 'download не вызывается до успешной проверки');
+  assert.equal(b.pending().length, 1);
+  assert.equal(b.pending()[0].status, 'error');
 });
 
 test('rt:save-url: чужие хосты и не-http схемы отклоняются, CDN RuTube проходит', async () => {

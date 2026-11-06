@@ -263,7 +263,10 @@
       var runId = job.jobId + ':' + (job.partIndex || 0);
       var res = await sendExt({
         type: 'rt:offscreen-run',
-        cfg: { runId: runId, segments: segments, mode: mode, concurrency: 5, title: job.title, tags: job.tags }
+        cfg: {
+          runId: runId, segments: segments, mode: mode, concurrency: 5,
+          title: job.title, tags: job.tags, validate: true, expectedDurationSec: job.partDurationSec
+        }
       });
       if (!res || !res.ok) {
         var err = new Error((res && res.error) || 'build-failed');
@@ -280,6 +283,8 @@
       title: job.title,
       tags: job.tags,
       concurrency: 5,
+      validate: true,
+      expectedDurationSec: job.partDurationSec,
       signal: job.controller.signal,
       onProgress: job.onProgress
     });
@@ -324,12 +329,16 @@
     function post(p) {
       p.type = 'rt:progress';
       p.jobId = job.jobId;
+      p.pendingId = opts.pendingId || null;
       if (queueInfo) p.queue = queueInfo;
-      (job.root || job).progress = { phase: p.phase, percent: p.percent, part: p.part, parts: p.parts };
+      (job.root || job).progress = {
+        phase: p.phase, percent: p.percent, part: p.part, parts: p.parts,
+        done: p.done, total: p.total, bytes: p.bytes, ms: p.ms
+      };
       sendTab(job.tabId, p);
       if (p.phase === 'download' && typeof p.percent === 'number') setBadge(p.percent + '%', '#ff3b3b');
       else if (p.phase === 'meta' || p.phase === 'playlist' || p.phase === 'parts') setBadge('…', '#ff3b3b');
-      else if (p.phase === 'done' || p.phase === 'error' || p.phase === 'cancelled') setBadge('');
+      else if (p.phase === 'done' || p.phase === 'error' || p.phase === 'cancelled' || p.phase === 'paused') setBadge('');
     }
 
     try {
@@ -416,6 +425,7 @@
         if (job.controller.signal.aborted) throw new Error('cancelled');
         var p = parts[i];
         var startedAt = Date.now();
+        (job.root || job).partStartedAt = startedAt;
         var filename = base +
           (parts.length > 1 ? ' — ' + (i + 1) + '/' + parts.length : '') +
           (mode === 'm4a' ? '.m4a' : mode === 'mp4' ? '.mp4' : '.ts');
@@ -423,6 +433,9 @@
         job.partIndex = i;
         job.partStart = startSeg + p.start;
         job.partEnd = startSeg + p.end;
+        job.partDurationSec = durations.slice(p.start, p.end).reduce(function (sum, value) {
+          return sum + (Number(value) || 0);
+        }, 0);
 
         var onProg = (function (idx, start) {
           return function (pr) {
@@ -480,6 +493,11 @@
     } catch (e) {
       var msg = (e && e.message) || String(e);
       var cancelled = /cancelled|Отменено/i.test(msg);
+      if (cancelled && job.abortReason === 'paused') {
+        if (opts.pendingId) pendingPatch(opts.pendingId, { status: 'paused', error: '' });
+        post({ phase: 'paused' });
+        return { ok: false, paused: true, error: 'paused' };
+      }
       var code = msg;
       if (msg === 'live') code = 'live';
       else if (msg === 'drm') code = 'drm';
@@ -503,7 +521,13 @@
       if (!queueInfo || cancelled) {
         post({ phase: cancelled ? 'cancelled' : 'error', error: code, detail: msg });
       }
-      return { ok: false, error: code === 'live' || code === 'drm' || code === 'empty-range' ? code : msg };
+      return {
+        ok: false,
+        error: code === 'live' || code === 'drm' || code === 'empty-range' ? code : msg,
+        nextPart: typeof saved !== 'undefined' ? saved.length : 0,
+        partsTotal: typeof parts !== 'undefined' ? parts.length : 0,
+        savedFiles: typeof saved !== 'undefined' ? saved.slice() : []
+      };
     }
   }
 
@@ -616,7 +640,20 @@
 
         if (r.ok) saved = saved.concat(r.files);
         else if (job.controller.signal.aborted) throw new Error('cancelled');
-        else failed.push({ title: v.title, error: r.error });
+        else {
+          var failure = { title: v.title, videoId: v.id, error: r.error };
+          failed.push(failure);
+          // Отдельная запись позволяет повторить именно эту серию из popup и не
+          // теряет уже сохранённые части, даже когда общая очередь завершилась.
+          pendingUpsert({
+            id: newId('video'), kind: 'video', videoId: v.id, height: opts.height, audio: !!opts.audio,
+            from: null, to: null, maxPartMB: opts.maxPartMB, nameTemplate: opts.nameTemplate || '',
+            subsUrl: '', subsExt: '', title: v.title,
+            nextPart: r.nextPart || 0, partsTotal: r.partsTotal || 0, savedFiles: r.savedFiles || [],
+            status: 'error', error: String(r.error || 'download').slice(0, 200), createdAt: Date.now(),
+            sourcePlaylistId: opts.playlistId, sourceIndex: i
+          });
+        }
         if (opts.pendingId) pendingPatch(opts.pendingId, { nextIndex: i + 1, doneCount: doneSoFar });
 
         if (opts.delayMs) await new Promise(function (res) { setTimeout(res, opts.delayMs); });
@@ -671,7 +708,7 @@
       nameTemplate: p.nameTemplate || '', subsUrl: p.subsUrl || '', subsExt: p.subsExt || '',
       title: resume ? resume.title : '', nextPart: resume ? resume.nextPart || 0 : 0,
       partsTotal: resume ? resume.partsTotal || 0 : 0, savedFiles: resume ? resume.savedFiles || [] : [],
-      status: 'running', createdAt: resume ? resume.createdAt : Date.now()
+      status: 'running', error: '', createdAt: resume ? resume.createdAt : Date.now()
     });
 
     runVideo(job, {
@@ -697,7 +734,10 @@
     var originalFrom = resume && resume.fromIndex != null ? resume.fromIndex : (p.fromIndex || 0);
     var startAt = resume && resume.nextIndex ? Math.max(resume.nextIndex, originalFrom) : (p.fromIndex || 0);
     if (!resume) {
-      dropStale(function (r) { return r.kind === 'playlist' && r.playlistId === p.playlistId && !!r.audio === !!p.audio; });
+      dropStale(function (r) {
+        return (!!r.audio === !!p.audio) && ((r.kind === 'playlist' && r.playlistId === p.playlistId) ||
+          (r.kind === 'video' && r.sourcePlaylistId === p.playlistId));
+      });
     }
     pendingUpsert({
       id: job.pendingId, kind: 'playlist', playlistId: p.playlistId, height: p.height, audio: !!p.audio,
@@ -734,6 +774,8 @@
       jobs.forEach(function (job) { if (job.pendingId === r.id) running = job; });
       return Object.assign({}, r, {
         running: !!running,
+        jobId: running ? running.jobId : null,
+        paused: running ? !!(running.queue && running.queue.paused) : r.status === 'paused',
         progress: running && running.progress ? running.progress : null
       });
     }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
@@ -855,6 +897,7 @@
       case 'rt:pending-discard': {
         jobs.forEach(function (job) {
           if (job.pendingId === msg.id) {
+            job.abortReason = 'user';
             try { job.controller.abort(); } catch (e) {}
             if (job.queue && job.queue.resume) job.queue.resume();
           }
@@ -865,8 +908,16 @@
 
       case 'rt:pause': {
         var jp = jobs.get(msg.jobId);
-        if (!jp || !jp.queue) return { ok: false };
-        jp.queue.paused = true;
+        if (!jp) return { ok: false };
+        if (jp.queue) {
+          jp.queue.paused = true;
+        } else {
+          jp.abortReason = 'paused';
+          try { jp.controller.abort(); } catch (e) {}
+          if (CAN_OFFSCREEN) {
+            sendExt({ type: 'rt:offscreen-cancel', runId: jp.jobId + ':' + (jp.partIndex || 0) });
+          }
+        }
         setBadge('II', '#8a8a93');
         return { ok: true, paused: true };
       }
@@ -883,9 +934,10 @@
       case 'rt:cancel': {
         var job3 = jobs.get(msg.jobId);
         if (job3) {
+          job3.abortReason = 'user';
           try { job3.controller.abort(); } catch (e) {}
           if (job3.queue && job3.queue.resume) job3.queue.resume();
-          if (CAN_OFFSCREEN) sendExt({ type: 'rt:offscreen-cancel', runId: msg.jobId + ':0' });
+          if (CAN_OFFSCREEN) sendExt({ type: 'rt:offscreen-cancel', runId: msg.jobId + ':' + (job3.partIndex || 0) });
           setBadge('');
         }
         return { ok: !!job3 };
@@ -953,7 +1005,7 @@
           job.abortReason = 'tab-closed';          // запись о загрузке остаётся — можно докачать из popup
           try { job.controller.abort(); } catch (e) {}
           if (job.queue && job.queue.resume) job.queue.resume();
-          if (CAN_OFFSCREEN) sendExt({ type: 'rt:offscreen-cancel', runId: job.jobId + ':0' });
+          if (CAN_OFFSCREEN) sendExt({ type: 'rt:offscreen-cancel', runId: job.jobId + ':' + (job.partIndex || 0) });
           setBadge('');
         }
       });
@@ -968,18 +1020,23 @@
       jobs.forEach(function (job, jobId) {
         if (msg.runId && msg.runId.indexOf(jobId + ':') === 0) {
           var part = parseInt(msg.runId.split(':')[1], 10) + 1;
-          setBadge((msg.percent || 0) + '%', '#ff3b3b');
-          sendTab(job.tabId, {
+          var root = job.root || job;
+          var progress = {
             type: 'rt:progress',
             jobId: jobId,
+            pendingId: job.pendingId || null,
             phase: 'download',
             part: part,
-            parts: part,
+            parts: (root.progress && root.progress.parts) || part,
             done: msg.done,
             total: msg.total,
             percent: msg.percent,
-            bytes: msg.bytes
-          });
+            bytes: msg.bytes,
+            ms: root.partStartedAt ? Date.now() - root.partStartedAt : 0
+          };
+          root.progress = progress;
+          setBadge((msg.percent || 0) + '%', '#ff3b3b');
+          sendTab(job.tabId, progress);
         }
       });
       return false;

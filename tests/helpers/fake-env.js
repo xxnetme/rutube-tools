@@ -1,13 +1,47 @@
 'use strict';
 /* Фальшивые браузер и RuTube для сквозных тестов background.js. */
 const path = require('node:path');
+const fs = require('node:fs');
+const vm = require('node:vm');
 const { adtsFrame, buildTs } = require('./ts-builder.js');
 
 const BG = path.resolve(__dirname, '../../src/background.js');
+const muxSandbox = { window: {} };
+vm.createContext(muxSandbox);
+vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../src/lib/mux-mp4.min.js'), 'utf8'), muxSandbox);
+const REAL_PROBE = muxSandbox.muxjs.probe;
+const VALID_MP4 = (() => {
+  const g = muxSandbox.muxjs.generator;
+  const video = {
+    id: 1, type: 'video', width: 64, height: 64, profileIdc: 66, profileCompatibility: 192, levelIdc: 10,
+    sps: [new Uint8Array([0x67, 0x42, 0xc0, 0x0a, 0xda, 0x1e, 0xd9])],
+    pps: [new Uint8Array([0x68, 0xce, 0x06, 0xe2])], baseMediaDecodeTime: 0,
+    samples: [{ duration: 9000, size: 1, compositionTimeOffset: 0, flags: {
+      isLeading: 0, dependsOn: 1, isDependedOn: 0, hasRedundancy: 0, paddingValue: 0,
+      isNonSyncSample: 0, degradationPriority: 0
+    } }]
+  };
+  const audio = {
+    id: 2, type: 'audio', samplerate: 44100, channelcount: 2, samplesize: 16,
+    audioobjecttype: 2, samplingfrequencyindex: 4, baseMediaDecodeTime: 0,
+    samples: [{ duration: 8192, size: 1 }]
+  };
+  const join = (...parts) => {
+    const out = new Uint8Array(parts.reduce((n, part) => n + part.length, 0));
+    let at = 0;
+    parts.forEach((part) => { out.set(part, at); at += part.length; });
+    return out;
+  };
+  return {
+    init: g.initSegment([video, audio]),
+    media: join(g.moof(1, [video, audio]), g.mdat(new Uint8Array([1, 2])))
+  };
+})();
 
 /** Один «запуск браузера». store можно передать от предыдущего — так имитируется перезапуск. */
-function createBrowser(store) {
+function createBrowser(store, options) {
   store = store || {};
+  options = options || {};
   const listeners = [];
   const downloads = [];
   const tabMsgs = [];
@@ -43,13 +77,13 @@ function createBrowser(store) {
   globalThis.RTLib = require('../../src/lib/engine.js');
   globalThis.RTAudio = require('../../src/lib/audio.js');
   // Минимальный double реального mux.js 7: Transmuxer экспортируется наверху.
-  globalThis.muxjs = { Transmuxer: class {
+  globalThis.muxjs = { probe: REAL_PROBE, Transmuxer: class {
     constructor() { this.handlers = {}; this.first = true; }
     on(name, fn) { this.handlers[name] = fn; }
-    push(buf) {
+    push() {
       this.handlers.data({
-        initSegment: this.first ? new Uint8Array([0, 0, 0, 1]) : null,
-        data: new Uint8Array(buf)
+        initSegment: this.first ? VALID_MP4.init : null,
+        data: options.corruptMp4 ? VALID_MP4.media.slice(0, 20) : VALID_MP4.media
       });
       this.first = false;
     }
@@ -135,8 +169,9 @@ function createServer(videos, opts) {
     m = url.match(/https:\/\/([\w.-]+)\/([0-9a-f]{32})\/(\d+)\/index\.m3u8/);
     if (m) {
       const x = videos[m[2]].variants.find((q) => String(q.height) === m[3]);
+      const segmentDuration = x.aac ? (8 * 1024 / 44100) : 4.0;
       return text('#EXTM3U\n' + Array.from({ length: x.segments }, (_, i) =>
-        '#EXTINF:4.0,\nhttps://' + m[1] + '/' + m[2] + '/' + m[3] + '/seg' + i + '.ts\n').join('') + '#EXT-X-ENDLIST\n');
+        '#EXTINF:' + segmentDuration + ',\nhttps://' + m[1] + '/' + m[2] + '/' + m[3] + '/seg' + i + '.ts\n').join('') + '#EXT-X-ENDLIST\n');
     }
     m = url.match(/https:\/\/([\w.-]+)\/([0-9a-f]{32})\/(\d+)\/seg(\d+)\.ts/);
     if (m) {
@@ -168,4 +203,4 @@ function createServer(videos, opts) {
 
 const vid = (n) => String(n).repeat(32).slice(0, 32);
 
-module.exports = { createBrowser, createServer, vid };
+module.exports = { createBrowser, createServer, vid, VALID_MP4, MUXJS: muxSandbox.muxjs };
