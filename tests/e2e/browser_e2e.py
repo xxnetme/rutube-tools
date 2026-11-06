@@ -7,8 +7,10 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import os
+import platform
 import re
 import select
 import shutil
@@ -20,13 +22,14 @@ import sys
 import threading
 import time
 import urllib.parse
+import urllib.request
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.common.selenium_manager import SeleniumManager
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -231,24 +234,58 @@ def shadow_text(driver) -> str:
 
 
 def chrome_service(binary: str) -> ChromeService:
-    """Подбирает driver к точной версии Playwright Chrome, а не к системному на runner."""
+    """Скачивает ChromeDriver той же версии, что и Playwright Chromium.
+
+    На GitHub runner Selenium Manager может вернуть системный driver даже при
+    переданных browser-path/driver-version. Поэтому здесь используется официальный
+    Chrome for Testing artifact, а не неявный driver из PATH.
+    """
     raw_version = subprocess.check_output([binary, "--version"], text=True, timeout=30)
     match = re.search(r"\b(\d+\.\d+\.\d+\.\d+)\b", raw_version)
     if not match:
         raise RuntimeError(f"Не удалось определить версию Chromium из {raw_version!r}")
     version = match.group(1)
-    paths = SeleniumManager().binary_paths([
-        "--browser", "chrome", "--browser-path", binary,
-        "--driver-version", version, "--avoid-browser-download"
-    ])
-    driver_path = paths.get("driver_path")
-    if not driver_path or not Path(driver_path).is_file():
-        raise RuntimeError(f"Selenium Manager не выдал ChromeDriver {version} для {binary}: {paths}")
-    driver_version = subprocess.check_output([driver_path, "--version"], text=True, timeout=30).strip()
-    if not driver_version.startswith(f"ChromeDriver {version.split('.')[0]}."):
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    if system == "linux":
+        archive_platform = "linux64"
+        executable = "chromedriver"
+    elif system == "darwin":
+        archive_platform = "mac-arm64" if machine in {"arm64", "aarch64"} else "mac-x64"
+        executable = "chromedriver"
+    elif system == "windows":
+        archive_platform = "win64" if machine in {"amd64", "x86_64"} else "win32"
+        executable = "chromedriver.exe"
+    else:
+        raise RuntimeError(f"ChromeDriver для платформы {system!r} не настроен")
+
+    driver_path = (Path.home() / ".cache" / "rutube-tools" / "chromedriver" /
+                   version / archive_platform / executable)
+    if not driver_path.is_file():
+        url = (f"https://storage.googleapis.com/chrome-for-testing-public/{version}/"
+               f"{archive_platform}/chromedriver-{archive_platform}.zip")
+        print(f"[e2e] Загрузка ChromeDriver {version} для {archive_platform}", flush=True)
+        request = urllib.request.Request(url, headers={"User-Agent": "rutube-tools-e2e"})
+        with urllib.request.urlopen(request, timeout=120) as response:
+            payload = response.read()
+        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+            member = next((name for name in archive.namelist()
+                           if name.endswith("/" + executable) or name == executable), None)
+            if member is None:
+                raise RuntimeError(f"В архиве ChromeDriver нет {executable}: {archive.namelist()}")
+            driver_bytes = archive.read(member)
+        driver_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = driver_path.with_name(driver_path.name + ".download")
+        temporary.write_bytes(driver_bytes)
+        temporary.chmod(0o755)
+        temporary.replace(driver_path)
+
+    driver_version = subprocess.check_output([str(driver_path), "--version"], text=True, timeout=30).strip()
+    if not (driver_version == f"ChromeDriver {version}" or
+            driver_version.startswith(f"ChromeDriver {version} ")):
         raise RuntimeError(f"ChromeDriver не соответствует Chromium {version}: {driver_version}")
     print(f"[e2e] Chromium {version}; {driver_version}; driver={driver_path}", flush=True)
-    return ChromeService(executable_path=driver_path)
+    return ChromeService(executable_path=str(driver_path))
 
 
 def make_driver(name: str, proxy_port: int, directory: Path) -> webdriver.Remote:
