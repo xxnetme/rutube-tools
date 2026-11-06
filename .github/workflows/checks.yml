@@ -102,14 +102,17 @@ jobs:
           npm ci
           python3 -m pip install --quiet -r tests/e2e/requirements.txt
 
-      - name: Browser binaries and ffmpeg
+      - name: ffmpeg
+        timeout-minutes: 3
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | sed -n '1p'
+
+      - name: Playwright browsers
         timeout-minutes: 5
         run: |
-          # На ubuntu-latest ffmpeg и системные библиотеки уже есть. Два вызова apt-get
-          # (здесь и внутри --with-deps) раньше зависали до начала самого E2E.
-          command -v ffmpeg
-          command -v ffprobe
-          ffmpeg -version | sed -n '1p'
+          # Без --with-deps: повторный apt-get внутри Playwright зависал до начала E2E.
           npx playwright install chromium firefox
 
       - name: Реальное расширение в Firefox и Chromium
