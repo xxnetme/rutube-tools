@@ -2,7 +2,7 @@
   <title id="title">RuTube Tools</title>
   <desc id="desc">Фирменный знак RuTube Tools: монолинейная буква R с символом воспроизведения</desc>
   <!-- Плоский squircle и собственная геометрия знака без декоративных эффектов. -->
-  <path fill="#ff3b30" d="M256 0C480 0 512 32 512 256C512 480 480 512 256 512C32 512 0 480 0 256C0 32 32 0 256 0Z"/>
+  <path fill="#ff453a" d="M256 0C480 0 512 32 512 256C512 480 480 512 256 512C32 512 0 480 0 256C0 32 32 0 256 0Z"/>
   <path d="M156 372V140H266C326 140 360 168 360 218C360 266 326 294 266 294H156M268 294L356 372" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M212 177L290 217L212 257Z" fill="#fff"/>
 </svg>

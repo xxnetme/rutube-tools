@@ -1,74 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="RuTube Tools — скачивание MP4, звук M4A и работа с кадрами в плеере RuTube" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="RuTube Tools — всё для видео прямо в плеере RuTube" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
   <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111114"/><stop offset="1" stop-color="#050505"/>
+    </linearGradient>
+    <radialGradient id="material" cx="0.82" cy="0.08" r="0.75">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.045"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d1d20"/><stop offset="1" stop-color="#141416"/>
+    </linearGradient>
     <filter id="panelShadow" x="-20%" y="-25%" width="140%" height="160%">
-      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#000" flood-opacity="0.08"/>
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000" flood-opacity="0.42"/>
     </filter>
-    <clipPath id="panelClip"><rect x="704" y="48" width="512" height="304" rx="20"/></clipPath>
+    <clipPath id="panelClip"><rect x="704" y="48" width="512" height="304" rx="22"/></clipPath>
   </defs>
 
-  <rect width="1280" height="400" fill="#f5f5f7"/>
+  <rect width="1280" height="400" fill="url(#bg)"/>
+  <rect width="1280" height="400" fill="url(#material)"/>
 
-  <!-- Знак и название -->
-  <g transform="translate(64 64) scale(.171875)">
-    <path fill="#ff3b30" d="M256 0C480 0 512 32 512 256C512 480 480 512 256 512C32 512 0 480 0 256C0 32 32 0 256 0Z"/>
+  <!-- Компактная строка бренда -->
+  <g transform="translate(64 58) scale(.125)">
+    <path fill="#ff453a" d="M256 0C480 0 512 32 512 256C512 480 480 512 256 512C32 512 0 480 0 256C0 32 32 0 256 0Z"/>
     <path d="M156 372V140H266C326 140 360 168 360 218C360 266 326 294 266 294H156M268 294L356 372" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M212 177L290 217L212 257Z" fill="#fff"/>
   </g>
-  <text x="176" y="110" font-size="42" font-weight="600" letter-spacing="-1.7" fill="#1d1d1f">RuTube Tools</text>
-  <text x="177" y="142" font-size="17" fill="#6e6e73">Видео, звук и кадры — прямо в плеере RuTube</text>
+  <text x="148" y="100" font-size="29" font-weight="600" letter-spacing="-1" fill="#f5f5f7">RuTube Tools</text>
 
-  <!-- Только суть, без декоративных чипов -->
-  <text x="64" y="210" font-size="18" font-weight="500" fill="#1d1d1f">MP4 · M4A · Кадры PNG · Субтитры</text>
-  <text x="64" y="242" font-size="15" fill="#6e6e73">Плейлисты, A/B-навигация и докачка.</text>
-  <text x="64" y="290" font-size="15" fill="#3a3a3c">Без рекламы, аналитики и сторонних серверов.</text>
-  <text x="64" y="338" font-size="13" fill="#86868b">2.0.0  ·  Firefox 140+  ·  Chromium MV3  ·  MIT</text>
+  <!-- Один сильный акцент вместо нескольких мелких блоков -->
+  <text x="64" y="184" font-size="44" font-weight="600" letter-spacing="-1.8" fill="#f5f5f7">Всё для видео.</text>
+  <text x="64" y="234" font-size="44" font-weight="600" letter-spacing="-1.8" fill="#86868b">Прямо в плеере.</text>
+  <text x="64" y="280" font-size="16" fill="#a1a1a6">MP4, M4A, кадры и субтитры. Без рекламы и трекеров.</text>
+  <text x="64" y="338" font-size="13" fill="#6e6e73">2.0.0  ·  Firefox 140+  ·  Chromium MV3  ·  MIT</text>
 
-  <!-- Схематичная панель расширения -->
-  <rect x="704" y="48" width="512" height="304" rx="20" fill="#fff" filter="url(#panelShadow)"/>
+  <!-- Тёмная material-панель -->
+  <rect x="704" y="48" width="512" height="304" rx="22" fill="#161618" filter="url(#panelShadow)"/>
   <g clip-path="url(#panelClip)">
-    <rect x="704" y="48" width="512" height="304" fill="#fff"/>
-    <rect x="704" y="93" width="512" height="1" fill="#e5e5ea"/>
+    <rect x="704" y="48" width="512" height="304" fill="url(#panel)"/>
+    <rect x="704" y="93" width="512" height="1" fill="#38383a"/>
 
-    <rect x="724" y="64" width="34" height="18" rx="6" fill="#ff3b30"/>
+    <rect x="724" y="64" width="34" height="18" rx="6" fill="#ff453a"/>
     <text x="741" y="77" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">MP4</text>
-    <text x="768" y="78" font-size="13" font-weight="600" fill="#1d1d1f">RuTube Tools</text>
+    <text x="768" y="78" font-size="13" font-weight="600" fill="#f5f5f7">RuTube Tools</text>
     <path d="M1178 65l9 9m0-9l-9 9" stroke="#86868b" stroke-width="1.5" stroke-linecap="round"/>
 
     <g font-size="11.5" font-weight="500">
-      <text x="724" y="118" fill="#1d1d1f">Скачать</text>
-      <rect x="724" y="125" width="45" height="2" rx="1" fill="#ff3b30"/>
+      <text x="724" y="118" fill="#f5f5f7">Скачать</text>
+      <rect x="724" y="125" width="45" height="2" rx="1" fill="#ff453a"/>
       <text x="790" y="118" fill="#86868b">Кадры</text>
       <text x="842" y="118" fill="#86868b">Ещё</text>
       <text x="884" y="118" fill="#86868b">Инфо</text>
     </g>
 
-    <text x="724" y="151" font-size="11" font-weight="500" fill="#3a3a3c">Лекция 03 — как устроен звук в видео</text>
+    <text x="724" y="151" font-size="11" font-weight="500" fill="#d1d1d6">Лекция 03 — как устроен звук в видео</text>
 
-    <!-- Сегментированный контрол -->
-    <rect x="724" y="162" width="300" height="34" rx="9" fill="#f5f5f7"/>
-    <rect x="726" y="164" width="147" height="30" rx="7" fill="#fff" stroke="#e5e5ea"/>
-    <text x="799.5" y="183" text-anchor="middle" font-size="11" font-weight="500" fill="#1d1d1f">Видео MP4</text>
-    <text x="949" y="183" text-anchor="middle" font-size="11" font-weight="500" fill="#6e6e73">Только звук</text>
+    <rect x="724" y="162" width="300" height="34" rx="9" fill="#2c2c2e"/>
+    <rect x="726" y="164" width="147" height="30" rx="7" fill="#3a3a3c" stroke="#545456"/>
+    <text x="799.5" y="183" text-anchor="middle" font-size="11" font-weight="500" fill="#f5f5f7">Видео MP4</text>
+    <text x="949" y="183" text-anchor="middle" font-size="11" font-weight="500" fill="#a1a1a6">Только звук</text>
 
-    <!-- Качество -->
     <g font-size="11">
-      <circle cx="729" cy="217" r="5" fill="#ff3b30"/>
+      <circle cx="729" cy="217" r="5" fill="#ff453a"/>
       <circle cx="729" cy="217" r="2" fill="#fff"/>
-      <text x="742" y="221" fill="#1d1d1f" font-weight="500">1080p</text>
+      <text x="742" y="221" fill="#f5f5f7" font-weight="500">1080p</text>
       <text x="1194" y="221" text-anchor="end" font-size="10" fill="#86868b">179 МБ</text>
 
-      <circle cx="729" cy="244" r="4" fill="none" stroke="#c7c7cc" stroke-width="1.4"/>
-      <text x="742" y="248" fill="#3a3a3c">720p</text>
+      <circle cx="729" cy="244" r="4" fill="none" stroke="#636366" stroke-width="1.4"/>
+      <text x="742" y="248" fill="#d1d1d6">720p</text>
       <text x="1194" y="248" text-anchor="end" font-size="10" fill="#86868b">86 МБ</text>
 
-      <circle cx="729" cy="271" r="4" fill="none" stroke="#c7c7cc" stroke-width="1.4"/>
-      <text x="742" y="275" fill="#3a3a3c">только звук</text>
+      <circle cx="729" cy="271" r="4" fill="none" stroke="#636366" stroke-width="1.4"/>
+      <text x="742" y="275" fill="#d1d1d6">только звук</text>
       <text x="1194" y="275" text-anchor="end" font-size="10" fill="#86868b">≈10 МБ</text>
     </g>
 
-    <rect x="724" y="291" width="472" height="38" rx="10" fill="#ff3b30"/>
+    <rect x="724" y="291" width="472" height="38" rx="10" fill="#ff453a"/>
     <text x="960" y="315" text-anchor="middle" font-size="13" font-weight="600" fill="#fff">Скачать MP4</text>
     <text x="724" y="344" font-size="10" fill="#86868b">Файл обрабатывается локально в вашем браузере</text>
   </g>
-  <rect x="704.5" y="48.5" width="511" height="303" rx="19.5" fill="none" stroke="#d2d2d7" stroke-opacity="0.75"/>
+  <rect x="704.5" y="48.5" width="511" height="303" rx="21.5" fill="none" stroke="#48484a" stroke-opacity="0.75"/>
 </svg>
