@@ -21,6 +21,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Node dependencies
+        run: npm ci
+
       - name: Build packages
         run: python3 build.py
 
