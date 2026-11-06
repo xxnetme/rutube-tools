@@ -85,6 +85,7 @@ jobs:
   browser-e2e:
     needs: build-and-lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
@@ -101,12 +102,18 @@ jobs:
           npm ci
           python3 -m pip install --quiet -r tests/e2e/requirements.txt
 
-      - name: Browsers and ffmpeg
+      - name: Browser binaries and ffmpeg
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-          npx playwright install --with-deps chromium firefox
+          # На ubuntu-latest ffmpeg и системные библиотеки уже есть. Два вызова apt-get
+          # (здесь и внутри --with-deps) раньше зависали до начала самого E2E.
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -version | sed -n '1p'
+          npx playwright install chromium firefox
 
       - name: Реальное расширение в Firefox и Chromium
+        timeout-minutes: 8
         run: npm run test:e2e
 
       - name: Отчёты, сеть и скачанные MP4
