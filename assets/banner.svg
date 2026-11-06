@@ -74,7 +74,7 @@
 
   <!-- ================= версия и платформы ================= -->
   <g font-family="JetBrains Mono" font-size="12" fill="#6f7079">
-    <text x="64" y="240">v1.7.0</text>
+    <text x="64" y="240">v1.8.0</text>
     <circle cx="126" cy="236" r="1.5" fill="#4a4b53"/>
     <text x="140" y="240">Firefox 140+ · Chromium MV3</text>
     <circle cx="330" cy="236" r="1.5" fill="#4a4b53"/>

@@ -22,6 +22,8 @@
     lang: 'auto',
     frameKeys: 'comma',     // comma | brackets | angle
     shotKey: 's',           // s | k | f
+    frameFormat: 'png',     // png | jpeg | webp — формат сохраняемого кадра
+    frameQuality: 92,       // 50…100, для jpeg и webp
     preservePitch: true,
     rememberPos: true,
     defaultFormat: 'video', // video | audio — с чего открывается вкладка «Скачать»
@@ -64,7 +66,7 @@
     panelOpen: false,
     ab: { a: null, b: null, loop: false },
     boardBusy: false,
-    storyboard: { every: 5, count: 12 }
+    storyboard: { every: 5, count: 12, useAB: false }
   };
 
   /* ------------------------------------------------------------- утилиты */
@@ -482,6 +484,7 @@
       ['<kbd>,</kbd> <kbd>.</kbd>', t('help.frame')],
       ['<kbd>&lt;</kbd> <kbd>&gt;</kbd>', t('help.speed')],
       ['<kbd>' + escapeHtml(settings.shotKey) + '</kbd>', t('help.shot')],
+      ['<kbd>c</kbd>', t('help.copy')],
       ['<kbd>p</kbd>', t('help.pip')]
     ];
     if (settings.youtubeKeys) {
@@ -638,15 +641,47 @@
 
   function frameFilename(time) {
     var base = (state.info && state.info.title) || document.title || 'rutube';
-    return L.sanitizeFilename(base) + ' — ' + L.formatTime(time).replace(/:/g, '-') + '.png';
+    return L.sanitizeFilename(base) + ' — ' + L.formatTime(time).replace(/:/g, '-') + '.' + L.frameFormat(settings.frameFormat).ext;
   }
 
-  function grabFrameDataUrl(v) {
+  function grabCanvas(v) {
     var c = document.createElement('canvas');
     c.width = v.videoWidth;
     c.height = v.videoHeight;
     c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    return c.toDataURL('image/png');
+    return c;
+  }
+
+  function canvasDataUrl(c) {
+    var f = L.frameFormat(settings.frameFormat);
+    return f.mime === 'image/png' ? c.toDataURL(f.mime) : c.toDataURL(f.mime, L.frameQuality(settings.frameQuality));
+  }
+
+  function grabFrameDataUrl(v) {
+    return canvasDataUrl(grabCanvas(v));
+  }
+
+  /** Кадр в буфер обмена. Браузеры принимают в буфер только PNG, поэтому формат из настроек не используется. */
+  function copyFrame(v) {
+    v = v || getPlayerVideo();
+    if (!v || !v.videoWidth) { toast(t('fr.notReady')); return Promise.resolve(null); }
+    if (!(navigator.clipboard && navigator.clipboard.write) || typeof window.ClipboardItem === 'undefined') {
+      toast(t('fr.copyUnsupported'));
+      return Promise.resolve(null);
+    }
+    var c;
+    try { c = grabCanvas(v); c.getContext('2d').getImageData(0, 0, 1, 1); } catch (e) { toast(t('fr.saveBlocked')); return Promise.resolve(null); }
+    // ClipboardItem принимает обещание: так запись остаётся внутри жеста пользователя
+    var blobPromise = new Promise(function (resolve, reject) {
+      c.toBlob(function (b) { if (b) resolve(b); else reject(new Error('blob')); }, 'image/png');
+    });
+    return navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blobPromise })]).then(function () {
+      toast(t('fr.copied'));
+      return true;
+    }, function () {
+      toast(t('fr.copyFail'));
+      return null;
+    });
   }
 
   function saveFrame(v) {
@@ -669,21 +704,32 @@
       });
   }
 
-  /** Серия кадров через равные интервалы: каждый кадр — отдельный PNG. */
+  /** Моменты серии: от начала или, если включено «только между A и B», внутри отрезка. */
+  function currentBoardTimes(v) {
+    var ab = state.ab;
+    return L.boardTimes({
+      every: state.storyboard.every,
+      count: state.storyboard.count,
+      duration: isFinite(v.duration) ? v.duration : 0,
+      useAB: !!state.storyboard.useAB,
+      a: ab.a, b: ab.b
+    });
+  }
+
+  /** Серия кадров через равные интервалы: каждый кадр — отдельный файл. */
   function makeStoryboard() {
     var v = getPlayerVideo();
     if (!v || !v.videoWidth) { toast(t('fr.notReady')); return; }
     if (state.boardBusy) return;
-    var every = Math.max(0.2, Number(state.storyboard.every) || 5);
-    var count = Math.max(1, Math.min(120, Number(state.storyboard.count) || 12));
-    var dur = isFinite(v.duration) ? v.duration : 0;
-    if (!dur) { toast(t('fr.notReady')); return; }
+    var times = currentBoardTimes(v);
+    if (!times.length) { toast(t('fr.notReady')); return; }
 
     state.boardBusy = true;
     var wasPaused = v.paused;
     var originalTime = v.currentTime;
     v.pause();
     var made = 0;
+    var count = times.length;
 
     function step(i) {
       if (i >= count) {
@@ -694,9 +740,7 @@
         if (window.RTPanel) window.RTPanel.render();
         return;
       }
-      var time = Math.min(dur - 0.1, i * every);
-      if (time < 0) time = 0;
-      shotAt(time).then(function () {
+      shotAt(times[i]).then(function () {
         made++;
         toast(t('fr.boardProgress', { i: i + 1, n: count }), { duration: 900 });
         setTimeout(function () { step(i + 1); }, 60);
@@ -708,6 +752,66 @@
         var dataUrl;
         try { dataUrl = grabFrameDataUrl(v); } catch (e) { return null; }
         return sendMessage({ type: 'rt:save-data-url', dataUrl: dataUrl, filename: frameFilename(v.currentTime) });
+      });
+    }
+
+    step(0);
+  }
+
+  /**
+   * Контактный лист: все кадры серии на одной картинке, под каждым — таймкод.
+   * Кадры уменьшаются сразу после съёмки, полноразмерные не копятся в памяти.
+   */
+  function makeContactSheet() {
+    var v = getPlayerVideo();
+    if (!v || !v.videoWidth) { toast(t('fr.notReady')); return; }
+    if (state.boardBusy) return;
+    var times = currentBoardTimes(v);
+    if (!times.length) { toast(t('fr.notReady')); return; }
+
+    var lay = L.sheetLayout(times.length, v.videoWidth, v.videoHeight);
+    var sheet = document.createElement('canvas');
+    sheet.width = lay.width;
+    sheet.height = lay.height;
+    var ctx = sheet.getContext('2d');
+    ctx.fillStyle = '#111114';
+    ctx.fillRect(0, 0, sheet.width, sheet.height);
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+
+    state.boardBusy = true;
+    var wasPaused = v.paused;
+    var originalTime = v.currentTime;
+    v.pause();
+
+    function finish(ok) {
+      v.currentTime = originalTime;
+      if (!wasPaused) v.play().catch(function () {});
+      state.boardBusy = false;
+      if (window.RTPanel) window.RTPanel.render();
+      if (!ok) return;
+      var dataUrl;
+      try { dataUrl = canvasDataUrl(sheet); } catch (e) { toast(t('fr.saveBlocked')); return; }
+      var base = (state.info && state.info.title) || document.title || 'rutube';
+      var name = L.sanitizeFilename(base) + ' — ' + t('fr.sheetName') + '.' + L.frameFormat(settings.frameFormat).ext;
+      sendMessage({ type: 'rt:save-data-url', dataUrl: dataUrl, filename: name }).then(function (r) {
+        toast(r && r.ok ? t('fr.saved', { name: r.name }) : t('fr.saveFail'));
+      });
+    }
+
+    function step(i) {
+      if (i >= times.length) { finish(true); return; }
+      seekTo(v, times[i]).then(function () {
+        var col = i % lay.cols, row = Math.floor(i / lay.cols);
+        var x = lay.gap + col * (lay.cellW + lay.gap);
+        var y = lay.gap + row * (lay.cellH + lay.captionH + lay.gap);
+        try {
+          ctx.drawImage(v, x, y, lay.cellW, lay.cellH);
+        } catch (e) { toast(t('fr.saveBlocked')); finish(false); return; }
+        ctx.fillStyle = '#e7e7ee';
+        ctx.fillText(timecode(v.currentTime), x + 4, y + lay.cellH + lay.captionH / 2);
+        toast(t('fr.boardProgress', { i: i + 1, n: times.length }), { duration: 900 });
+        setTimeout(function () { step(i + 1); }, 60);
       });
     }
 
@@ -818,13 +922,14 @@
     var isHelp = key === '?' || (key === '/' && e.shiftKey);
     var isShot = key === settings.shotKey || (settings.shotKey === 's' && (key === 'ы' || key === 'Ы'));
     var isPip = key === 'p' || key === 'P' || key === 'з' || key === 'З';
+    var isCopy = key === 'c' || key === 'C' || key === 'с' || key === 'С';   // латинская и русская «с» — одна клавиша
 
     if (key === 'Escape') {
       if (ui && !ui.help.hidden) { ui.help.hidden = true; e.preventDefault(); }
       return;
     }
 
-    var special = isBack || isFwd || isHelp || isShot || isPip;
+    var special = isBack || isFwd || isHelp || isShot || isPip || isCopy;
     if (!special && !isSpeed && !settings.youtubeKeys) return;
 
     var v = getPlayerVideo();
@@ -836,6 +941,7 @@
     if (isFwd) { stopEvent(e); stepFrame(1, v); return; }
     if (isSpeed) { if (e.shiftKey && (key === '<' || key === '>')) { stopEvent(e); stepFrame(key === '>' ? 1 : -1, v); return; } stopEvent(e); changeSpeed(v, key === '>' ? 1 : -1); return; }
     if (isShot) { stopEvent(e); saveFrame(v); return; }
+    if (isCopy) { stopEvent(e); copyFrame(v); return; }
     if (isPip) { stopEvent(e); togglePip(); return; }
     if (isHelp) { stopEvent(e); toggleHelp(); return; }
 
@@ -989,7 +1095,9 @@
     seekTo: seekTo,
     resolveFps: resolveFps,
     saveFrame: saveFrame,
+    copyFrame: copyFrame,
     makeStoryboard: makeStoryboard,
+    makeContactSheet: makeContactSheet,
     changeSpeed: changeSpeed,
     seekBy: seekBy,
     togglePip: togglePip,

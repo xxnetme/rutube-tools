@@ -12,6 +12,8 @@
     lang: 'auto',
     frameKeys: 'comma',
     shotKey: 's',
+    frameFormat: 'png',
+    frameQuality: 92,
     preservePitch: true,
     rememberPos: true,
     defaultFormat: 'video',
@@ -19,7 +21,7 @@
     saveSubs: false
   };
 
-  var SELECTS = ['quality', 'fps', 'maxPartMB', 'frameKeys', 'shotKey', 'lang', 'defaultFormat'];
+  var SELECTS = ['quality', 'fps', 'maxPartMB', 'frameKeys', 'shotKey', 'frameFormat', 'frameQuality', 'lang', 'defaultFormat'];
   var TEXTS = ['nameTemplate'];
   var CHECKS = ['showButton', 'youtubeKeys', 'preservePitch', 'rememberPos'];
 
@@ -60,7 +62,7 @@
     var out = {};
     SELECTS.forEach(function (id) {
       var node = el(id);
-      out[id] = id === 'maxPartMB' ? Number(node.value) : node.value;
+      out[id] = (id === 'maxPartMB' || id === 'frameQuality') ? Number(node.value) : node.value;
     });
     CHECKS.forEach(function (id) {
       out[id] = el(id).checked;

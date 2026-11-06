@@ -1,6 +1,6 @@
 {
   "name": "rutube-tools",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "description": "Расширение для RuTube: кадры, MP4, звук M4A. Зависимостей в рантайме нет; package.json нужен только для тестов и линтера.",
   "license": "MIT",

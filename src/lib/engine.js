@@ -640,6 +640,79 @@
     return segs.join('/');
   }
 
+  /* ------------------------------------------------------------------ кадры */
+
+  var FRAME_FORMATS = { png: ['image/png', 'png'], jpeg: ['image/jpeg', 'jpg'], webp: ['image/webp', 'webp'] };
+
+  /** Формат кадра из настроек → {mime, ext}. Незнакомое значение — PNG. */
+  function frameFormat(fmt) {
+    var f = FRAME_FORMATS[String(fmt || '').toLowerCase()] || FRAME_FORMATS.png;
+    return { mime: f[0], ext: f[1] };
+  }
+
+  /** Качество для canvas.toDataURL: 0.5…1 (в настройках — проценты 50…100). */
+  function frameQuality(pct) {
+    var n = Number(pct);
+    if (!isFinite(n)) n = 92;
+    return Math.max(50, Math.min(100, Math.round(n))) / 100;
+  }
+
+  /**
+   * Моменты для серии кадров. Без A/B — от начала через every секунд, count штук.
+   * С A и B (useAB) — внутри отрезка [A, B], от A через every секунд, не дальше B.
+   * Последний кадр не ближе 0.1 с к концу, чтобы seek не упёрся в конец потока.
+   */
+  function boardTimes(opts) {
+    opts = opts || {};
+    var every = Math.max(0.2, Number(opts.every) || 5);
+    var count = Math.max(1, Math.min(120, Math.floor(Number(opts.count) || 12)));
+    var dur = Number(opts.duration) || 0;
+    if (!(dur > 0)) return [];
+    var start = 0;
+    var end = dur - 0.1;
+    if (opts.useAB && opts.a != null && opts.b != null && isFinite(opts.a) && isFinite(opts.b)) {
+      start = Math.max(0, Math.min(opts.a, opts.b));
+      end = Math.min(end, Math.max(opts.a, opts.b));
+    }
+    var out = [];
+    for (var i = 0; i < count; i++) {
+      var tm = start + i * every;
+      if (tm > end + 1e-9) break;
+      out.push(Math.round(tm * 1000) / 1000);
+    }
+    return out;
+  }
+
+  /**
+   * Раскладка контактного листа: сколько колонок и какого размера ячейки.
+   * Лист не превышает maxSide по любой стороне (по умолчанию 8192 px) —
+   * иначе canvas в браузере откажется рисовать.
+   */
+  function sheetLayout(count, vw, vh, opts) {
+    opts = opts || {};
+    var n = Math.max(1, Math.floor(count) || 1);
+    var aspect = (vw > 0 && vh > 0) ? vw / vh : 16 / 9;
+    var maxSide = opts.maxSide || 8192;
+    var gap = opts.gap == null ? 8 : opts.gap;
+    var cap = opts.captionH == null ? 22 : opts.captionH;
+    var cols = opts.cols || Math.min(n, Math.max(1, Math.round(Math.sqrt(n * 1.6))));
+    var rows = Math.ceil(n / cols);
+    var cellW = opts.cellW || 320;
+    var cellH = Math.round(cellW / aspect);
+    for (var guard = 0; guard < 40; guard++) {
+      var w = gap + cols * (cellW + gap);
+      var h = gap + rows * (cellH + cap + gap);
+      if (w <= maxSide && h <= maxSide) break;
+      cellW = Math.max(40, Math.floor(cellW * 0.9));
+      cellH = Math.round(cellW / aspect);
+    }
+    return {
+      cols: cols, rows: rows, cellW: cellW, cellH: cellH, gap: gap, captionH: cap,
+      width: gap + cols * (cellW + gap),
+      height: gap + rows * (cellH + cap + gap)
+    };
+  }
+
   var TRANSLIT = {
     'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y',
     'к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f',
@@ -723,7 +796,11 @@
     toAsciiFilename: toAsciiFilename,
     formatBytes: formatBytes,
     formatTime: formatTime,
-    parseTimecode: parseTimecode
+    parseTimecode: parseTimecode,
+    frameFormat: frameFormat,
+    frameQuality: frameQuality,
+    boardTimes: boardTimes,
+    sheetLayout: sheetLayout
   };
 
   global.RTLib = API;

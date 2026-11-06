@@ -171,7 +171,7 @@
       return '<label class="' + (v.compatible ? '' : 'dis') + '">' +
         '<input type="radio" name="rq" value="' + v.height + '"' + (checked ? ' checked' : '') + '>' +
         '<span class="radio"></span>' +
-        '<span class="lbl">' + esc(v.label) + '</span>' +
+        '<span class="lbl">' + esc(v.label) + (v.compatible ? '' : ' · .ts') + '</span>' +
         '<span class="est">' + (v.estimatedBytes ? L.formatBytes(v.estimatedBytes) : '') + '</span>' +
         '</label>';
     }).join('');
@@ -182,6 +182,9 @@
     var isPart = state.mode === 'part';
     var isAudio = currentFormat() === 'audio';
     var light = L.pickAudioVariant(list);
+    var chosen = list.filter(function (v) { return sel != null && Math.abs(v.height - sel) < 1; })[0];
+    var tsWarn = !isAudio && chosen && !chosen.compatible
+      ? '<div class="hint" style="margin-bottom:8px">⚠ ' + esc(t('dl.tsWarn')) + '</div>' : '';
 
     setHTML(
       '<div class="title">' + esc(info.title) + '</div>' +
@@ -194,7 +197,7 @@
             q: light ? light.label : '—',
             size: light && light.estimatedBytes ? L.formatBytes(light.estimatedBytes) : '?'
           })) + '</div>'
-        : '<div class="q">' + rows + '</div>') +
+        : '<div class="q">' + rows + '</div>' + tsWarn) +
       '<div class="seg">' +
         '<button data-mode="full" class="' + (!isPart ? 'on' : '') + '">' + esc(t('dl.modeFull')) + '</button>' +
         '<button data-mode="part" class="' + (isPart ? 'on' : '') + '">' + esc(t('dl.modePart')) + '</button>' +
@@ -442,6 +445,8 @@
       '<div class="sect">' +
         '<button class="btn" data-act="shot" style="width:100%">' + esc(t('fr.save')) +
           ' <kbd style="opacity:.8">' + esc(RT.settings.shotKey) + '</kbd></button>' +
+        '<div class="row" style="margin-top:6px"><button class="btn ghost wide small" data-act="copyshot">' + esc(t('fr.copy')) +
+          ' <kbd style="opacity:.8">c</kbd></button></div>' +
       '</div>' +
       '<div class="sect"><h5>' + esc(t('fr.goto')) + '</h5>' +
         '<div class="row">' +
@@ -464,7 +469,11 @@
           '<span class="in"><input type="number" min="0.2" step="0.5" data-in="every" value="' + esc(state.storyboard.every) + '"></span></div>' +
         '<div class="field"><span class="lb">' + esc(t('fr.frames')) + '</span>' +
           '<span class="in"><input type="number" min="1" max="120" data-in="count" value="' + esc(state.storyboard.count) + '"></span></div>' +
-        '<div class="row"><button class="btn ghost wide small" data-act="board">' + esc(t('fr.make')) + '</button></div>' +
+        '<div class="sw" style="margin-bottom:6px"><span>' + esc(t('fr.onlyAB')) + '</span>' +
+          '<input type="checkbox" data-act="useab"' + (state.storyboard.useAB ? ' checked' : '') +
+            (ab.a == null || ab.b == null ? ' disabled' : '') + '></div>' +
+        '<div class="row"><button class="btn ghost wide small" data-act="board">' + esc(t('fr.make')) + '</button>' +
+          '<button class="btn ghost wide small" data-act="sheet">' + esc(t('fr.sheet')) + '</button></div>' +
       '</div>' +
       '<div class="sw"><span>' + esc(t('fr.pitch')) + '</span>' +
         '<input type="checkbox" data-act="pitch"' + (RT.settings.preservePitch ? ' checked' : '') + '></div>'
@@ -514,6 +523,7 @@
     var clear = $('[data-act="abclear"]');
     if (clear) clear.addEventListener('click', function () {
       state.ab = { a: null, b: null, loop: false };
+      state.storyboard.useAB = false;
       RT.applyAB(RT.getPlayerVideo());
       render();
     });
@@ -527,6 +537,15 @@
 
     var board = $('[data-act="board"]');
     if (board) board.addEventListener('click', function () { RT.makeStoryboard(); });
+
+    var sheet = $('[data-act="sheet"]');
+    if (sheet) sheet.addEventListener('click', function () { RT.makeContactSheet(); });
+
+    var copyshot = $('[data-act="copyshot"]');
+    if (copyshot) copyshot.addEventListener('click', function () { RT.copyFrame(); });
+
+    var useab = $('[data-act="useab"]');
+    if (useab) useab.addEventListener('change', function () { state.storyboard.useAB = useab.checked; });
 
     var pitch = $('[data-act="pitch"]');
     if (pitch) pitch.addEventListener('change', function () {

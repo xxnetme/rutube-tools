@@ -255,3 +255,37 @@ test('filenameFromTemplate: «..» и абсолютные пути не даю�
   const abs = L.filenameFromTemplate('/{title}', { title: 'v' });
   assert.ok(!abs.startsWith('/'), abs);
 });
+
+test('frameFormat/frameQuality: формат и качество кадра', () => {
+  assert.deepEqual(L.frameFormat('jpeg'), { mime: 'image/jpeg', ext: 'jpg' });
+  assert.deepEqual(L.frameFormat('WEBP'), { mime: 'image/webp', ext: 'webp' });
+  assert.deepEqual(L.frameFormat('gif'), { mime: 'image/png', ext: 'png' }, 'незнакомое — PNG');
+  assert.deepEqual(L.frameFormat(undefined), { mime: 'image/png', ext: 'png' });
+  assert.equal(L.frameQuality(92), 0.92);
+  assert.equal(L.frameQuality(10), 0.5, 'нижний предел');
+  assert.equal(L.frameQuality(500), 1, 'верхний предел');
+  assert.equal(L.frameQuality('мусор'), 0.92, 'по умолчанию 92');
+});
+
+test('boardTimes: серия от начала и внутри отрезка A–B', () => {
+  assert.deepEqual(L.boardTimes({ every: 5, count: 4, duration: 100 }), [0, 5, 10, 15]);
+  assert.deepEqual(L.boardTimes({ every: 5, count: 100, duration: 12 }), [0, 5, 10], 'не дальше конца ролика');
+  assert.deepEqual(L.boardTimes({ every: 10, count: 10, duration: 100, useAB: true, a: 20, b: 45 }), [20, 30, 40]);
+  assert.deepEqual(L.boardTimes({ every: 10, count: 10, duration: 100, useAB: true, a: 45, b: 20 }), [20, 30, 40], 'A и B в любом порядке');
+  assert.deepEqual(L.boardTimes({ every: 5, count: 3, duration: 100, useAB: true, a: null, b: null }), [0, 5, 10], 'без отметок — обычная серия');
+  assert.deepEqual(L.boardTimes({ every: 1, count: 3, duration: 0 }), [], 'неизвестная длительность — пусто');
+  assert.equal(L.boardTimes({ every: 0.01, count: 500, duration: 1000 }).length, 120, 'не больше 120 кадров');
+  assert.equal(L.boardTimes({ every: 0.01, count: 3, duration: 1000 })[1], 0.2, 'шаг не меньше 0.2 с');
+});
+
+test('sheetLayout: лист не выходит за 8192 px и вмещает все кадры', () => {
+  const l = L.sheetLayout(12, 1920, 1080);
+  assert.ok(l.cols * l.rows >= 12);
+  assert.ok(l.width <= 8192 && l.height <= 8192);
+  assert.equal(l.cellH, Math.round(l.cellW / (1920 / 1080)), 'пропорции кадра сохранены');
+  const big = L.sheetLayout(120, 1920, 1080, { cellW: 2000 });
+  assert.ok(big.width <= 8192 && big.height <= 8192, 'крупные ячейки ужимаются');
+  const one = L.sheetLayout(1, 0, 0);
+  assert.equal(one.cols, 1);
+  assert.ok(one.cellW > 0 && one.cellH > 0, 'без размеров видео — 16:9');
+});

@@ -240,3 +240,37 @@ test('имя файла: шаблон из настроек уходит в rt:s
   assert.equal(p.sent.find((m) => m.type === 'rt:start').nameTemplate, '{author} — {title}');
   p.close();
 });
+
+test('HEVC/AV1: до старта показано предупреждение про .ts, у обычного качества его нет', { skip }, async () => {
+  const hevc = { url: 'https://c/720.m3u8', mirrors: ['https://c/720.m3u8'], height: 720, bandwidth: 80e6, label: '720p', estimatedBytes: 50e6, compatible: false };
+  INFO.variants.push(hevc);
+  try {
+    const p = await openPanel('https://rutube.ru/video/' + ID + '/');
+    await p.until(() => p.body().querySelector('input[name="rq"]'));
+    assert.ok(!/HEVC\/AV1/.test(p.body().textContent), 'у выбранного по умолчанию совместимого качества предупреждения нет');
+    const radio = p.body().querySelector('input[name="rq"][value="720"]');
+    assert.ok(radio, 'есть строка 720p');
+    assert.match(radio.closest('label').textContent, /\.ts/, 'у строки пометка .ts');
+    radio.click();
+    radio.dispatchEvent(new p.w.Event('change', { bubbles: true }));
+    await p.until(() => /HEVC\/AV1/.test(p.body().textContent));
+    assert.match(p.body().textContent, /\.ts/);
+    p.close();
+  } finally {
+    INFO.variants.pop();
+  }
+});
+
+test('вкладка «Кадры»: копирование, контактный лист и «только между A и B» (выключено без A/B)', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/', 'frames');
+  await p.until(() => p.body().querySelector('[data-act="shot"]'));
+  assert.ok(p.body().querySelector('[data-act="copyshot"]'), 'кнопка копирования кадра');
+  assert.ok(p.body().querySelector('[data-act="sheet"]'), 'кнопка контактного листа');
+  const useAB = p.body().querySelector('[data-act="useab"]');
+  assert.ok(useAB, 'галочка «только между A и B»');
+  assert.equal(useAB.disabled, true, 'без отметок A и B недоступна');
+  p.RT.state.ab.a = 10; p.RT.state.ab.b = 40;
+  p.RT.render();
+  assert.equal(p.body().querySelector('[data-act="useab"]').disabled, false, 'с A и B доступна');
+  p.close();
+});
