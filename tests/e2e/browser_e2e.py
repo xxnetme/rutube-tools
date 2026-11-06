@@ -231,13 +231,23 @@ def shadow_text(driver) -> str:
 
 
 def chrome_service(binary: str) -> ChromeService:
-    """Подбирает driver именно к Playwright Chrome, а не к системному Chrome на runner."""
+    """Подбирает driver к точной версии Playwright Chrome, а не к системному на runner."""
+    raw_version = subprocess.check_output([binary, "--version"], text=True, timeout=30)
+    match = re.search(r"\b(\d+\.\d+\.\d+\.\d+)\b", raw_version)
+    if not match:
+        raise RuntimeError(f"Не удалось определить версию Chromium из {raw_version!r}")
+    version = match.group(1)
     paths = SeleniumManager().binary_paths([
-        "--browser", "chrome", "--browser-path", binary, "--avoid-browser-download"
+        "--browser", "chrome", "--browser-path", binary,
+        "--driver-version", version, "--avoid-browser-download"
     ])
     driver_path = paths.get("driver_path")
     if not driver_path or not Path(driver_path).is_file():
-        raise RuntimeError(f"Selenium Manager не выдал ChromeDriver для {binary}: {paths}")
+        raise RuntimeError(f"Selenium Manager не выдал ChromeDriver {version} для {binary}: {paths}")
+    driver_version = subprocess.check_output([driver_path, "--version"], text=True, timeout=30).strip()
+    if not driver_version.startswith(f"ChromeDriver {version.split('.')[0]}."):
+        raise RuntimeError(f"ChromeDriver не соответствует Chromium {version}: {driver_version}")
+    print(f"[e2e] Chromium {version}; {driver_version}; driver={driver_path}", flush=True)
     return ChromeService(executable_path=driver_path)
 
 
