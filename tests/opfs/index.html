@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OPFS / Blob — изолированный замер</title>
+  <style>
+    :root { color-scheme: dark; font: 15px/1.5 system-ui, sans-serif; background: #101216; color: #eef0f4; }
+    body { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 24px; }
+    p { color: #b8bec9; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 22px 0; }
+    input, button { font: inherit; border-radius: 8px; border: 1px solid #3b424e; padding: 9px 13px; }
+    input { width: 80px; background: #181c22; color: inherit; }
+    button { background: #e6464d; color: white; cursor: pointer; }
+    button + button { background: #286c78; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #181c22; padding: 18px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h1>OPFS / Blob — изолированный замер</h1>
+  <p>Не входит в расширение и не меняет путь загрузки. Worker создаёт детерминированные данные,
+    проверяет их при чтении и удаляет OPFS-файл. RSS процессов измеряет внешний Python-раннер.</p>
+  <div class="controls">
+    <label>МиБ <input id="size" type="number" min="1" max="2048" value="64"></label>
+    <button id="blob" type="button">Blob</button>
+    <button id="opfs" type="button">OPFS</button>
+  </div>
+  <pre id="output">Готово к запуску.</pre>
+  <script src="./bench.js"></script>
+</body>
+</html>

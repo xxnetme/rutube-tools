@@ -9,7 +9,8 @@
     "lint": "npx --yes eslint@10 src tests",
     "typecheck": "npx --yes -p typescript@7.0.2 tsc -p jsconfig.json",
     "build": "python3 build.py",
-    "test:e2e": "python3 tests/e2e/browser_e2e.py --browser all"
+    "test:e2e": "python3 tests/e2e/browser_e2e.py --browser all",
+    "bench:opfs": "python3 tests/opfs/opfs_bench.py --browser all --size-mib 64"
   },
   "devDependencies": {
     "eslint-plugin-no-unsanitized": "4.1.5",

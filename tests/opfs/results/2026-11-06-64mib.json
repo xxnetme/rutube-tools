@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-06T04:37:04.572187+00:00",
+  "requestedBytes": 67108864,
+  "chunkBytes": 1048576,
+  "expectedCrc32": "ec1b524b",
+  "host": {
+    "platform": "Linux-6.1.189+-x86_64-with-glibc2.41",
+    "python": "3.13.16",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+    "logicalCpuCount": 2,
+    "memoryKiB": 2030416
+  },
+  "runs": [
+    {
+      "browser": "chromium",
+      "mode": "blob",
+      "status": "passed",
+      "version": "158.0.8127.18",
+      "pageCapabilities": {
+        "opfsOnMain": true,
+        "secure": true,
+        "worker": true
+      },
+      "result": {
+        "capabilities": {
+          "blobStream": true,
+          "opfs": false,
+          "syncAccessHandle": null,
+          "worker": true
+        },
+        "chunkBytes": 1048576,
+        "crc32": "ec1b524b",
+        "mode": "blob",
+        "requestedBytes": 67108864,
+        "size": 67108864,
+        "storageAfterCleanup": {
+          "quota": 1073741824,
+          "usage": 0
+        },
+        "storageAfterWrite": {
+          "quota": 1073741824,
+          "usage": 0
+        },
+        "storageBefore": {
+          "quota": 1073741824,
+          "usage": 0
+        },
+        "timingMs": {
+          "finalize": 34.200000000186265,
+          "generate": 71.99999999953434,
+          "readAndVerify": 274,
+          "total": 381.89999999990687,
+          "writeOrRetain": 0
+        },
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+        "verifiedBytes": 67108864
+      },
+      "processMemory": {
+        "method": "Linux /proc VmRSS, сумма дерева WebDriver и браузерных процессов; не чистый размер данных",
+        "baselineKiB": 1034600,
+        "peakKiB": 1154660,
+        "peakDeltaKiB": 120060,
+        "samples": 5
+      }
+    },
+    {
+      "browser": "chromium",
+      "mode": "opfs",
+      "status": "passed",
+      "version": "158.0.8127.18",
+      "pageCapabilities": {
+        "opfsOnMain": true,
+        "secure": true,
+        "worker": true
+      },
+      "opfsCleanupAfter500ms": {
+        "exists": false,
+        "quota": 1073741824,
+        "usage": 0
+      },
+      "result": {
+        "capabilities": {
+          "blobStream": true,
+          "opfs": true,
+          "syncAccessHandle": true,
+          "worker": true
+        },
+        "chunkBytes": 1048576,
+        "crc32": "ec1b524b",
+        "mode": "opfs",
+        "requestedBytes": 67108864,
+        "size": 67108864,
+        "storageAfterCleanup": {
+          "quota": 1073741824,
+          "usage": 0
+        },
+        "storageAfterWrite": {
+          "quota": 1140850884,
+          "usage": 67109060
+        },
+        "storageBefore": {
+          "quota": 1073741824,
+          "usage": 0
+        },
+        "timingMs": {
+          "finalize": 0.7999999998137355,
+          "generate": 74.80000000214204,
+          "readAndVerify": 235.1999999997206,
+          "total": 343.79999999981374,
+          "writeOrRetain": 24.39999999757856
+        },
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+        "verifiedBytes": 67108864
+      },
+      "processMemory": {
+        "method": "Linux /proc VmRSS, сумма дерева WebDriver и браузерных процессов; не чистый размер данных",
+        "baselineKiB": 1036472,
+        "peakKiB": 1136000,
+        "peakDeltaKiB": 99528,
+        "samples": 5
+      }
+    },
+    {
+      "browser": "firefox",
+      "mode": "blob",
+      "status": "passed",
+      "version": "159.0",
+      "pageCapabilities": {
+        "opfsOnMain": true,
+        "secure": true,
+        "worker": true
+      },
+      "result": {
+        "capabilities": {
+          "blobStream": true,
+          "opfs": false,
+          "syncAccessHandle": null,
+          "worker": true
+        },
+        "chunkBytes": 1048576,
+        "crc32": "ec1b524b",
+        "mode": "blob",
+        "requestedBytes": 67108864,
+        "size": 67108864,
+        "storageAfterCleanup": {
+          "quota": 103957299,
+          "usage": 0
+        },
+        "storageAfterWrite": {
+          "quota": 103957299,
+          "usage": 0
+        },
+        "storageBefore": {
+          "quota": 103957299,
+          "usage": 0
+        },
+        "timingMs": {
+          "finalize": 38,
+          "generate": 74,
+          "readAndVerify": 667,
+          "total": 781,
+          "writeOrRetain": 0
+        },
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:159.0) Gecko/20100101 Firefox/159.0",
+        "verifiedBytes": 67108864
+      },
+      "processMemory": {
+        "method": "Linux /proc VmRSS, сумма дерева WebDriver и браузерных процессов; не чистый размер данных",
+        "baselineKiB": 701376,
+        "peakKiB": 855396,
+        "peakDeltaKiB": 154020,
+        "samples": 8
+      }
+    },
+    {
+      "browser": "firefox",
+      "mode": "opfs",
+      "status": "passed",
+      "version": "159.0",
+      "pageCapabilities": {
+        "opfsOnMain": true,
+        "secure": true,
+        "worker": true
+      },
+      "opfsCleanupAfter500ms": {
+        "exists": false,
+        "quota": 103957299,
+        "usage": 491520
+      },
+      "result": {
+        "capabilities": {
+          "blobStream": true,
+          "opfs": true,
+          "syncAccessHandle": true,
+          "worker": true
+        },
+        "chunkBytes": 1048576,
+        "crc32": "ec1b524b",
+        "mode": "opfs",
+        "requestedBytes": 67108864,
+        "size": 67108864,
+        "storageAfterCleanup": {
+          "quota": 103957299,
+          "usage": 491520
+        },
+        "storageAfterWrite": {
+          "quota": 103957299,
+          "usage": 67600384
+        },
+        "storageBefore": {
+          "quota": 103957299,
+          "usage": 491520
+        },
+        "timingMs": {
+          "finalize": 1,
+          "generate": 77,
+          "readAndVerify": 901,
+          "total": 1028,
+          "writeOrRetain": 42
+        },
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:159.0) Gecko/20100101 Firefox/159.0",
+        "verifiedBytes": 67108864
+      },
+      "processMemory": {
+        "method": "Linux /proc VmRSS, сумма дерева WebDriver и браузерных процессов; не чистый размер данных",
+        "baselineKiB": 691868,
+        "peakKiB": 804520,
+        "peakDeltaKiB": 112652,
+        "samples": 12
+      }
+    }
+  ],
+  "interpretation": [
+    "Каждый режим запускался в свежем браузерном процессе.",
+    "peakDeltaKiB — пик суммарного RSS дерева процессов относительно страницы до запуска, не точный размер данных.",
+    "Нельзя сравнивать абсолютный RSS разных браузеров или переносить один замер на файлы 2 ГиБ без отдельного прогона."
+  ]
+}
