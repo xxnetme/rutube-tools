@@ -42,6 +42,19 @@ function createBrowser(store) {
   globalThis.RTNetwork = require('../../src/lib/network.js');
   globalThis.RTLib = require('../../src/lib/engine.js');
   globalThis.RTAudio = require('../../src/lib/audio.js');
+  // Минимальный double реального mux.js 7: Transmuxer экспортируется наверху.
+  globalThis.muxjs = { Transmuxer: class {
+    constructor() { this.handlers = {}; this.first = true; }
+    on(name, fn) { this.handlers[name] = fn; }
+    push(buf) {
+      this.handlers.data({
+        initSegment: this.first ? new Uint8Array([0, 0, 0, 1]) : null,
+        data: new Uint8Array(buf)
+      });
+      this.first = false;
+    }
+    flush() {}
+  } };
   delete require.cache[BG];
   require(BG);
 

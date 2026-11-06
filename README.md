@@ -222,13 +222,17 @@ flowchart LR
 
 ## Качество
 
-Проект покрыт автотестами (`npm test`, 78 JS-проверок, плюс Python unit-тесты инфраструктуры),
-в CI они идут вместе с ESLint и `addons-linter`:
+Проект покрыт автотестами (`npm test` — 99 JS-проверок, плюс 15 Python unit-тестов инфраструктуры).
+В CI они идут вместе с ESLint, `no-unsanitized`, JSDoc/`tsc --checkJs`, `addons-linter` и
+браузерным E2E в Firefox и Chromium:
 
 - разбор HLS, диапазоны, разбиение на части, главы (результат принимает `ffmpeg`);
 - извлечение звука: байт-в-байт сверка кадров, склейка кадров на границах PES и сегментов, настоящий поток от `ffmpeg` и проверка `ffprobe`;
 - сквозные сценарии фона с подменёнными браузером и RuTube: докачка, «перезапуск браузера», зеркала CDN, отмена;
-- смоук-тест панели в jsdom;
+- смоук-тест панели в jsdom и проверка, что строки API не становятся HTML;
+- сетевой allowlist и редиректы, включая запрет скрытого `opaqueredirect`;
+- настоящие расширения в Firefox и Chromium: локальный HLS, скачанный MP4, H.264 + AAC и `ffprobe`;
+- CONNECT-прокси в E2E записывает все попытки соединений и падает на любом хосте вне стенда;
 - валидатор публичного API и JWT-издатель AMO — отдельно, без сети и настоящих секретов.
 
 Тесты ищут реальные ошибки: код намеренно ломали (потеря хвоста кадра, неверное смещение, докачка с нуля), и тесты падали.
@@ -242,15 +246,26 @@ flowchart LR
 <summary>Запуск проверок</summary>
 
 ```bash
-npm install --no-save jsdom    # включает тест панели
-npm test                       # нужен Node 20+
-npm run lint                   # ESLint
+npm ci                         # нужен Node 22+
+npm test
+npm run lint                   # ESLint + no-unsanitized
+npm run typecheck              # JSDoc + tsc --checkJs
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 build.py
 (cd release && sha256sum -c SHA256SUMS)
 ```
 
-Тесты звука используют `ffmpeg`/`ffprobe`, если они установлены, и пропускают эти проверки, если нет.
+Браузерный E2E (нужны Python 3.12+, `ffmpeg`, `ffprobe` и `openssl`):
+
+```bash
+npx playwright install --with-deps chromium firefox
+python3 -m pip install -r tests/e2e/requirements.txt
+npm run test:e2e
+```
+
+Подробности стенда и его артефактов — в [tests/e2e/README.md](tests/e2e/README.md).
+Тесты звука используют `ffmpeg`/`ffprobe`, если они установлены, и пропускают эти проверки, если нет;
+для E2E эти программы обязательны.
 
 </details>
 
@@ -272,7 +287,7 @@ rutube-tools/
 │   ├── lib/mux-mp4.min.js       mux.js, Apache 2.0
 │   ├── popup.html, popup.js     настройки и незавершённые загрузки
 │   └── offscreen.html, .js      сборка файла для Chromium
-├── tests/                       JS: движок, звук, фон, панель; Python: монитор и AMO JWT
+├── tests/                       JS: движок, звук, фон, панель; Python: монитор, AMO JWT и browser E2E
 ├── build.py                     сборка, проверки и SHA256SUMS, только stdlib
 ├── eslint.config.js, package.json   только для тестов и линтера
 ├── docs/                        сайт (галерея тянется мышью, демо кадров), privacy.html, CHANGELOG, ROADMAP

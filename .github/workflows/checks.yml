@@ -15,6 +15,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Node dependencies
+        run: npm ci
+
       - name: JS syntax
         run: |
           for f in $(find src -name '*.js' ! -name 'mux*'); do
@@ -25,7 +28,6 @@ jobs:
       - name: Тесты
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-          npm install --no-save jsdom
           npm test
 
       - name: Валидатор монитора API — unit-тесты без сети
@@ -79,3 +81,39 @@ jobs:
           assert data['@graph'], 'JSON-LD пуст'
           print('страницы в порядке, JSON-LD парсится')
           PY
+
+  browser-e2e:
+    needs: build-and-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Node and WebDriver dependencies
+        run: |
+          npm ci
+          python3 -m pip install --quiet -r tests/e2e/requirements.txt
+
+      - name: Browsers and ffmpeg
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          npx playwright install --with-deps chromium firefox
+
+      - name: Реальное расширение в Firefox и Chromium
+        run: npm run test:e2e
+
+      - name: Отчёты, сеть и скачанные MP4
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-e2e
+          path: tmp/e2e/
+          if-no-files-found: warn
+          retention-days: 14

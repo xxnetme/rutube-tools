@@ -546,7 +546,12 @@
     var muxjs = cfg.muxjs || global.muxjs;
     var audioLib = cfg.audio || global.RTAudio;
 
-    if (mode === 'mp4' && (!muxjs || !muxjs.mp4 || !muxjs.mp4.Transmuxer)) mode = 'ts';
+    // mux.js 7 экспортирует Transmuxer наверху; старые сборки — внутри .mp4.
+    var Transmuxer = muxjs && typeof muxjs.Transmuxer === 'function' ? muxjs.Transmuxer
+      : muxjs && muxjs.mp4 && muxjs.mp4.Transmuxer;
+    if (mode === 'mp4' && typeof Transmuxer !== 'function') {
+      throw new Error('Модуль сборки MP4 не загружен');
+    }
     // «только звук» нельзя подменить другим режимом: молча отдать видео вместо аудио было бы ошибкой
     if (mode === 'm4a' && (!audioLib || !audioLib.createExtractor)) {
       throw new Error('Модуль извлечения звука не загружен');
@@ -561,7 +566,7 @@
     var total = segments.length;
 
     if (mode === 'mp4') {
-      transmuxer = new muxjs.mp4.Transmuxer({ remux: true });
+      transmuxer = new Transmuxer({ remux: true });
       transmuxer.on('data', function (s) {
         if (!initSegment && s.initSegment && s.initSegment.byteLength) initSegment = s.initSegment;
         if (s.data && s.data.byteLength) chunks.push(s.data);

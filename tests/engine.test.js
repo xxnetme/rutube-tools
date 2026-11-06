@@ -228,6 +228,35 @@ test('downloadPart (m4a): без модуля звука — явная ошиб
   globalThis.RTAudio = saved;
 });
 
+test('downloadPart (mp4): поддержаны обе формы экспорта Transmuxer', async () => {
+  function Transmuxer() { this.handlers = {}; }
+  Transmuxer.prototype.on = function (name, fn) { this.handlers[name] = fn; };
+  Transmuxer.prototype.push = function (buf) {
+    this.handlers.data({ initSegment: new Uint8Array([0, 0, 0, 1]), data: new Uint8Array([buf[0]]) });
+  };
+  Transmuxer.prototype.flush = function () {};
+
+  const restore = fakeFetch(async () => ok(Buffer.from([7])));
+  try {
+    for (const muxjs of [{ Transmuxer }, { mp4: { Transmuxer } }]) {
+      const out = await L.downloadPart({ segments: ['https://cdn.rutube.ru/a.ts'], mode: 'mp4', muxjs });
+      assert.equal(out.ext, 'mp4');
+      assert.equal(out.mime, 'video/mp4');
+      assert.deepEqual(Buffer.concat(out.chunks.map(Buffer.from)), Buffer.from([0, 0, 0, 1, 7]));
+    }
+  } finally { restore(); }
+});
+
+test('downloadPart (mp4): без muxer — явная ошибка, не TS с именем .mp4', async () => {
+  let calls = 0;
+  const restore = fakeFetch(async () => { calls++; return ok(Buffer.from([1])); });
+  try {
+    await assert.rejects(L.downloadPart({ segments: ['https://cdn.rutube.ru/a.ts'], mode: 'mp4', muxjs: {} }),
+      /Модуль сборки MP4 не загружен/);
+    assert.equal(calls, 0, 'до скачивания сегмента понятно, что результат невозможен');
+  } finally { restore(); }
+});
+
 test('сетевая политика: чужой master из ответа API не получает запрос', async () => {
   const calls = [];
   const restore = fakeFetch(async (url) => {

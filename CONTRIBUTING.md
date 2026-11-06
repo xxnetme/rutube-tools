@@ -16,14 +16,18 @@ cd rutube-tools
 python3 build.py            # сборка + проверки
 ```
 
-В самом расширении зависимостей нет. Для сборки нужен Python 3, для проверок — Node 20+:
+В самом расширении зависимостей нет. Для сборки нужен Python 3, для проверок — Node 22+:
 
 ```bash
-npm install --no-save jsdom   # включает смоук-тест панели
-npm test        # 78 проверок: движок, звук, фон, панель
-npm run lint    # ESLint
-python3 -m unittest discover -s tests -p 'test_*.py' -v   # монитор API и AMO JWT
+npm ci
+npm test        # 99 проверок: движок, звук, фон, панель
+npm run lint    # ESLint + no-unsanitized
+npm run typecheck
+python3 -m unittest discover -s tests -p 'test_*.py' -v   # 15 тестов инфраструктуры
 ```
+
+Настоящий браузерный сценарий запускается через `npm run test:e2e`; установка браузеров и
+зависимостей описана в [tests/e2e/README.md](tests/e2e/README.md).
 
 Тесты звука используют `ffmpeg`/`ffprobe`, если они установлены, и пропускают эти проверки, если нет.
 
@@ -44,7 +48,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v   # монитор API �
 
 ## Перед PR
 
-- [ ] `python3 build.py`, `npm test`, `npm run lint` и Python unit-тесты без ошибок
+- [ ] `python3 build.py`, `npm test`, `npm run lint`, `npm run typecheck` и Python unit-тесты без ошибок
 - [ ] `(cd release && sha256sum -c SHA256SUMS)` после сборки
-- [ ] Проверено в Firefox и Chromium
+- [ ] `npm run test:e2e` прошёл в Firefox и Chromium
 - [ ] Обновлён `docs/CHANGELOG.md` (одна строка, понятная не-технарю)

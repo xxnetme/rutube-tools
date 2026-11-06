@@ -14,6 +14,13 @@
     } catch (e) {}
   }
 
+  function librariesReady() {
+    var m = globalThis.muxjs;
+    var transmuxer = m && (typeof m.Transmuxer === 'function' ||
+      (m.mp4 && typeof m.mp4.Transmuxer === 'function'));
+    return !!(L && globalThis.RTNetwork && globalThis.RTAudio && transmuxer);
+  }
+
   async function run(cfg) {
     var ctrl = new AbortController();
     jobs.set(cfg.runId, ctrl);
@@ -57,7 +64,7 @@
     if (!msg || typeof msg.type !== 'string') return false;
 
     if (msg.type === 'rt:offscreen-ping') {
-      sendResponse({ ok: !!(L && globalThis.RTNetwork && globalThis.muxjs && globalThis.RTAudio) });
+      sendResponse({ ok: librariesReady() });
       return true;
     }
 
@@ -79,7 +86,7 @@
     }
 
     if (msg.type === 'rt:offscreen-run') {
-      if (!L || !globalThis.muxjs || !globalThis.RTAudio) {
+      if (!librariesReady()) {
         sendResponse({ ok: false, error: 'Библиотеки не загружены в offscreen' });
         return true;
       }

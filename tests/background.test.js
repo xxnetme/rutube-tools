@@ -382,8 +382,10 @@ test('чужие URL обложки и субтитров не получают 
   await b.call({ type: 'rt:start', videoId: ID1, height: 144, subsUrl: 'https://evil.example/sub.srt' });
   done = await b.waitFor((m) => isDone(m) || isErr(m));
   assert.equal(done.phase, 'done');
+  assert.equal(done.mode, 'mp4');
   assert.equal(done.subs.length, 0);
   assert.equal(b.downloads.length, 2);
+  assert.equal(b.downloads[1].filename, 'Тестовое видео.mp4');
   assert.ok(!srv.log.some((url) => url.includes('evil.example')), 'ни обложка, ни субтитры не запрашивались');
 });
 
