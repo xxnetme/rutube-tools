@@ -17,10 +17,11 @@
 
   if (typeof importScripts === 'function' &&
       (typeof RTNetwork === 'undefined' || typeof RTLib === 'undefined' ||
-       typeof muxjs === 'undefined' || typeof RTAudio === 'undefined')) {
+       typeof muxjs === 'undefined' || typeof RTAudio === 'undefined' || typeof RTMedia === 'undefined')) {
     try {
       if (typeof RTNetwork === 'undefined') importScripts('lib/network.js');
       if (typeof muxjs === 'undefined') importScripts('lib/mux-mp4.min.js');
+      if (typeof RTMedia === 'undefined') importScripts('lib/media.js');
       if (typeof RTLib === 'undefined') importScripts('lib/engine.js');
       if (typeof RTAudio === 'undefined') importScripts('lib/audio.js');
     } catch (e) { console.warn('[RT] importScripts:', e); }
@@ -29,6 +30,7 @@
   var api = globalThis.browser || globalThis.chrome;
   var jobs = new Map();      // jobId -> {controller, tabId, queue:{paused,resume}}
   var urlById = new Map();   // downloadId -> objectURL
+  var opfsById = new Map();  // downloadId -> OPFS key, чистим после ответа браузера
 
   var CAN_OFFSCREEN = !!api.offscreen;
   var offscreenOk = false;
@@ -284,13 +286,34 @@
           urlById.delete(d.id);
           revokeLater(u);
         }
+        var opfsKey = opfsById.get(d.id);
+        if (opfsKey) {
+          opfsById.delete(d.id);
+          if (CAN_OFFSCREEN) sendExt({ type: 'rt:offscreen-cleanup', key: opfsKey });
+          else if (globalThis.RTMedia && typeof globalThis.RTMedia.cleanupOpfs === 'function') {
+            globalThis.RTMedia.cleanupOpfs(opfsKey).catch(function () {});
+          }
+        }
       }
     });
   } catch (e) {}
 
   /* -------------------------------------------------- сборка и сохранение */
 
+  function mediaFingerprint(segments) {
+    var hash = 2166136261;
+    var text = segments.join('\n');
+    for (var i = 0; i < text.length; i++) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36) + ':' + segments.length;
+  }
+
   async function buildPartBlobUrl(job, segments, mode) {
+    var resumeKey = String(job.pendingId || job.jobId) + ':part:' + (job.partIndex || 0);
+    var fingerprint = mediaFingerprint(segments);
+    var expectedBytes = job.partExpectedBytes || 0;
     if (CAN_OFFSCREEN) {
       await ensureOffscreen();
       var runId = job.jobId + ':' + (job.partIndex || 0);
@@ -298,7 +321,9 @@
         type: 'rt:offscreen-run',
         cfg: {
           runId: runId, segments: segments, mode: mode, concurrency: 5,
-          title: job.title, tags: job.tags, validate: true, expectedDurationSec: job.partDurationSec
+          title: job.title, tags: job.tags, validate: true, expectedDurationSec: job.partDurationSec,
+          expectedBytes: expectedBytes, resumeKey: resumeKey, fingerprint: fingerprint,
+          pendingId: job.segmentPendingId || null
         }
       });
       if (!res || !res.ok) {
@@ -306,24 +331,40 @@
         err.segmentIndex = /Сегмент (\d+)/.exec((res && res.error) || '') ? 1 : null;
         throw err;
       }
-      return { url: res.url, ext: res.ext };
+      return { url: res.url, ext: res.ext, opfsKey: res.opfsKey || null };
     }
     var out = await RTLib.downloadPart({
       segments: segments,
       mode: mode,
       muxjs: globalThis.muxjs,
       audio: globalThis.RTAudio,
+      media: globalThis.RTMedia,
       title: job.title,
       tags: job.tags,
       concurrency: 5,
       validate: true,
       expectedDurationSec: job.partDurationSec,
+      expectedBytes: expectedBytes,
+      resumeKey: resumeKey,
+      fingerprint: fingerprint,
       signal: job.controller.signal,
+      onSegmentSaved: function (info) {
+        if (!job.segmentPendingId) return null;
+        return pendingPatch(job.segmentPendingId, info.reset ? {
+          segmentKey: resumeKey, nextSegment: 0, segmentBytes: 0
+        } : {
+          segmentKey: resumeKey, nextSegment: info.nextSegment, segmentBytes: info.bytes
+        });
+      },
+      onStorage: function (info) {
+        if (job.segmentPendingId) return pendingPatch(job.segmentPendingId, { storage: info.state });
+        return null;
+      },
       onProgress: job.onProgress
     });
-    var blob = new Blob(out.chunks, { type: out.mime });
+    var blob = out.file || new Blob(out.chunks, { type: out.mime });
     out.chunks = null;
-    return { url: URL.createObjectURL(blob), ext: out.ext };
+    return { url: URL.createObjectURL(blob), ext: out.ext, opfsKey: out.opfsKey || null };
   }
 
   /* ------------------------------------------------------------- одна часть */
@@ -344,8 +385,11 @@
           job.mirror = media.mirrorIndex + a;
         }
         var built = await buildPartBlobUrl(job, useSegs, mode);
-        var dl = await downloadUrl(built.url, filename);
+        var actualFilename = filename.replace(/\.[^.]+$/, '.' + (built.ext || 'mp4'));
+        var dl = await downloadUrl(built.url, actualFilename);
         retainUrl(built.url, dl.id);
+        if (built.opfsKey && dl.id !== undefined && dl.id !== null) opfsById.set(dl.id, built.opfsKey);
+        else if (built.opfsKey && globalThis.RTMedia) globalThis.RTMedia.cleanupOpfsLater(built.opfsKey);
         return { name: dl.name, id: dl.id, ext: built.ext };
       } catch (e) {
         if (job.controller.signal.aborted) throw new Error('cancelled');
@@ -375,6 +419,7 @@
     }
 
     try {
+      job.segmentPendingId = opts.pendingId || null;
       post({ phase: 'meta' });
       var info = await RTLib.getVideoInfo(opts.videoId, { signal: job.controller.signal });
       if (info.isLive) throw new Error('live');
@@ -382,8 +427,10 @@
 
       var audioOnly = !!opts.audio;
       var variant = audioOnly ? RTLib.pickAudioVariant(info.variants) : RTLib.pickVariant(info.variants, opts.height);
-      // звук достаём из любого потока, а видео в HEVC/AV1 без перекодирования в MP4 не собрать
-      var mode = audioOnly ? 'm4a' : (variant.compatible ? 'mp4' : 'ts');
+      // Media-модуль сначала пытается сохранить дорожки в fMP4; .ts — только фактический fallback.
+      // В старом окружении без bundle сохраняем прежний безопасный выбор режима.
+      var hasMedia = !!(globalThis.RTMedia && typeof globalThis.RTMedia.transmuxChunks === 'function');
+      var mode = audioOnly ? 'm4a' : (hasMedia ? 'mp4' : (variant.compatible ? 'mp4' : 'ts'));
       job.title = info.title;
 
       post({ phase: 'playlist', quality: variant.label });
@@ -469,6 +516,7 @@
         job.partDurationSec = durations.slice(p.start, p.end).reduce(function (sum, value) {
           return sum + (Number(value) || 0);
         }, 0);
+        job.partExpectedBytes = Math.max(0, Math.round(p.bytes || (variant.bandwidth / 8 * job.partDurationSec)));
 
         var onProg = (function (idx, start) {
           return function (pr) {
@@ -493,7 +541,7 @@
         var res = await runPart(job, variant, segments.slice(p.start, p.end), mode, filename);
         saved.push(res.name);
         savedIds.push(res.id);
-        if (opts.pendingId) pendingPatch(opts.pendingId, { nextPart: i + 1, savedFiles: saved.slice() });
+        if (opts.pendingId) pendingPatch(opts.pendingId, { nextPart: i + 1, savedFiles: saved.slice(), nextSegment: 0, segmentBytes: 0, segmentKey: '' });
       }
 
       /* Субтитры кладём рядом с видео и с тем же базовым именем — иначе VLC
@@ -1043,6 +1091,22 @@
 
   api.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     if (!msg || typeof msg.type !== 'string') return false;
+
+    if (msg.type === 'rt:offscreen-segment') {
+      if (msg.pendingId) {
+        pendingPatch(msg.pendingId, msg.reset ? {
+          segmentKey: msg.key || '', nextSegment: 0, segmentBytes: 0
+        } : {
+          segmentKey: msg.key || '', nextSegment: msg.nextSegment || 0, segmentBytes: msg.bytes || 0
+        });
+      }
+      return false;
+    }
+
+    if (msg.type === 'rt:offscreen-storage') {
+      if (msg.pendingId) pendingPatch(msg.pendingId, { storage: msg.storage && msg.storage.state });
+      return false;
+    }
 
     // прогресс из offscreen-документа → в вкладку
     if (msg.type === 'rt:offscreen-progress') {

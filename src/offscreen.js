@@ -35,7 +35,20 @@
         tags: cfg.tags,
         validate: true,
         expectedDurationSec: cfg.expectedDurationSec,
+        expectedBytes: cfg.expectedBytes,
+        resumeKey: cfg.resumeKey,
+        fingerprint: cfg.fingerprint,
         signal: ctrl.signal,
+        onSegmentSaved: function (info) {
+          post({
+            type: 'rt:offscreen-segment', pendingId: cfg.pendingId,
+            key: cfg.resumeKey, nextSegment: info.nextSegment,
+            bytes: info.bytes, reset: !!info.reset
+          });
+        },
+        onStorage: function (info) {
+          post({ type: 'rt:offscreen-storage', pendingId: cfg.pendingId, storage: info });
+        },
         onProgress: function (p) {
           post({
             type: 'rt:offscreen-progress',
@@ -47,14 +60,14 @@
           });
         }
       });
-      var blob = new Blob(out.chunks, { type: out.mime });
+      var blob = out.file || new Blob(out.chunks, { type: out.mime });
       out.chunks = null;
       var url = URL.createObjectURL(blob);
       keep.push(url);
       if (keep.length > 6) {
         try { URL.revokeObjectURL(keep.shift()); } catch (e) {}
       }
-      return { ok: true, url: url, bytes: out.bytes, ext: out.ext };
+      return { ok: true, url: url, bytes: out.bytes, ext: out.ext, opfsKey: out.opfsKey || null };
     } catch (e) {
       return { ok: false, error: (e && e.message) || String(e) };
     } finally {
@@ -95,6 +108,15 @@
       run(msg.cfg).then(sendResponse, function (e) {
         sendResponse({ ok: false, error: (e && e.message) || String(e) });
       });
+      return true;
+    }
+
+    if (msg.type === 'rt:offscreen-cleanup') {
+      if (globalThis.RTMedia && typeof globalThis.RTMedia.cleanupOpfs === 'function' && msg.key) {
+        globalThis.RTMedia.cleanupOpfs(msg.key).then(function () {
+          sendResponse({ ok: true });
+        }, function (e) { sendResponse({ ok: false, error: String(e && e.message || e) }); });
+      } else sendResponse({ ok: true });
       return true;
     }
 

@@ -10,7 +10,7 @@
 
   var SELECTS = ['quality', 'fps', 'maxPartMB', 'frameKeys', 'shotKey', 'frameFormat', 'frameQuality', 'lang', 'defaultFormat'];
   var TEXTS = ['nameTemplate'];
-  var CHECKS = ['showButton', 'youtubeKeys', 'preservePitch', 'rememberPos'];
+  var CHECKS = ['showButton', 'youtubeKeys', 'preservePitch', 'rememberPos', 'rememberRate'];
 
   function el(id) { return document.getElementById(id); }
 
@@ -74,18 +74,22 @@
 
   function save() {
     var data = read();
+    data[S.STORAGE_VERSION_KEY] = S.SCHEMA_VERSION;
     try { api.storage.local.set(data); } catch (e) {}
     I.setLang(data.lang);
     applyI18n();
   }
 
-  var p = api.storage.local.get(DEFAULTS);
+  var p = S.load(api);
   if (p && p.then) {
     p.then(function (s) {
       var merged = Object.assign({}, DEFAULTS, s || {});
       I.setLang(merged.lang);
       applyI18n();
       apply(merged);
+    }).catch(function () {
+      applyI18n();
+      apply(DEFAULTS);
     });
   } else {
     applyI18n();
@@ -110,7 +114,9 @@
   });
 
   el('reset').addEventListener('click', function () {
-    try { api.storage.local.set(DEFAULTS); } catch (e) {}
+    var reset = Object.assign({}, DEFAULTS);
+    reset[S.STORAGE_VERSION_KEY] = S.SCHEMA_VERSION;
+    try { api.storage.local.set(reset); } catch (e) {}
     I.setLang(DEFAULTS.lang);
     applyI18n();
     apply(DEFAULTS);
@@ -133,7 +139,7 @@
       var blob = new Blob([JSON.stringify(backup, null, 2) + '\n'], { type: 'application/json' });
       blobUrl = URL.createObjectURL(blob);
       await api.downloads.download({
-        url: blobUrl, filename: 'rutube-tools-settings-v1.json', saveAs: true
+        url: blobUrl, filename: 'rutube-tools-settings-v2.json', saveAs: true
       });
       backupStatus('pop.exportDone');
     } catch (e) {
@@ -157,8 +163,10 @@
       if (file.size > 65536) throw new Error('backup-too-large');
       var next = S.parseBackup(await file.text());
       var previous = await api.storage.local.get(DEFAULTS);
+      var nextWithVersion = Object.assign({}, next);
+      nextWithVersion[S.STORAGE_VERSION_KEY] = S.SCHEMA_VERSION;
       try {
-        await api.storage.local.set(next);
+        await api.storage.local.set(nextWithVersion);
       } catch (writeError) {
         // Даже частично записанный импорт не должен оставить смесь старых и новых значений.
         try { await api.storage.local.set(previous); } catch (e) {}

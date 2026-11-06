@@ -33,6 +33,7 @@
     "scripts": [
       "lib/network.js",
       "lib/mux-mp4.min.js",
+      "lib/media.js",
       "lib/engine.js",
       "lib/audio.js",
       "background.js"
@@ -49,6 +50,7 @@
         "lib/dom.js",
         "lib/engine.js",
         "lib/i18n.js",
+        "lib/settings.js",
         "content-core.js",
         "content-panel.js"
       ],

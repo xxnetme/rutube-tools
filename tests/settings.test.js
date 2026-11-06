@@ -8,7 +8,7 @@ test('settings backup: defaults roundtrip и только разрешённые
     rtPending: [{ id: 'x' }], rtHistory: [{ id: 1 }], rtDebug: true, unknown: 'x'
   }));
   assert.equal(backup.app, 'rutube-tools');
-  assert.equal(backup.schemaVersion, 1);
+  assert.equal(backup.schemaVersion, 2);
   assert.deepEqual(Object.keys(backup.settings).sort(), Object.keys(S.DEFAULTS).sort());
   assert.equal('rtPending' in backup.settings, false);
   assert.equal('rtHistory' in backup.settings, false);
@@ -32,7 +32,7 @@ test('settings backup: пользовательские значения сох�
 test('settings backup: неправильные типы и значения отклоняют весь файл', () => {
   const bad = [
     ['fps', 25], ['quality', 1080], ['quality', '100'], ['maxPartMB', '220'],
-    ['frameQuality', 69], ['frameQuality', 92.5], ['lang', 'uk'], ['shotKey', 'x'],
+    ['frameQuality', 69], ['frameQuality', 92.5], ['lang', 'de'], ['shotKey', 'x'],
     ['frameFormat', 'gif'], ['showButton', 1], ['nameTemplate', 'a\nb'],
     ['nameTemplate', 'x'.repeat(257)], ['defaultFormat', 'audio/m4a']
   ];
@@ -46,7 +46,8 @@ test('settings backup: схема, JSON и размер проверяются �
   assert.throws(() => S.parseBackup('{'), { message: 'bad-json' });
   assert.throws(() => S.parseBackup('null'), { message: 'bad-schema' });
   assert.throws(() => S.parseBackup(JSON.stringify({ app: 'other', schemaVersion: 1, settings: {} })), { message: 'bad-schema' });
-  assert.throws(() => S.parseBackup(JSON.stringify({ app: 'rutube-tools', schemaVersion: 2, settings: {} })), { message: 'bad-schema' });
+  assert.throws(() => S.parseBackup(JSON.stringify({ app: 'rutube-tools', schemaVersion: 3, settings: {} })), { message: 'bad-schema' });
+  assert.equal(S.parseBackup(JSON.stringify({ app: 'rutube-tools', schemaVersion: 2, settings: {} })).quality, S.DEFAULTS.quality);
   assert.throws(() => S.parseBackup(JSON.stringify({ app: 'rutube-tools', schemaVersion: 1, settings: [] })), { message: 'bad-settings' });
   assert.throws(() => S.parseBackup('x'.repeat(65537)), { message: 'backup-too-large' });
 });

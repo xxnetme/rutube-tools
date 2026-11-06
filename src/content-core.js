@@ -27,6 +27,7 @@
     frameQuality: 92,       // 50…100, для jpeg и webp
     preservePitch: true,
     rememberPos: true,
+    rememberRate: true,
     defaultFormat: 'video', // video | audio — с чего открывается вкладка «Скачать»
     nameTemplate: '{title}',// {title} {author} {quality} {date} {playlist}, «/» — подпапка
     saveSubs: false,        // класть .srt рядом с видео
@@ -65,9 +66,12 @@
     fpsCache: Object.create(null),
     fpsRequested: null,
     panelOpen: false,
-    ab: { a: null, b: null, loop: false },
+    ab: { a: null, b: null, loop: false, previewA: null, previewB: null, previewing: false, previewToken: 0 },
     boardBusy: false,
-    storyboard: { every: 5, count: 12, useAB: false }
+    rateRestoredFor: null,
+    rateVideo: null,
+    frameProbe: null,
+    storyboard: { every: 5, count: 12, useAB: false, everyFrame: false }
   };
 
   /* ------------------------------------------------------------- утилиты */
@@ -162,12 +166,13 @@
 
   function loadSettings() {
     try {
-      var p = api.storage.local.get(DEFAULTS);
+      var p = globalThis.RTSettings && typeof globalThis.RTSettings.load === 'function'
+        ? globalThis.RTSettings.load(api) : api.storage.local.get(DEFAULTS);
       if (p && p.then) p.then(function (v) {
         settings = Object.assign({}, DEFAULTS, v || {});
         I.setLang(settings.lang);
         onSettingsChanged();
-      });
+      }).catch(function () {});
     } catch (e) {}
   }
 
@@ -261,6 +266,7 @@
     '.field .lb{color:#b7b9c0;font-size:12px;flex:0 0 auto;min-width:52px}',
     '.field .in{flex:1;min-width:0}',
     '.hint{color:var(--faint);font-size:11px;margin-top:9px;line-height:1.5}',
+    '.ab-scale-wrap{margin:2px 0 8px}.ab-scale{position:relative;height:28px;margin:0 5px;touch-action:none;cursor:crosshair}.ab-line{position:absolute;left:0;right:0;top:12px;height:4px;border-radius:4px;background:linear-gradient(90deg,rgba(242,65,58,.55),rgba(255,255,255,.16))}.ab-marker{position:absolute;top:1px;transform:translateX(-50%);width:24px;height:24px;padding:0;border:1px solid rgba(255,255,255,.4);border-radius:7px;background:#26262d;color:#fff;font:700 11px/1 ui-monospace,monospace;cursor:ew-resize;box-shadow:0 3px 10px rgba(0,0,0,.35);z-index:1}.ab-marker.ab-a{border-color:rgba(242,65,58,.85);background:#542524}.ab-marker.ab-b{border-color:rgba(110,169,255,.8);background:#202f49}.ab-previews{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:5px}.ab-preview{min-width:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:rgba(255,255,255,.025);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:58px}.ab-preview img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}.ab-preview span{display:grid;place-items:center;min-height:48px;color:var(--faint);font-weight:700}.ab-preview small{display:block;width:100%;padding:4px 5px;color:var(--dim);font:10px/1.2 ui-monospace,monospace;text-align:center;border-top:1px solid var(--line)}',
     '.hint kbd{background:rgba(255,255,255,.1);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:0 4px;font-size:10.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}',
     /* --- прогресс --- */
     '.bar{height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:12px 0 9px}',
@@ -328,13 +334,13 @@
     var closeButton = D.h('button', {
       class: 'x', title: t('panel.close'), 'aria-label': t('panel.close'), text: '×'
     });
-    var card = D.h('div', { class: 'card', hidden: true, role: 'dialog', 'aria-label': 'RuTube Tools' },
+    var card = D.h('div', { class: 'card', hidden: true, role: 'dialog', 'aria-modal': 'false', 'aria-label': 'RuTube Tools' },
       D.h('div', { class: 'hd' },
         D.h('span', { class: 'badge', text: 'MP4' }),
         D.h('span', { class: 't', text: 'RuTube Tools' }),
         closeButton),
-      D.h('div', { class: 'tabs', role: 'tablist' }),
-      D.h('div', { class: 'bd' })
+      D.h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'RuTube Tools' }),
+      D.h('div', { class: 'bd', role: 'tabpanel', tabindex: 0 })
     );
     var pillIcon = D.svg('svg', {
       viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2',
@@ -351,11 +357,24 @@
 
     var toastEl = document.createElement('div');
     toastEl.className = 'toast';
+    toastEl.setAttribute('role', 'status');
+    toastEl.setAttribute('aria-live', 'polite');
+    toastEl.setAttribute('aria-atomic', 'true');
     root.appendChild(toastEl);
+
+    var liveEl = document.createElement('div');
+    liveEl.setAttribute('role', 'status');
+    liveEl.setAttribute('aria-live', 'polite');
+    liveEl.setAttribute('aria-atomic', 'true');
+    liveEl.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;';
+    root.appendChild(liveEl);
 
     var help = document.createElement('div');
     help.className = 'help';
     help.hidden = true;
+    help.setAttribute('role', 'dialog');
+    help.setAttribute('aria-modal', 'true');
+    help.setAttribute('aria-label', 'RuTube Tools');
     root.appendChild(help);
 
     ui = {
@@ -367,7 +386,9 @@
       body: wrap.querySelector('.bd'),
       close: wrap.querySelector('.x'),
       toast: toastEl,
+      live: liveEl,
       help: help,
+      returnFocus: null,
       toastTimer: 0,
       toastAction: null
     };
@@ -378,6 +399,25 @@
     });
     ['click', 'mousedown', 'pointerdown', 'dblclick', 'keydown'].forEach(function (ev) {
       ui.card.addEventListener(ev, function (e) { e.stopPropagation(); });
+    });
+    ui.card.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (!ui.help.hidden) ui.help.hidden = true; else closePanel();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      var list = Array.prototype.slice.call(ui.card.querySelectorAll(
+        'button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])'
+      )).filter(function (el) { return !el.hidden && el.getAttribute('aria-hidden') !== 'true'; });
+      if (!list.length) { e.preventDefault(); return; }
+      var active = ui.root.activeElement || document.activeElement;
+      var first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && (active === first || !ui.card.contains(active))) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && (active === last || !ui.card.contains(active))) {
+        e.preventDefault(); first.focus();
+      }
     });
     ui.toast.addEventListener('click', function () {
       var fn = ui.toastAction;
@@ -397,29 +437,49 @@
     return ['download', 'frames', 'more', 'info'];
   }
 
+  function selectTab(id, focus) {
+    state.tab = id;
+    buildTabs();
+    render();
+    if (focus && ui) {
+      var selected = ui.tabs.querySelector('[aria-selected="true"]');
+      if (selected) selected.focus();
+    }
+  }
+
   function buildTabs() {
     if (!ui) return;
     var tabs = tabList();
     if (tabs.indexOf(state.tab) === -1) state.tab = tabs[0];
+    ui.body.id = 'rt-tabpanel';
+    ui.body.setAttribute('aria-labelledby', 'rt-tab-' + state.tab);
     D.set(ui.tabs, tabs.map(function (id) {
       return D.h('button', {
-        'data-tab': id, role: 'tab', class: state.tab === id ? 'on' : '', text: t('tab.' + id)
+        id: 'rt-tab-' + id, 'data-tab': id, role: 'tab',
+        'aria-selected': state.tab === id ? 'true' : 'false',
+        'aria-controls': 'rt-tabpanel', tabindex: state.tab === id ? 0 : -1,
+        class: state.tab === id ? 'on' : '', text: t('tab.' + id)
       });
     }));
     Array.prototype.forEach.call(ui.tabs.querySelectorAll('button'), function (b) {
       b.addEventListener('click', function (e) {
         e.preventDefault(); e.stopPropagation();
-        state.tab = b.getAttribute('data-tab');
-        buildTabs();
-        render();
+        selectTab(b.getAttribute('data-tab'), false);
+      });
+      b.addEventListener('keydown', function (e) {
+        var keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+        if (keys.indexOf(e.key) < 0) return;
+        e.preventDefault(); e.stopPropagation();
+        var index = tabs.indexOf(b.getAttribute('data-tab'));
+        var next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 :
+          (index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        selectTab(tabs[next], true);
       });
     });
   }
 
   function setTab(id) {
-    state.tab = id;
-    buildTabs();
-    render();
+    selectTab(id, false);
   }
 
   function render() {
@@ -475,10 +535,13 @@
 
   function openPanel() {
     if (!ui) return;
+    if (!state.panelOpen) ui.returnFocus = document.activeElement;
     state.panelOpen = true;
     ui.card.hidden = false;
+    ui.card.setAttribute('aria-modal', 'true');
     buildTabs();
     render();
+    ui.close.focus();
     if (!state.info && !state.playlist && !state.infoLoading && !state.playlistLoading && !state.job) {
       if (window.RTPanel) window.RTPanel.load();
     }
@@ -486,7 +549,13 @@
 
   function closePanel() {
     state.panelOpen = false;
-    if (ui) ui.card.hidden = true;
+    if (!ui) return;
+    ui.card.hidden = true;
+    ui.card.setAttribute('aria-modal', 'false');
+    ui.help.hidden = true;
+    var target = ui.returnFocus;
+    ui.returnFocus = null;
+    if (target && target.focus && (target.isConnected || document.documentElement.contains(target))) target.focus();
   }
 
   function currentHref() {
@@ -512,6 +581,7 @@
       [keys(['<', '>']), t('help.speed')],
       [keys([settings.shotKey]), t('help.shot')],
       [keys(['c']), t('help.copy')],
+      [keys(['A', 'B']), t('help.ab')],
       [keys(['p']), t('help.pip')]
     ];
     if (settings.youtubeKeys) {
@@ -541,6 +611,58 @@
   }
 
   /* --------------------------------------------------------- покадрово */
+
+  /* rVFC — источник фактических показанных кадров. Он не используется как
+   * абсолютный индекс после seek: для VFR показываем только честный таймкод. */
+  function attachFrameProbe(v) {
+    if (!v) return null;
+    if (state.frameProbe && state.frameProbe.video === v) return state.frameProbe;
+    var probe = {
+      video: v, vfr: false, supported: typeof v.requestVideoFrameCallback === 'function',
+      lastTime: null, lastFrames: null, rates: []
+    };
+    state.frameProbe = probe;
+    if (!probe.supported) return probe;
+    function callback(meta) {
+      if (state.frameProbe !== probe) return;
+      meta = meta || {};
+      var time = Number(meta.mediaTime), frames = Number(meta.presentedFrames);
+      if (isFinite(time) && isFinite(frames)) {
+        if (probe.lastTime !== null && frames > probe.lastFrames && time > probe.lastTime) {
+          var rate = (frames - probe.lastFrames) / (time - probe.lastTime);
+          if (isFinite(rate) && rate > 0 && rate < 1000) {
+            probe.rates.push(rate);
+            if (probe.rates.length > 8) probe.rates.shift();
+            if (probe.rates.length >= 3) {
+              var min = Math.min.apply(Math, probe.rates), max = Math.max.apply(Math, probe.rates);
+              var avg = probe.rates.reduce(function (sum, x) { return sum + x; }, 0) / probe.rates.length;
+              if (max - min > Math.max(0.05, avg * 0.03)) probe.vfr = true;
+            }
+          }
+        }
+        probe.lastTime = time;
+        probe.lastFrames = frames;
+      }
+      try { v.requestVideoFrameCallback(callback); } catch (e) {}
+    }
+    try { v.requestVideoFrameCallback(callback); } catch (e) {}
+    return probe;
+  }
+
+  function isVfr(v) {
+    var probe = attachFrameProbe(v);
+    return !!(probe && probe.vfr);
+  }
+
+  function waitForPresentedFrame(v) {
+    if (!v || typeof v.requestVideoFrameCallback !== 'function') return Promise.resolve();
+    return new Promise(function (resolve) {
+      var done = false;
+      function finish() { if (done) return; done = true; clearTimeout(timer); resolve(); }
+      var timer = setTimeout(finish, 140);
+      try { v.requestVideoFrameCallback(finish); } catch (e) { finish(); }
+    });
+  }
 
   function seekTo(v, time) {
     return new Promise(function (resolve) {
@@ -604,13 +726,17 @@
     return resolveFps().then(function (fps) {
       if (!fps || !isFinite(fps) || fps <= 0) fps = 25;
       var cur = v.currentTime || 0;
+      var dur = isFinite(v.duration) ? v.duration : 0;
+      var vfr = isVfr(v);
       var frame = Math.round(cur * fps);
       frame = dir > 0 ? frame + 1 : Math.max(0, frame - 1);
-      var dur = isFinite(v.duration) ? v.duration : 0;
-      var target = (frame + 0.25) / fps;
+      var target = vfr ? cur + dir / fps : (frame + 0.25) / fps;
+      target = Math.max(0, target);
       if (dur && target > dur - 0.02) target = Math.max(0, dur - 0.04);
-      return seekTo(v, target).then(function () {
-        toast(t('fr.readout', { n: frame, tc: timecode(v.currentTime), fps: fps }));
+      return seekTo(v, target).then(function () { return waitForPresentedFrame(v); }).then(function () {
+        // Не называем currentTime*fps абсолютным номером кадра на VFR.
+        if (vfr) toast(t('fr.readoutVfr', { tc: timecode(v.currentTime) }));
+        else toast(t('fr.readout', { n: frame, tc: timecode(v.currentTime), fps: fps }));
       });
     });
   }
@@ -618,13 +744,14 @@
   function gotoFrame(n) {
     var v = getPlayerVideo();
     if (!v) { toast(t('fr.noVideo')); return; }
+    if (isVfr(v)) { toast(t('fr.vfrGoto')); return; }
     resolveFps().then(function (fps) {
       if (!fps || !isFinite(fps)) fps = 25;
       var target = Math.max(0, (Number(n) || 1) - 1) / fps;
       var dur = isFinite(v.duration) ? v.duration : 0;
       if (dur && target > dur - 0.05) target = Math.max(0, dur - 0.05);
       v.pause();
-      seekTo(v, target).then(function () {
+      seekTo(v, target).then(function () { return waitForPresentedFrame(v); }).then(function () {
         toast(t('fr.frameN', { n: Math.round(target * fps) + 1, tc: timecode(v.currentTime) }));
       });
     });
@@ -640,6 +767,7 @@
     idx = Math.min(speeds.length - 1, Math.max(0, idx + (dir > 0 ? 1 : -1)));
     v.playbackRate = speeds[idx];
     applyPitch(v);
+    saveRate(v);
     toast(t('toast.speed', { rate: speeds[idx] }));
   }
 
@@ -650,6 +778,64 @@
       v.mozPreservesPitch = !!settings.preservePitch;
       v.webkitPreservesPitch = !!settings.preservePitch;
     } catch (e) {}
+  }
+
+  /* Скорость привязана к videoId, а не к адресу вкладки или к текущему плееру глобально. */
+  var RATE_KEY = 'rtPlaybackRates';
+  var RATE_MAX = 50;
+  var rateChain = Promise.resolve();
+
+  function saveRate(v) {
+    var id = getVideoId();
+    if (!id || !settings.rememberRate || !v || !isFinite(v.playbackRate)) return;
+    var rate = Math.max(0.25, Math.min(2, Number(v.playbackRate)));
+    rateChain = rateChain.then(async function () {
+      var got = await api.storage.local.get(RATE_KEY);
+      var old = got && got[RATE_KEY];
+      var map = old && typeof old === 'object' && !Array.isArray(old) ? old : {};
+      map[id] = { rate: rate, at: Date.now() };
+      var entries = Object.keys(map).map(function (key) { return [key, map[key]]; })
+        .filter(function (entry) { return entry[1] && isFinite(entry[1].rate); })
+        .sort(function (a, b) { return (b[1].at || 0) - (a[1].at || 0); })
+        .slice(0, RATE_MAX);
+      var next = {};
+      entries.forEach(function (entry) { next[entry[0]] = entry[1]; });
+      var payload = {};
+      payload[RATE_KEY] = next;
+      await api.storage.local.set(payload);
+    }).catch(function () {});
+    return rateChain;
+  }
+
+  function maybeRestoreRate(v) {
+    var id = getVideoId();
+    if (!id || !settings.rememberRate || !v) return;
+    if (state.rateRestoredFor === id && state.rateVideo === v) return;
+    state.rateRestoredFor = id;
+    state.rateVideo = v;
+    var p = api.storage.local.get(RATE_KEY);
+    if (!p || !p.then) return;
+    p.then(function (got) {
+      // Пользователь мог уже уйти на другое видео или поменять скорость сам.
+      if (getVideoId() !== id || state.rateVideo !== v) return;
+      var map = got && got[RATE_KEY];
+      var rec = map && map[id];
+      if (!rec || !isFinite(rec.rate)) return;
+      var rate = Math.max(0.25, Math.min(2, Number(rec.rate)));
+      if (Math.abs((v.playbackRate || 1) - rate) > 0.001) v.playbackRate = rate;
+      applyPitch(v);
+    }).catch(function () {});
+  }
+
+  function bindRate(v) {
+    if (!v) return;
+    attachFrameProbe(v);
+    if (state.rateVideo !== v) maybeRestoreRate(v);
+    if (v.__rtRateBound) return;
+    try { v.__rtRateBound = true; } catch (e) {}
+    v.addEventListener('ratechange', function () {
+      if (state.rateRestoredFor === getVideoId()) saveRate(v);
+    });
   }
 
   function seekBy(v, d) {
@@ -735,8 +921,12 @@
   /** Моменты серии: от начала или, если включено «только между A и B», внутри отрезка. */
   function currentBoardTimes(v) {
     var ab = state.ab;
+    var everyFrame = !!state.storyboard.everyFrame;
+    if (everyFrame && isVfr(v)) return [];
+    var fps = (state.fpsCache[getVideoId()] || 25);
     return L.boardTimes({
-      every: state.storyboard.every,
+      every: everyFrame ? 1 / fps : state.storyboard.every,
+      everyFrame: everyFrame,
       count: state.storyboard.count,
       duration: isFinite(v.duration) ? v.duration : 0,
       useAB: !!state.storyboard.useAB,
@@ -776,7 +966,7 @@
     }
 
     function shotAt(time) {
-      return seekTo(v, time).then(function () {
+      return seekTo(v, time).then(function () { return waitForPresentedFrame(v); }).then(function () {
         var dataUrl;
         try { dataUrl = grabFrameDataUrl(v); } catch (e) { return null; }
         return sendMessage({ type: 'rt:save-data-url', dataUrl: dataUrl, filename: frameFilename(v.currentTime) });
@@ -829,7 +1019,7 @@
 
     function step(i) {
       if (i >= times.length) { finish(true); return; }
-      seekTo(v, times[i]).then(function () {
+      seekTo(v, times[i]).then(function () { return waitForPresentedFrame(v); }).then(function () {
         var col = i % lay.cols, row = Math.floor(i / lay.cols);
         var x = lay.gap + col * (lay.cellW + lay.gap);
         var y = lay.gap + row * (lay.cellH + lay.captionH + lay.gap);
@@ -848,6 +1038,50 @@
 
   /* ------------------------------------------------------------- A/B петля */
 
+  function setABMarker(which, time, v, withPreview, deferRender) {
+    v = v || getPlayerVideo();
+    if (!v || (which !== 'a' && which !== 'b')) return;
+    var duration = isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
+    var value = Math.max(0, Number(time) || 0);
+    if (duration) value = Math.min(value, Math.max(0, duration - 0.04));
+    if (which === 'a') {
+      if (state.ab.b != null && value >= state.ab.b) value = Math.max(0, state.ab.b - 0.04);
+      state.ab.a = value;
+    } else {
+      if (state.ab.a != null && value <= state.ab.a) value = Math.min(duration || value + 0.04, state.ab.a + 0.04);
+      state.ab.b = value;
+    }
+    applyAB(v);
+    if (!deferRender && window.RTPanel && state.panelOpen) window.RTPanel.render();
+    if (withPreview !== false) captureABPreview(which, v);
+  }
+
+  function captureABPreview(which, v) {
+    if (!v || !v.videoWidth) return;
+    var ab = state.ab;
+    var time = which === 'a' ? ab.a : ab.b;
+    if (time == null) return;
+    var token = ++ab.previewToken;
+    var original = v.currentTime || 0;
+    var wasPaused = v.paused;
+    ab.previewing = true;
+    v.pause();
+    seekTo(v, time).then(function () { return waitForPresentedFrame(v); }).then(function () {
+      if (token !== ab.previewToken) return;
+      try {
+        var canvas = grabCanvas(v);
+        var data = canvas.toDataURL('image/jpeg', 0.72);
+        if (which === 'a') ab.previewA = data; else ab.previewB = data;
+      } catch (e) {}
+    }).catch(function () {}).then(function () {
+      if (token === ab.previewToken) ab.previewing = false;
+      return seekTo(v, original).then(function () {
+        if (!wasPaused) v.play().catch(function () {});
+        if (window.RTPanel && state.panelOpen) window.RTPanel.render();
+      });
+    });
+  }
+
   function applyAB(v) {
     if (!v) return;
     var ab = state.ab;
@@ -862,7 +1096,7 @@
   function abHandler() {
     var v = getPlayerVideo();
     var ab = state.ab;
-    if (!v || ab.a === null || ab.b === null || !ab.loop) return;
+    if (!v || ab.previewing || ab.a === null || ab.b === null || !ab.loop) return;
     if (v.currentTime >= ab.b || v.currentTime < ab.a - 0.5) {
       try { v.currentTime = ab.a; } catch (e) {}
     }
@@ -947,6 +1181,8 @@
     var isBack = key === ks.back || (settings.frameKeys === 'angle' && key === '<' && e.shiftKey);
     var isFwd = key === ks.fwd || (settings.frameKeys === 'angle' && key === '>' && e.shiftKey);
     var isSpeed = key === '<' || key === '>';
+    var isA = key === 'a' || key === 'A' || key === 'ф' || key === 'Ф';
+    var isB = key === 'b' || key === 'B' || key === 'и' || key === 'И';
     var isHelp = key === '?' || (key === '/' && e.shiftKey);
     var isShot = key === settings.shotKey || (settings.shotKey === 's' && (key === 'ы' || key === 'Ы'));
     var isPip = key === 'p' || key === 'P' || key === 'з' || key === 'З';
@@ -957,7 +1193,7 @@
       return;
     }
 
-    var special = isBack || isFwd || isHelp || isShot || isPip || isCopy;
+    var special = isBack || isFwd || isHelp || isShot || isPip || isCopy || isA || isB;
     if (!special && !isSpeed && !settings.youtubeKeys) return;
 
     var v = getPlayerVideo();
@@ -968,6 +1204,8 @@
     if (isBack) { stopEvent(e); stepFrame(-1, v); return; }
     if (isFwd) { stopEvent(e); stepFrame(1, v); return; }
     if (isSpeed) { if (e.shiftKey && (key === '<' || key === '>')) { stopEvent(e); stepFrame(key === '>' ? 1 : -1, v); return; } stopEvent(e); changeSpeed(v, key === '>' ? 1 : -1); return; }
+    if (isA) { stopEvent(e); setABMarker('a', v.currentTime, v); return; }
+    if (isB) { stopEvent(e); setABMarker('b', v.currentTime, v); return; }
     if (isShot) { stopEvent(e); saveFrame(v); return; }
     if (isCopy) { stopEvent(e); copyFrame(v); return; }
     if (isPip) { stopEvent(e); togglePip(); return; }
@@ -1030,6 +1268,11 @@
     state.to = '';
     state.lastRequest = null;
     state.lastResult = null;
+    state.rateRestoredFor = null;
+    state.rateVideo = null;
+    state.frameProbe = null;
+    state.ab = { a: null, b: null, loop: false, previewA: null, previewB: null, previewing: false, previewToken: 0 };
+    state.storyboard.useAB = false;
     state.videoId = getVideoId();
     state.playlistId = getPlaylistId();
     if (state.playlistId && !state.videoId) state.tab = 'playlist';
@@ -1044,6 +1287,7 @@
     if (checkNav() && ui) buildTabs();
     ensureUI();
     var v = findVideo(document);
+    if (v) { applyPitch(v); bindRate(v); }
     if (ui && !v && !getPlaylistId()) ui.wrap.style.display = 'none';
   }
 
@@ -1058,6 +1302,16 @@
   function onProgressMessage(msg) {
     if (!msg || msg.type !== 'rt:progress') return;
     if (window.RTPanel && window.RTPanel.onProgress) window.RTPanel.onProgress(msg);
+    if (!ui || !ui.live) return;
+    var phase = msg.phase || '';
+    var text = phase === 'done' || phase === 'queue-done' ? t('dl.done') :
+      phase === 'error' || phase === 'cancelled' ? t('err.download') : t('dl.phase.' + phase);
+    if (text === 'dl.phase.' + phase) text = phase;
+    if (typeof msg.percent === 'number' && isFinite(msg.percent)) text += ' ' + Math.round(msg.percent) + '%';
+    if (text && text !== ui.lastLive) {
+      ui.lastLive = text;
+      ui.live.textContent = text;
+    }
   }
 
   function init() {
@@ -1077,7 +1331,7 @@
       setTimeout(function () {
         ensureUI();
         var v = findVideo(document);
-        if (v) { applyPitch(v); maybeOfferResume(v); }
+        if (v) { applyPitch(v); bindRate(v); maybeOfferResume(v); }
       }, 400);
     }, true);
 
@@ -1133,8 +1387,14 @@
     seekBy: seekBy,
     togglePip: togglePip,
     applyAB: applyAB,
+    setABMarker: setABMarker,
     applyPitch: applyPitch,
-    savePosition: savePosition
+    savePosition: savePosition,
+    saveRate: saveRate,
+    maybeRestoreRate: maybeRestoreRate,
+    attachFrameProbe: attachFrameProbe,
+    isVfr: isVfr,
+    waitForPresentedFrame: waitForPresentedFrame
   };
 
   /* keepalive: не даём фону уснуть во время загрузки */

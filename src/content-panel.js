@@ -480,6 +480,28 @@
     var v = RT.getPlayerVideo();
     var cur = v ? v.currentTime : 0;
     var fps = (RT.getVideoId() && state.fpsCache[RT.getVideoId()]) || 25;
+    var duration = v && isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
+    var vfr = v && RT.isVfr ? RT.isVfr(v) : false;
+    function marker(which) {
+      var value = which === 'a' ? ab.a : ab.b;
+      var percent = duration && value != null ? Math.max(0, Math.min(100, value / duration * 100)) : (which === 'a' ? 0 : 100);
+      return D.h('button', {
+        class: 'ab-marker ab-' + which, style: 'left:' + percent + '%',
+        'data-act': 'marker-' + which, 'data-marker': which, role: 'slider', tabindex: 0,
+        'aria-label': which.toUpperCase() + ' ' + t('fr.abMarker'),
+        'aria-valuemin': 0, 'aria-valuemax': duration || 0, 'aria-valuenow': value == null ? 0 : value,
+        'aria-valuetext': value == null ? '—' : RT.timecode(value), text: which.toUpperCase()
+      });
+    }
+    var scale = D.h('div', { class: 'ab-scale', 'data-act': 'ab-scale', 'aria-label': t('fr.abScale') },
+      D.h('div', { class: 'ab-line' }), marker('a'), marker('b'));
+    var previews = D.h('div', { class: 'ab-previews' }, ['a', 'b'].map(function (which) {
+      var data = which === 'a' ? ab.previewA : ab.previewB;
+      var value = which === 'a' ? ab.a : ab.b;
+      return D.h('div', { class: 'ab-preview' },
+        data ? D.h('img', { src: data, alt: which.toUpperCase() + ' ' + t('fr.abPreview') }) : D.h('span', { text: which.toUpperCase() }),
+        D.h('small', { text: value == null ? '—' : RT.timecode(value) }));
+    }));
 
     setNodes(
       section(null,
@@ -495,14 +517,15 @@
       section(t('fr.goto'),
         D.h('div', { class: 'row' },
           D.h('input', {
-            type: 'number', min: 1, 'data-in': 'frame', placeholder: Math.round(cur * fps), style: 'flex:1'
+            type: 'number', min: 1, 'data-in': 'frame', placeholder: vfr ? '—' : Math.round(cur * fps), style: 'flex:1', disabled: !!vfr
           }),
-          btn(t('fr.go'), { class: 'btn ghost', 'data-act': 'goto' })
+          btn(t('fr.go'), { class: 'btn ghost', 'data-act': 'goto', disabled: !!vfr })
         ),
-        D.h('div', { class: 'hint' }, fps, ' fps · ', RT.timecode(cur))
+        D.h('div', { class: 'hint', text: vfr ? t('fr.vfrReadout') : fps + ' fps · ' + RT.timecode(cur) })
       ),
       section(t('fr.ab'),
-        D.h('div', { class: 'row' },
+        D.h('div', { class: 'ab-scale-wrap' }, scale, previews),
+        D.h('div', { class: 'row', style: 'margin-top:8px' },
           btn('A: ' + (ab.a == null ? '—' : RT.timecode(ab.a)), {
             class: 'btn ghost wide small', 'data-act': 'setA'
           }),
@@ -519,6 +542,11 @@
         )
       ),
       section(t('fr.storyboard'),
+        D.h('div', { class: 'sw', style: 'margin-bottom:7px' },
+          D.h('span', { text: t('fr.everyFrame') }),
+          D.h('input', { type: 'checkbox', 'data-act': 'everyframe', checked: !!state.storyboard.everyFrame, disabled: !!vfr })
+        ),
+        vfr ? D.h('div', { class: 'hint', text: t('fr.vfrSeries') }) : null,
         field(t('fr.every'), D.h('input', {
           type: 'number', min: 0.2, step: 0.5, 'data-in': 'every', value: state.storyboard.every
         })),
@@ -555,20 +583,92 @@
     var setA = $('[data-act="setA"]');
     if (setA) setA.addEventListener('click', function () {
       var vv = RT.getPlayerVideo();
-      state.ab.a = vv ? vv.currentTime : null;
-      if (state.ab.b != null && state.ab.a >= state.ab.b) state.ab.b = null;
-      RT.applyAB(vv);
+      if (vv) RT.setABMarker('a', vv.currentTime, vv);
       render();
     });
 
     var setB = $('[data-act="setB"]');
     if (setB) setB.addEventListener('click', function () {
       var vv = RT.getPlayerVideo();
-      state.ab.b = vv ? vv.currentTime : null;
-      if (state.ab.a != null && state.ab.b <= state.ab.a) state.ab.a = null;
-      RT.applyAB(vv);
+      if (vv) RT.setABMarker('b', vv.currentTime, vv);
       render();
     });
+
+    $$('[data-marker]').forEach(function (markerButton) {
+      function currentValue(which, video) {
+        var value = which === 'a' ? state.ab.a : state.ab.b;
+        return value == null ? (which === 'a' ? 0 : (video.duration || 0)) : value;
+      }
+      markerButton.addEventListener('keydown', function (e) {
+        var video = RT.getPlayerVideo();
+        if (!video) return;
+        var which = markerButton.getAttribute('data-marker');
+        var value = currentValue(which, video);
+        var delta = e.shiftKey ? 1 : 1 / fps;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') value -= delta;
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') value += delta;
+        else if (e.key === 'Home') value = 0;
+        else if (e.key === 'End') value = video.duration || value;
+        else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault(); e.stopPropagation(); RT.setABMarker(which, value, video, true); return;
+        } else return;
+        e.preventDefault(); e.stopPropagation();
+        RT.setABMarker(which, value, video, false);
+      });
+      markerButton.addEventListener('keyup', function (e) {
+        if (['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowUp', 'Home', 'End'].indexOf(e.key) === -1) return;
+        var video = RT.getPlayerVideo();
+        if (video) RT.setABMarker(markerButton.getAttribute('data-marker'), currentValue(markerButton.getAttribute('data-marker'), video), video, true);
+      });
+    });
+
+    var scaleNode = $('[data-act="ab-scale"]');
+    if (scaleNode) {
+      var drag = null;
+      function timeAt(event) {
+        var rect = scaleNode.getBoundingClientRect();
+        if (!rect.width || !duration) return null;
+        return Math.max(0, Math.min(duration, (event.clientX - rect.left) / rect.width * duration));
+      }
+      scaleNode.addEventListener('pointerdown', function (e) {
+        var video = RT.getPlayerVideo();
+        var time = timeAt(e);
+        if (!video || time == null) return;
+        var which = e.target && e.target.getAttribute ? e.target.getAttribute('data-marker') : null;
+        if (!which) {
+          var a = state.ab.a == null ? 0 : state.ab.a;
+          var b = state.ab.b == null ? duration : state.ab.b;
+          which = Math.abs(time - a) <= Math.abs(time - b) ? 'a' : 'b';
+        }
+        drag = { which: which, id: e.pointerId };
+        try { scaleNode.setPointerCapture(e.pointerId); } catch (ignore) {}
+        e.preventDefault(); e.stopPropagation();
+        RT.setABMarker(which, time, video, false, true);
+      });
+      scaleNode.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var video = RT.getPlayerVideo(), time = timeAt(e);
+        if (!video || time == null) return;
+        e.preventDefault(); e.stopPropagation();
+        RT.setABMarker(drag.which, time, video, false, true);
+        var markerNode = scaleNode.querySelector('[data-marker="' + drag.which + '"]');
+        if (markerNode && duration) {
+          var value = drag.which === 'a' ? state.ab.a : state.ab.b;
+          markerNode.style.left = (value / duration * 100) + '%';
+          markerNode.setAttribute('aria-valuenow', value);
+          markerNode.setAttribute('aria-valuetext', RT.timecode(value));
+        }
+      });
+      function endDrag(e) {
+        if (!drag) return;
+        var video = RT.getPlayerVideo(), which = drag.which;
+        drag = null;
+        if (video) RT.setABMarker(which, which === 'a' ? state.ab.a : state.ab.b, video, true);
+        e.preventDefault(); e.stopPropagation();
+      }
+      scaleNode.addEventListener('pointerup', endDrag);
+      scaleNode.addEventListener('pointercancel', endDrag);
+    }
 
     var loop = $('[data-act="loop"]');
     if (loop) loop.addEventListener('change', function () {
@@ -586,7 +686,7 @@
 
     var clear = $('[data-act="abclear"]');
     if (clear) clear.addEventListener('click', function () {
-      state.ab = { a: null, b: null, loop: false };
+      state.ab = { a: null, b: null, loop: false, previewA: null, previewB: null, previewing: false, previewToken: 0 };
       state.storyboard.useAB = false;
       RT.applyAB(RT.getPlayerVideo());
       render();
@@ -607,6 +707,12 @@
 
     var copyshot = $('[data-act="copyshot"]');
     if (copyshot) copyshot.addEventListener('click', function () { RT.copyFrame(); });
+
+    var everyframe = $('[data-act="everyframe"]');
+    if (everyframe) everyframe.addEventListener('change', function () {
+      state.storyboard.everyFrame = everyframe.checked;
+      render();
+    });
 
     var useab = $('[data-act="useab"]');
     if (useab) useab.addEventListener('change', function () { state.storyboard.useAB = useab.checked; });

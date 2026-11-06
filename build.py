@@ -3,6 +3,7 @@
 import hashlib
 import json
 import shutil
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -26,7 +27,8 @@ EXCLUDE_BY_FLAVOR = {
 }
 
 REQUIRED = {"manifest.json", "background.js", "content-core.js", "content-panel.js",
-            "lib/network.js", "lib/dom.js", "lib/engine.js", "lib/audio.js", "lib/i18n.js", "lib/settings.js", "lib/mux-mp4.min.js", "popup.html", "popup.js"}
+            "lib/network.js", "lib/dom.js", "lib/engine.js", "lib/audio.js", "lib/i18n.js", "lib/settings.js", "lib/mux-mp4.min.js", "lib/media.js", "lib/opfs-worker.js",
+            "lib/mediabunny.LICENSE", "popup.html", "popup.js"}
 REQUIRED_BY_FLAVOR = {"chromium": {"offscreen.html", "offscreen.js"}}
 
 # AMO/CWS не любят удалённый код и eval — проверяем свои файлы (кроме вендорного mux.js)
@@ -69,6 +71,17 @@ def build_all():
             target = dest / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, target)
+        # Один autonomous IIFE-bundle вместо runtime CDN/import: внутри только
+        # Mediabunny и наш адаптер, а MPL-2.0 едет рядом с каждым пакетом.
+        bundle = dest / "lib" / "media.js"
+        bundle.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([
+            str(ROOT / "node_modules" / ".bin" / "esbuild"),
+            str(ROOT / "modules" / "media.mjs"),
+            "--bundle", "--format=iife", "--global-name=RTMedia",
+            "--target=chrome109,firefox140", "--minify", "--legal-comments=eof",
+            f"--outfile={bundle}",
+        ], cwd=ROOT, check=True)
         shutil.copy2(SRC / manifest, dest / "manifest.json")
         json.loads((dest / "manifest.json").read_text(encoding="utf-8"))  # валидация
 

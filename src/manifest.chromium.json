@@ -33,6 +33,7 @@
         "lib/dom.js",
         "lib/engine.js",
         "lib/i18n.js",
+        "lib/settings.js",
         "content-core.js",
         "content-panel.js"
       ],

@@ -76,6 +76,13 @@
    * @property {Object} [tags]
    * @property {boolean} [validate]
    * @property {number} [expectedDurationSec]
+   * @property {any} [media]
+   * @property {string} [resumeKey]
+   * @property {boolean} [opfs]
+   * @property {string} [fingerprint]
+   * @property {number} [expectedBytes]
+   * @property {(info: Object) => any} [onSegmentSaved]
+   * @property {(info: Object) => any} [onStorage]
    */
 
   /**
@@ -85,9 +92,11 @@
    * @property {string} ext
    * @property {number} bytes
    * @property {number} [durationSec]
+   * @property {File} [file]
+   * @property {string} [opfsKey]
    */
 
-  /** @typedef {{every?: number, count?: number, duration?: number, useAB?: boolean, a?: number|null, b?: number|null}} RtBoardOptions */
+  /** @typedef {{every?: number, everyFrame?: boolean, count?: number, duration?: number, useAB?: boolean, a?: number|null, b?: number|null}} RtBoardOptions */
   /** @typedef {{maxSide?: number, gap?: number, captionH?: number, cols?: number, cellW?: number}} RtSheetOptions */
   /** @typedef {{cols: number, rows: number, cellW: number, cellH: number, gap: number, captionH: number, width: number, height: number}} RtSheetLayout */
 
@@ -405,7 +414,8 @@
           frameRate: fps || v.frameRate,
           label: v.height ? v.height + 'p' : Math.round(v.bandwidth / 1000) + ' kbps',
           estimatedBytes: durationMs ? Math.round(v.bandwidth * (durationMs / 1000) / 8) : 0,
-          compatible: !/hvc1|hev1|av01|vp0?9/i.test(v.codecs || '')
+          // compatible описывает старый mux.js-путь; Media отдельно поддерживает HEVC/AV1.
+          compatible: !v.codecs || /^avc[13](?:\.|,|$)/i.test(v.codecs || '')
         };
       }),
       fps: fps || 25
@@ -650,7 +660,7 @@
     if (mode === 'mp4' && !video.length) throw invalidOutput('в MP4 нет видеодорожки');
     if (mode === 'm4a' && !audio.length) throw invalidOutput('в M4A нет аудиодорожки');
     tracks.forEach(function (track) {
-      if (track.type === 'video' && !/^avc[13]/i.test(track.codec || '')) {
+      if (track.type === 'video' && !/^(?:avc[13]|hvc1|hev1|av01)/i.test(track.codec || '')) {
         throw invalidOutput('неподдерживаемый видеокодек ' + (track.codec || 'unknown'));
       }
       if (track.type === 'audio' && !/^mp4a/i.test(track.codec || '')) {
@@ -707,27 +717,58 @@
     var onProgress = cfg.onProgress || function () {};
     var muxjs = cfg.muxjs || global.muxjs;
     var audioLib = cfg.audio || global.RTAudio;
+    var mediaLib = cfg.media || global.RTMedia;
+    var useMedia = mode === 'mp4' && mediaLib && typeof mediaLib.transmuxChunks === 'function';
 
-    // mux.js 7 экспортирует Transmuxer наверху; старые сборки — внутри .mp4.
+    // mux.js остаётся резервным путём для автономных/старых сборок и тестовых окружений.
     var Transmuxer = muxjs && typeof muxjs.Transmuxer === 'function' ? muxjs.Transmuxer
       : muxjs && muxjs.mp4 && muxjs.mp4.Transmuxer;
-    if (mode === 'mp4' && typeof Transmuxer !== 'function') {
+    if (mode === 'mp4' && !useMedia && typeof Transmuxer !== 'function') {
       throw new Error('Модуль сборки MP4 не загружен');
     }
-    // «только звук» нельзя подменить другим режимом: молча отдать видео вместо аудио было бы ошибкой
     if (mode === 'm4a' && (!audioLib || !audioLib.createExtractor)) {
       throw new Error('Модуль извлечения звука не загружен');
     }
 
     var chunks = [];
+    var mediaChunks = [];
     var initSegment = null;
     var transmuxer = null;
     var extractor = null;
+    var session = null;
     var receivedBytes = 0;
     var doneCount = 0;
     var total = segments.length;
+    var resumeStart = 0;
 
-    if (mode === 'mp4') {
+    if (useMedia && cfg.resumeKey && cfg.opfs !== false && typeof mediaLib.createOpfsSession === 'function') {
+      try {
+        session = await mediaLib.createOpfsSession({
+          key: cfg.resumeKey,
+          total: total,
+          fingerprint: cfg.fingerprint || segments.join('\n'),
+          expectedBytes: cfg.expectedBytes || 0,
+          onIndex: cfg.onSegmentSaved
+        });
+        resumeStart = Math.max(0, Math.min(total, session.nextSegment || 0));
+        receivedBytes = session.bytes || 0;
+        doneCount = resumeStart;
+        if (typeof cfg.onStorage === 'function') {
+          await cfg.onStorage({ state: 'opfs', resumed: resumeStart > 0, nextSegment: resumeStart });
+        }
+      } catch (error) {
+        session = null;
+        resumeStart = 0;
+        receivedBytes = 0;
+        doneCount = 0;
+        if (signal && signal.aborted) throw error;
+        if (typeof cfg.onStorage === 'function') {
+          await cfg.onStorage({ state: 'memory', reason: (error && error.code) || 'opfs-unavailable' });
+        }
+      }
+    }
+
+    if (mode === 'mp4' && !useMedia) {
       transmuxer = new Transmuxer({ remux: true });
       transmuxer.on('data', function (s) {
         if (!initSegment && s.initSegment && s.initSegment.byteLength) initSegment = s.initSegment;
@@ -738,7 +779,8 @@
     if (mode === 'm4a') extractor = audioLib.createExtractor({ title: cfg.title, tags: cfg.tags });
 
     function checked(result) {
-      if (cfg.validate && mode !== 'ts') {
+      // Media-модуль уже проверил File и fMP4; TS fallback нельзя отправлять в MP4 validator.
+      if (cfg.validate && mode !== 'ts' && result.ext !== 'ts' && result.chunks && !result.file) {
         validatePart({ chunks: result.chunks, mode: mode, muxjs: muxjs, expectedDurationSec: cfg.expectedDurationSec });
       }
       return result;
@@ -764,7 +806,6 @@
         });
       } catch (e) {
         if (signal && signal.aborted) throw e;
-        // Нарушение сетевой политики детерминировано: повтор только зря задержал бы ошибку.
         if (e && /^(url|redirect|method)-not-allowed$|^too-many-redirects$/.test(e.code)) throw e;
         if (attempt < 3) {
           await new Promise(function (res) { setTimeout(res, 400 * attempt); });
@@ -778,8 +819,8 @@
     }
 
     var window_ = new Map();
-    var nextToStart = 0;
-    var nextToFeed = 0;
+    var nextToStart = resumeStart;
+    var nextToFeed = resumeStart;
 
     function startOne() {
       if (nextToStart >= total) return;
@@ -794,31 +835,78 @@
     emit();
     for (var i = 0; i < concurrency; i++) startOne();
 
-    while (nextToFeed < total) {
-      if (signal && signal.aborted) throw new Error('Отменено пользователем');
-      var res = await window_.get(nextToFeed);
-      window_.delete(nextToFeed);
-      if (signal && signal.aborted) throw new Error('Отменено пользователем');
-      if (!res.ok) throw res.err;
-      receivedBytes += res.buf.byteLength;
-      if (mode === 'mp4') {
-        transmuxer.push(res.buf, { remux: true });
-      } else if (mode === 'm4a') {
-        extractor.push(res.buf);
-      } else {
-        chunks.push(res.buf);
+    try {
+      while (nextToFeed < total) {
+        if (signal && signal.aborted) throw new Error('Отменено пользователем');
+        var res = await window_.get(nextToFeed);
+        window_.delete(nextToFeed);
+        if (signal && signal.aborted) throw new Error('Отменено пользователем');
+        if (!res.ok) throw res.err;
+        receivedBytes += res.buf.byteLength;
+        if (session) {
+          await session.write(res.buf, nextToFeed);
+        } else if (useMedia) {
+          mediaChunks.push(res.buf);
+        } else if (mode === 'mp4') {
+          transmuxer.push(res.buf, { remux: true });
+        } else if (mode === 'm4a') {
+          extractor.push(res.buf);
+        } else {
+          chunks.push(res.buf);
+        }
+        res.buf = null;
+        nextToFeed++;
+        doneCount = nextToFeed;
+        emit();
+        startOne();
       }
-      res.buf = null;
-      nextToFeed++;
-      doneCount = nextToFeed;
-      emit();
-      startOne();
+    } catch (error) {
+      if (session) {
+        var failedSession = session;
+        session = null;
+        await failedSession.close({ discardOutput: true }).catch(function () {});
+        var opfsFailure = error && /^opfs-/.test(error.code || '');
+        if (opfsFailure && !(signal && signal.aborted)) {
+          if (typeof cfg.onSegmentSaved === 'function') {
+            await Promise.resolve().then(function () {
+              return cfg.onSegmentSaved({ key: cfg.resumeKey, reset: true });
+            }).catch(function () {});
+          }
+          if (typeof mediaLib.cleanupOpfs === 'function') {
+            await mediaLib.cleanupOpfs(cfg.resumeKey).catch(function () {});
+          }
+          if (typeof cfg.onStorage === 'function') {
+            await cfg.onStorage({ state: 'memory', reason: error.code });
+          }
+          // Дисковый путь не должен становиться новой причиной потери загрузки.
+          return downloadPart(Object.assign({}, cfg, { opfs: false, resumeKey: null }));
+        }
+      }
+      throw error;
     }
 
     if (mode === 'm4a') {
       var audio = extractor.finish();
       return checked({ chunks: audio.chunks, mime: 'audio/mp4', ext: 'm4a', bytes: audio.bytes,
                durationSec: audio.durationSec });
+    }
+    if (useMedia) {
+      var mediaResult;
+      if (session) {
+        var activeSession = session;
+        session = null;
+        mediaResult = await mediaLib.transmuxOpfs(activeSession, {
+          signal: signal,
+          expectedDurationSec: cfg.expectedDurationSec
+        });
+      } else {
+        mediaResult = await mediaLib.transmuxChunks(mediaChunks, {
+          signal: signal,
+          expectedDurationSec: cfg.expectedDurationSec
+        });
+        mediaChunks = [];
+      }
+      return checked(mediaResult);
     }
     if (mode === 'mp4') {
       transmuxer.flush();
@@ -1000,7 +1088,7 @@
    */
   function boardTimes(opts) {
     opts = opts || {};
-    var every = Math.max(0.2, Number(opts.every) || 5);
+    var every = Math.max(opts.everyFrame ? 0.001 : 0.2, Number(opts.every) || 5);
     var count = Math.max(1, Math.min(120, Math.floor(Number(opts.count) || 12)));
     var dur = Number(opts.duration) || 0;
     if (!(dur > 0)) return [];

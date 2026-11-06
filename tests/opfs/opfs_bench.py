@@ -46,10 +46,12 @@ def browser_binary(name: str) -> str:
     return path
 
 
-def make_driver(name: str):
+def make_driver(name: str, profile_dir: Path | None = None):
     if name == "chromium":
         options = ChromeOptions()
         options.binary_location = browser_binary(name)
+        if profile_dir is not None:
+            options.add_argument(f"--user-data-dir={profile_dir}")
         for arg in [
             "--headless=new", "--no-sandbox", "--disable-dev-shm-usage",
             "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
@@ -61,6 +63,9 @@ def make_driver(name: str):
     options = FirefoxOptions()
     options.binary_location = browser_binary(name)
     options.add_argument("-headless")
+    if profile_dir is not None:
+        options.add_argument("-profile")
+        options.add_argument(str(profile_dir))
     prefs = {
         "app.update.auto": False, "app.update.enabled": False,
         "extensions.update.enabled": False, "extensions.systemAddon.update.enabled": False,
@@ -194,9 +199,11 @@ def run_one(name: str, mode: str, origin: str, byte_count: int, chunk_bytes: int
     driver = None
     sampler = None
     baseline = None
+    profile_dir = OUT / "profiles" / f"{name}-{mode}"
+    profile_dir.mkdir(parents=True, exist_ok=True)
     try:
-        log(f"{name}/{mode}: свежий браузер, {byte_count // MIB} МиБ")
-        driver = make_driver(name)
+        log(f"{name}/{mode}: свежий браузер, {byte_count // MIB} МиБ; профиль на рабочем диске")
+        driver = make_driver(name, profile_dir)
         record["version"] = driver.capabilities.get("browserVersion")
         driver.get(origin + "/index.html")
         capabilities = driver.execute_script("""
@@ -271,6 +278,7 @@ def run_one(name: str, mode: str, origin: str, byte_count: int, chunk_bytes: int
                 driver.quit()
             except Exception:
                 pass
+        shutil.rmtree(profile_dir, ignore_errors=True)
     if record["status"] == "passed":
         memory = record["processMemory"].get("peakDeltaKiB")
         memory_text = "n/a" if memory is None else f"{memory / 1024:.1f} МиБ"
@@ -285,6 +293,7 @@ def main() -> None:
     parser.add_argument("--browser", choices=("chromium", "firefox", "all"), default="all")
     parser.add_argument("--size-mib", type=int, default=64)
     parser.add_argument("--chunk-kib", type=int, default=1024)
+    parser.add_argument("--mode", choices=("blob", "opfs", "all"), default="all")
     parser.add_argument("--timeout", type=int, default=300)
     args = parser.parse_args()
     if not 1 <= args.size_mib <= 2048:
@@ -308,8 +317,9 @@ def main() -> None:
         with urllib.request.urlopen(origin + "/index.html", timeout=5) as response:
             if response.status != 200:
                 raise RuntimeError("Локальный стенд не отвечает")
+        modes = ("blob", "opfs") if args.mode == "all" else (args.mode,)
         for name in names:
-            for mode in ("blob", "opfs"):
+            for mode in modes:
                 runs.append(run_one(name, mode, origin, byte_count, chunk_bytes, expected_crc, args.timeout))
     finally:
         server.shutdown()

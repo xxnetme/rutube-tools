@@ -13,8 +13,10 @@
     "bench:opfs": "python3 tests/opfs/opfs_bench.py --browser all --size-mib 64"
   },
   "devDependencies": {
+    "esbuild": "0.28.2",
     "eslint-plugin-no-unsanitized": "4.1.5",
     "jsdom": "29.1.1",
+    "mediabunny": "1.65.2",
     "playwright": "1.65.0"
   },
   "overrides": {
