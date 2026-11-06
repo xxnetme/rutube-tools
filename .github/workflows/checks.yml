@@ -102,11 +102,14 @@ jobs:
           npm ci
           python3 -m pip install --quiet -r tests/e2e/requirements.txt
 
+      - name: APT package index
+        timeout-minutes: 5
+        run: sudo apt-get update
+
       - name: ffmpeg
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
+          sudo apt-get install -y ffmpeg
           ffmpeg -version | sed -n '1p'
 
       - name: Playwright browsers
