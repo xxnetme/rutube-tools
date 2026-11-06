@@ -2,6 +2,8 @@
 (function () {
   var api = globalThis.browser || globalThis.chrome;
   var I = globalThis.RTI18n;
+  var D = globalThis.RTDom;
+  if (!I || !D) return;
 
   var DEFAULTS = {
     fps: 'auto',
@@ -36,11 +38,23 @@
     });
     var lang = I.getLang();
     document.documentElement.lang = lang;
-    el('keysHint').innerHTML =
-      '<kbd>,</kbd> <kbd>.</kbd> ' + I.t('pop.keysHint', {
-        speed: '<kbd>&lt;</kbd> <kbd>&gt;</kbd>',
-        shot: '<kbd>' + I.t('opt.shot' + DEFAULTS.shotKey.toUpperCase()) + '</kbd>'
-      }).replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;');
+    var speedToken = '\u0001', shotToken = '\u0002';
+    var hint = I.t('pop.keysHint', { speed: speedToken, shot: shotToken });
+    var nodes = [];
+    function keys(values) {
+      values.forEach(function (value, index) {
+        if (index) nodes.push(' ');
+        nodes.push(D.h('kbd', { text: value }));
+      });
+    }
+    keys([',', '.']);
+    nodes.push(' ');
+    hint.split(/(\u0001|\u0002)/).forEach(function (part) {
+      if (part === speedToken) keys(['<', '>']);
+      else if (part === shotToken) keys([I.t('opt.shot' + DEFAULTS.shotKey.toUpperCase())]);
+      else if (part) nodes.push(part);
+    });
+    D.set(el('keysHint'), nodes);
   }
 
   function apply(s) {

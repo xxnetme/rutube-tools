@@ -1,5 +1,6 @@
 'use strict';
-/* Линтер ловит опечатки, необъявленные переменные и мёртвый код. Запуск: npm run lint */
+/* Линтер ловит опечатки, необъявленные переменные, мёртвый код и опасные DOM-приёмы. */
+const noUnsanitized = require('eslint-plugin-no-unsanitized');
 const browserGlobals = {
   window: 'readonly', document: 'readonly', navigator: 'readonly', location: 'readonly', localStorage: 'readonly',
   fetch: 'readonly', URL: 'readonly', Blob: 'readonly', AbortController: 'readonly', TextEncoder: 'readonly',
@@ -18,7 +19,10 @@ module.exports = [
   {
     files: ['src/**/*.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: browserGlobals },
+    plugins: { 'no-unsanitized': noUnsanitized },
     rules: {
+      'no-unsanitized/method': 'error',
+      'no-unsanitized/property': 'error',
       'no-undef': 'error',
       'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
       'no-redeclare': 'error',

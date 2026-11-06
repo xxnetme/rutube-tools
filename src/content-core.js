@@ -9,7 +9,8 @@
   var api = globalThis.browser || globalThis.chrome;
   var L = globalThis.RTLib;
   var I = globalThis.RTI18n;
-  if (!api || !L || !I) return;
+  var D = globalThis.RTDom;
+  if (!api || !L || !I || !D) return;
 
   var t = I.t;
 
@@ -324,16 +325,28 @@
     st.textContent = CSS;
     root.appendChild(st);
 
-    var wrap = document.createElement('div');
-    wrap.className = 'wrap';
-    wrap.innerHTML =
-      '<div class="card" hidden role="dialog" aria-label="RuTube Tools">' +
-        '<div class="hd"><span class="badge">MP4</span><span class="t">RuTube Tools</span>' +
-          '<button class="x" title="' + escapeHtml(t('panel.close')) + '" aria-label="' + escapeHtml(t('panel.close')) + '">×</button></div>' +
-        '<div class="tabs" role="tablist"></div>' +
-        '<div class="bd"></div>' +
-      '</div>' +
-      '<button class="pill" aria-label="RuTube Tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m6.5 10.5 5.5 5.5 5.5-5.5"/><path d="M4 20h16"/></svg><span>MP4</span></button>';
+    var closeButton = D.h('button', {
+      class: 'x', title: t('panel.close'), 'aria-label': t('panel.close'), text: '×'
+    });
+    var card = D.h('div', { class: 'card', hidden: true, role: 'dialog', 'aria-label': 'RuTube Tools' },
+      D.h('div', { class: 'hd' },
+        D.h('span', { class: 'badge', text: 'MP4' }),
+        D.h('span', { class: 't', text: 'RuTube Tools' }),
+        closeButton),
+      D.h('div', { class: 'tabs', role: 'tablist' }),
+      D.h('div', { class: 'bd' })
+    );
+    var pillIcon = D.svg('svg', {
+      viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2',
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true'
+    },
+      D.svg('path', { d: 'M12 3v12' }),
+      D.svg('path', { d: 'm6.5 10.5 5.5 5.5 5.5-5.5' }),
+      D.svg('path', { d: 'M4 20h16' })
+    );
+    var pill = D.h('button', { class: 'pill', 'aria-label': 'RuTube Tools' },
+      pillIcon, D.h('span', { text: 'MP4' }));
+    var wrap = D.h('div', { class: 'wrap' }, card, pill);
     root.appendChild(wrap);
 
     var toastEl = document.createElement('div');
@@ -388,10 +401,11 @@
     if (!ui) return;
     var tabs = tabList();
     if (tabs.indexOf(state.tab) === -1) state.tab = tabs[0];
-    ui.tabs.innerHTML = tabs.map(function (id) {
-      return '<button data-tab="' + id + '" role="tab" class="' + (state.tab === id ? 'on' : '') + '">' +
-        escapeHtml(t('tab.' + id)) + '</button>';
-    }).join('');
+    D.set(ui.tabs, tabs.map(function (id) {
+      return D.h('button', {
+        'data-tab': id, role: 'tab', class: state.tab === id ? 'on' : '', text: t('tab.' + id)
+      });
+    }));
     Array.prototype.forEach.call(ui.tabs.querySelectorAll('button'), function (b) {
       b.addEventListener('click', function (e) {
         e.preventDefault(); e.stopPropagation();
@@ -475,37 +489,49 @@
     if (ui) ui.card.hidden = true;
   }
 
-  function getVideoId() { return L.extractVideoId(location.href); }
-  function getPlaylistId() { return L.extractPlaylistId(location.href); }
+  function currentHref() {
+    try { return window.location.href; } catch (e) { return ''; }
+  }
+  function getVideoId() { return L.extractVideoId(currentHref()); }
+  function getPlaylistId() { return L.extractPlaylistId(currentHref()); }
 
   /* ------------------------------------------------------------ справка */
 
   function buildHelp() {
     if (!ui) return;
+    function keys(list, separator) {
+      var fragment = document.createDocumentFragment();
+      list.forEach(function (key, index) {
+        if (index) D.append(fragment, separator === undefined ? ' ' : separator);
+        D.append(fragment, D.h('kbd', { text: key }));
+      });
+      return fragment;
+    }
     var rows = [
-      ['<kbd>,</kbd> <kbd>.</kbd>', t('help.frame')],
-      ['<kbd>&lt;</kbd> <kbd>&gt;</kbd>', t('help.speed')],
-      ['<kbd>' + escapeHtml(settings.shotKey) + '</kbd>', t('help.shot')],
-      ['<kbd>c</kbd>', t('help.copy')],
-      ['<kbd>p</kbd>', t('help.pip')]
+      [keys([',', '.']), t('help.frame')],
+      [keys(['<', '>']), t('help.speed')],
+      [keys([settings.shotKey]), t('help.shot')],
+      [keys(['c']), t('help.copy')],
+      [keys(['p']), t('help.pip')]
     ];
     if (settings.youtubeKeys) {
       rows = rows.concat([
-        ['<kbd>Space</kbd> <kbd>K</kbd>', t('help.pause')],
-        ['<kbd>J</kbd> <kbd>L</kbd>', t('help.seek10')],
-        ['<kbd>←</kbd> <kbd>→</kbd>', t('help.seek5')],
-        ['<kbd>↑</kbd> <kbd>↓</kbd>', t('help.volume')],
-        ['<kbd>M</kbd>', t('help.mute')],
-        ['<kbd>0</kbd>–<kbd>9</kbd>', t('help.percent')]
+        [keys(['Space', 'K']), t('help.pause')],
+        [keys(['J', 'L']), t('help.seek10')],
+        [keys(['←', '→']), t('help.seek5')],
+        [keys(['↑', '↓']), t('help.volume')],
+        [keys(['M']), t('help.mute')],
+        [keys(['0', '9'], '–'), t('help.percent')]
       ]);
     }
-    rows.push(['<kbd>?</kbd>', t('help.help')]);
-    ui.help.innerHTML =
-      '<h4>' + escapeHtml(t('help.title')) + '</h4>' +
-      '<table>' + rows.map(function (r) {
-        return '<tr><td>' + r[0] + '</td><td>' + escapeHtml(r[1]) + '</td></tr>';
-      }).join('') + '</table>' +
-      '<p class="hint">' + escapeHtml(t('help.note')) + '</p>';
+    rows.push([keys(['?']), t('help.help')]);
+    D.set(ui.help,
+      D.h('h4', { text: t('help.title') }),
+      D.h('table', null, rows.map(function (r) {
+        return D.h('tr', null, D.h('td', null, r[0]), D.h('td', { text: r[1] }));
+      })),
+      D.h('p', { class: 'hint', text: t('help.note') })
+    );
   }
 
   function toggleHelp() {
@@ -982,10 +1008,11 @@
 
   /* ------------------------------------------------------------ события */
 
-  var lastHref = location.href;
+  var lastHref = currentHref();
   function checkNav() {
-    if (location.href === lastHref) return false;
-    lastHref = location.href;
+    var href = currentHref();
+    if (!href || href === lastHref) return false;
+    lastHref = href;
     if (state.job) {
       sendMessage({ type: 'rt:cancel', jobId: state.job.id });
       stopKeepalive();
@@ -1012,6 +1039,8 @@
   }
 
   function watch() {
+    // Таймер может оказаться в очереди после unload/jsdom.close.
+    if (window.closed || typeof document === 'undefined' || !document.documentElement) return;
     if (checkNav() && ui) buildTabs();
     ensureUI();
     var v = findVideo(document);
@@ -1074,7 +1103,7 @@
   /* ------------------------------------------------------ общий неймспейс */
 
   window.__RT = {
-    api: api, L: L, I: I, t: t,
+    api: api, L: L, I: I, D: D, t: t,
     state: state,
     get settings() { return settings; },
     ui: function () { return ui; },

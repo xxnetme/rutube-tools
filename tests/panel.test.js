@@ -29,7 +29,7 @@ const INFO = {
   ]
 };
 
-async function openPanel(url, tab, settings) {
+async function openPanel(url, tab, settings, data) {
   const sent = [];
   const errors = [];
   const virtualConsole = new VirtualConsole();
@@ -44,8 +44,8 @@ async function openPanel(url, tab, settings) {
     runtime: {
       sendMessage: async (msg) => {
         sent.push(msg);
-        if (msg.type === 'rt:info') return { ok: true, info: INFO };
-        if (msg.type === 'rt:playlist-info') return { ok: true, playlist: { id: '9', title: 'Подкаст', videosCount: 3, pageSize: 50, videos: [{ id: ID, title: 'a', durationSec: 600 }] } };
+        if (msg.type === 'rt:info') return { ok: true, info: (data && data.info) || INFO };
+        if (msg.type === 'rt:playlist-info') return { ok: true, playlist: (data && data.playlist) || { id: '9', title: 'Подкаст', videosCount: 3, pageSize: 50, videos: [{ id: ID, title: 'a', durationSec: 600 }] } };
         if (msg.type === 'rt:start' || msg.type === 'rt:start-playlist') return { ok: true, jobId: 'j1' };
         if (msg.type === 'rt:save-data-url') return { ok: true, name: msg.filename };
         return { ok: true };
@@ -55,6 +55,7 @@ async function openPanel(url, tab, settings) {
     },
     storage: { local: { get: async () => (settings || {}), set: async () => {} }, onChanged: { addListener() {} } }
   };
+  w.eval(read('lib/dom.js'));
   w.eval(read('lib/engine.js'));
   w.eval(read('lib/i18n.js'));
   w.eval(read('content-core.js'));
@@ -281,10 +282,63 @@ test('вкладка «Кадры»: копирование, контактны�
   p.close();
 });
 
-test('MutationObserver после закрытия документа не выбрасывает ошибок', { skip }, async () => {
+test('MutationObserver и watch после закрытия документа не выбрасывают ошибок', { skip }, async () => {
   const p = await openPanel('https://rutube.ru/video/' + ID + '/');
   await p.until(() => p.body().querySelector('[data-act="go"]'));
   p.close();
-  await new Promise((resolve) => setTimeout(resolve, 60));
+  await new Promise((resolve) => setTimeout(resolve, 1600));
   assert.deepEqual(p.errors.map(String), [], 'после close не должно быть отложенных jsdomError');
+});
+
+test('строки API и результата не превращаются в HTML', { skip }, async () => {
+  const payload = '<img data-xss src=x onerror="globalThis.pwned=1">';
+  const info = Object.assign({}, INFO, {
+    title: payload,
+    author: payload,
+    captions: [{ langTitle: payload, format: 'srt', url: 'https://c/sub.srt' }],
+    cuepoints: [{ time: 0, title: payload }]
+  });
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/', null, null, { info });
+  const assertTextOnly = () => {
+    assert.ok(p.body().textContent.includes(payload), 'строка видна пользователю как текст');
+    assert.equal(p.body().querySelector('[data-xss]'), null, 'разметка из строки не создана');
+    assert.equal(p.w.pwned, undefined);
+  };
+
+  await p.until(() => p.body().querySelector('[data-act="go"]'));
+  assertTextOnly();
+
+  p.RT.setTab('more');
+  await p.until(() => p.body().querySelector('[data-sub]'));
+  assertTextOnly();
+
+  p.RT.setTab('info');
+  await p.until(() => p.body().querySelector('dl.kv'));
+  assertTextOnly();
+  await p.until(() => !p.RT.state.metaLoading, 3000);
+
+  p.RT.setTab('download');
+  p.RT.state.job = { id: 'xss-test', kind: 'video' };
+  p.w.RTPanel.onProgress({ phase: 'done', files: [payload], subs: [payload], downloadIds: [] });
+  assertTextOnly();
+
+  p.RT.state.job = { id: 'xss-test', kind: 'video' };
+  p.w.RTPanel.onProgress({ phase: 'error', error: 'download', detail: payload });
+  assertTextOnly();
+  p.close();
+});
+
+test('названия плейлиста и серий остаются текстом', { skip }, async () => {
+  const payload = '<svg data-xss onload="globalThis.pwned=1"></svg>';
+  const playlist = {
+    id: '9', title: payload, videosCount: 1, pageSize: 50,
+    videos: [{ id: ID, title: payload, durationSec: 60 }]
+  };
+  const p = await openPanel('https://rutube.ru/plst/9/', null, null, { playlist });
+  await p.until(() => p.body().querySelector('[data-pl]'));
+  assert.equal(p.body().querySelector('.title').textContent, payload);
+  assert.equal(p.body().querySelector('.pl-t').textContent, payload);
+  assert.equal(p.body().querySelector('[data-xss]'), null);
+  assert.equal(p.w.pwned, undefined);
+  p.close();
 });

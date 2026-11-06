@@ -4,7 +4,7 @@
   var RT = window.__RT;
   if (!RT) return;
 
-  var L = RT.L, t = RT.t;
+  var L = RT.L, t = RT.t, D = RT.D;
   var state = RT.state;
 
   state.result = null;
@@ -12,10 +12,24 @@
   function $(sel) { return RT.ui().body.querySelector(sel); }
   function $$(sel) { return Array.prototype.slice.call(RT.ui().body.querySelectorAll(sel)); }
   function body() { return RT.ui().body; }
-  function esc(s) { return RT.escapeHtml(s); }
 
-  function setHTML(html) {
-    body().innerHTML = html;
+  function setNodes() {
+    var args = [body()].concat(Array.prototype.slice.call(arguments));
+    D.set.apply(null, args);
+  }
+
+  function btn(label, attrs) {
+    return D.h('button', Object.assign({ class: 'btn ghost' }, attrs || {}), label);
+  }
+
+  function field(label, control) {
+    return D.h('div', { class: 'field' },
+      D.h('span', { class: 'lb', text: label }), D.h('span', { class: 'in' }, control));
+  }
+
+  function section(title) {
+    var children = Array.prototype.slice.call(arguments, 1);
+    return D.h.apply(null, ['div', { class: 'sect' }, title ? D.h('h5', { text: title }) : null].concat(children));
   }
 
   /* Какие серии плейлиста качать. null — все; иначе список номеров с нуля,
@@ -89,9 +103,9 @@
     var id = RT.getVideoId();
     if (!id) return;
     if (state.info && state.infoFor === id && !withMeta) { render(); return; }
-    if (withMeta && state.metaAttempted && state.infoFor === id) { render(); return; }
+    if (withMeta && state.metaAttempted === id && state.infoFor === id) { render(); return; }
     state.infoLoading = true;
-    if (withMeta) { state.metaLoading = true; state.metaAttempted = true; }
+    if (withMeta) { state.metaLoading = true; state.metaAttempted = id; }
     render();
     RT.sendMessage({ type: 'rt:info', videoId: id, withMeta: !!withMeta }).then(function (r) {
       state.infoLoading = false;
@@ -148,17 +162,17 @@
   }
 
   function spinner(text) {
-    return '<div class="muted"><span class="spin"></span>' + esc(text) + '</div>';
+    return D.h('div', { class: 'muted' }, D.h('span', { class: 'spin' }), text);
   }
 
   /* ---------------------------------------------------------- вкладка «Скачать» */
 
   function renderDownloadTab() {
     if (!state.info) {
-      if (state.infoLoading) return setHTML(spinner(t('panel.loading')));
+      if (state.infoLoading) return setNodes(spinner(t('panel.loading')));
       if (state.infoError) return renderErrorBox(state.infoError);
       loadInfo();
-      return setHTML(spinner(t('panel.loading')));
+      return setNodes(spinner(t('panel.loading')));
     }
     var info = state.info;
     if (info.isLive) return renderBlocked(t('err.live'));
@@ -168,13 +182,13 @@
     var sel = selectedHeight();
     var rows = list.map(function (v) {
       var checked = sel != null && Math.abs(v.height - sel) < 1;
-      return '<label class="' + (v.compatible ? '' : 'dis') + '">' +
-        '<input type="radio" name="rq" value="' + v.height + '"' + (checked ? ' checked' : '') + '>' +
-        '<span class="radio"></span>' +
-        '<span class="lbl">' + esc(v.label) + (v.compatible ? '' : ' · .ts') + '</span>' +
-        '<span class="est">' + (v.estimatedBytes ? L.formatBytes(v.estimatedBytes) : '') + '</span>' +
-        '</label>';
-    }).join('');
+      return D.h('label', { class: v.compatible ? '' : 'dis' },
+        D.h('input', { type: 'radio', name: 'rq', value: v.height, checked: checked }),
+        D.h('span', { class: 'radio' }),
+        D.h('span', { class: 'lbl' }, v.label, v.compatible ? null : ' · .ts'),
+        D.h('span', { class: 'est', text: v.estimatedBytes ? L.formatBytes(v.estimatedBytes) : '' })
+      );
+    });
 
     var caps = (info.captions || []).filter(function (c) { return c && c.url; });
     if (state.subs == null) state.subs = !!RT.settings.saveSubs;
@@ -183,59 +197,88 @@
     var isAudio = currentFormat() === 'audio';
     var light = L.pickAudioVariant(list);
     var chosen = list.filter(function (v) { return sel != null && Math.abs(v.height - sel) < 1; })[0];
-    var tsWarn = !isAudio && chosen && !chosen.compatible
-      ? '<div class="hint" style="margin-bottom:8px">⚠ ' + esc(t('dl.tsWarn')) + '</div>' : '';
 
-    setHTML(
-      '<div class="title">' + esc(info.title) + '</div>' +
-      '<div class="seg" style="margin-bottom:8px">' +
-        '<button data-fmt="video" class="' + (!isAudio ? 'on' : '') + '">' + esc(t('dl.fmtVideo')) + '</button>' +
-        '<button data-fmt="audio" class="' + (isAudio ? 'on' : '') + '">' + esc(t('dl.fmtAudio')) + '</button>' +
-      '</div>' +
-      (isAudio
-        ? '<div class="hint" style="margin-bottom:8px">' + esc(t('dl.audioHint', {
-            q: light ? light.label : '—',
-            size: light && light.estimatedBytes ? L.formatBytes(light.estimatedBytes) : '?'
-          })) + '</div>'
-        : '<div class="q">' + rows + '</div>' + tsWarn) +
-      '<div class="seg">' +
-        '<button data-mode="full" class="' + (!isPart ? 'on' : '') + '">' + esc(t('dl.modeFull')) + '</button>' +
-        '<button data-mode="part" class="' + (isPart ? 'on' : '') + '">' + esc(t('dl.modePart')) + '</button>' +
-      '</div>' +
-      (!isAudio && caps.length
-        ? '<div class="sw"><span>' + esc(t('dl.subs')) + '</span>' +
-            '<input type="checkbox" data-act="subs"' + (state.subs ? ' checked' : '') + '></div>' +
-          (state.subs && caps.length > 1
-            ? '<div class="field"><span class="lb">' + esc(t('dl.subsLang')) + '</span>' +
-                '<span class="in"><select data-in="subslang">' +
-                  caps.map(function (c, i) {
-                    return '<option value="' + i + '"' + (i === state.subsIndex ? ' selected' : '') + '>' +
-                      esc(c.langTitle || c.lang || ('#' + (i + 1))) + '</option>';
-                  }).join('') +
-                '</select></span></div>'
-            : '')
-        : '') +
-      (isPart
-        ? '<div class="field"><span class="lb">' + esc(t('dl.from')) + '</span>' +
-            '<span class="in"><input type="text" data-in="from" placeholder="0:00" value="' + esc(state.from) + '"></span>' +
-            '<button class="btn ghost small" data-take="from" title="' + esc(t('dl.fromPlayer')) + '">⏱</button></div>' +
-          '<div class="field"><span class="lb">' + esc(t('dl.to')) + '</span>' +
-            '<span class="in"><input type="text" data-in="to" placeholder="' + esc(L.formatTime(info.durationSec)) + '" value="' + esc(state.to) + '"></span>' +
-            '<button class="btn ghost small" data-take="to" title="' + esc(t('dl.fromPlayer')) + '">⏱</button></div>'
-        : '') +
-      '<div class="row" style="margin-top:10px">' +
-        '<button class="btn" data-act="go">' + esc(isPart ? t('dl.startPart') : (isAudio ? t('dl.startAudio') : t('dl.start'))) + '</button>' +
-        '<button class="btn ghost" data-act="link" title="' + esc(t('dl.copyLink')) + '">' +
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>' +
-        '</button>' +
-      '</div>' +
-      '<div class="hint">' +
-        (info.durationSec ? esc(t('dl.duration')) + ' ' + L.formatTime(info.durationSec) + ' · ' : '') +
-        (isAudio ? '' : esc(t('dl.mergeHint'))) +
-        (big && !isAudio ? '. ' + esc(t('dl.partsHint', { n: RT.settings.maxPartMB })) : '') +
-      '</div>' +
-      '<div class="hint">' + esc(t('dl.frameHint', { key: RT.settings.shotKey })) + '</div>'
+    var children = [
+      D.h('div', { class: 'title', text: info.title }),
+      D.h('div', { class: 'seg', style: 'margin-bottom:8px' },
+        D.h('button', { 'data-fmt': 'video', class: !isAudio ? 'on' : '', text: t('dl.fmtVideo') }),
+        D.h('button', { 'data-fmt': 'audio', class: isAudio ? 'on' : '', text: t('dl.fmtAudio') })
+      )
+    ];
+
+    if (isAudio) {
+      children.push(D.h('div', { class: 'hint', style: 'margin-bottom:8px', text: t('dl.audioHint', {
+        q: light ? light.label : '—',
+        size: light && light.estimatedBytes ? L.formatBytes(light.estimatedBytes) : '?'
+      }) }));
+    } else {
+      children.push(D.h('div', { class: 'q' }, rows));
+      if (chosen && !chosen.compatible) {
+        children.push(D.h('div', { class: 'hint', style: 'margin-bottom:8px' }, '⚠ ', t('dl.tsWarn')));
+      }
+    }
+
+    children.push(D.h('div', { class: 'seg' },
+      D.h('button', { 'data-mode': 'full', class: !isPart ? 'on' : '', text: t('dl.modeFull') }),
+      D.h('button', { 'data-mode': 'part', class: isPart ? 'on' : '', text: t('dl.modePart') })
+    ));
+
+    if (!isAudio && caps.length) {
+      children.push(D.h('div', { class: 'sw' },
+        D.h('span', { text: t('dl.subs') }),
+        D.h('input', { type: 'checkbox', 'data-act': 'subs', checked: !!state.subs })
+      ));
+      if (state.subs && caps.length > 1) {
+        children.push(field(t('dl.subsLang'), D.h('select', { 'data-in': 'subslang' }, caps.map(function (c, i) {
+          return D.h('option', {
+            value: i, selected: i === state.subsIndex,
+            text: c.langTitle || c.lang || ('#' + (i + 1))
+          });
+        }))));
+      }
+    }
+
+    if (isPart) {
+      children.push(
+        D.h('div', { class: 'field' },
+          D.h('span', { class: 'lb', text: t('dl.from') }),
+          D.h('span', { class: 'in' }, D.h('input', {
+            type: 'text', 'data-in': 'from', placeholder: '0:00', value: state.from
+          })),
+          btn('⏱', { class: 'btn ghost small', 'data-take': 'from', title: t('dl.fromPlayer') })
+        ),
+        D.h('div', { class: 'field' },
+          D.h('span', { class: 'lb', text: t('dl.to') }),
+          D.h('span', { class: 'in' }, D.h('input', {
+            type: 'text', 'data-in': 'to', placeholder: L.formatTime(info.durationSec), value: state.to
+          })),
+          btn('⏱', { class: 'btn ghost small', 'data-take': 'to', title: t('dl.fromPlayer') })
+        )
+      );
+    }
+
+    var linkIcon = D.svg('svg', {
+      width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+      'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+    },
+      D.svg('path', { d: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7' }),
+      D.svg('path', { d: 'M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7' })
     );
+    children.push(
+      D.h('div', { class: 'row', style: 'margin-top:10px' },
+        btn(isPart ? t('dl.startPart') : (isAudio ? t('dl.startAudio') : t('dl.start')), {
+          class: 'btn', 'data-act': 'go'
+        }),
+        btn(linkIcon, { class: 'btn ghost', 'data-act': 'link', title: t('dl.copyLink') })
+      ),
+      D.h('div', { class: 'hint' },
+        info.durationSec ? [t('dl.duration') + ' ', L.formatTime(info.durationSec), ' · '] : null,
+        isAudio ? null : t('dl.mergeHint'),
+        big && !isAudio ? ['. ', t('dl.partsHint', { n: RT.settings.maxPartMB })] : null
+      ),
+      D.h('div', { class: 'hint', text: t('dl.frameHint', { key: RT.settings.shotKey }) })
+    );
+    setNodes(children);
 
     $$('input[name="rq"]').forEach(function (inp) {
       inp.addEventListener('change', function () {
@@ -305,15 +348,14 @@
       if (v) RT.copyText(v.url, t('toast.copied'));
     });
   }
-
   function renderBlocked(text) {
-    setHTML('<div class="err" style="margin-bottom:10px">' + esc(text) + '</div>');
+    setNodes(D.h('div', { class: 'err', style: 'margin-bottom:10px', text: text }));
   }
 
   function renderErrorBox(text) {
-    setHTML(
-      '<div class="err" style="margin-bottom:10px">' + esc(text) + '</div>' +
-      '<div class="row"><button class="btn ghost wide" data-act="retry-info">' + esc(t('panel.retry')) + '</button></div>'
+    setNodes(
+      D.h('div', { class: 'err', style: 'margin-bottom:10px', text: text }),
+      D.h('div', { class: 'row' }, btn(t('panel.retry'), { class: 'btn ghost wide', 'data-act': 'retry-info' }))
     );
     var b = $('[data-act="retry-info"]');
     if (b) b.addEventListener('click', function () {
@@ -327,9 +369,9 @@
   /* --------------------------------------------------------- вкладка «Плейлист» */
 
   function renderPlaylistTab() {
-    if (state.playlistLoading) return setHTML(spinner(t('pl.loading')));
+    if (state.playlistLoading) return setNodes(spinner(t('pl.loading')));
     if (state.playlistError) return renderErrorBox(state.playlistError);
-    if (!state.playlist) { loadPlaylist(); return setHTML(spinner(t('pl.loading'))); }
+    if (!state.playlist) { loadPlaylist(); return setNodes(spinner(t('pl.loading'))); }
 
     var pl = state.playlist;
     var audio = currentFormat() === 'audio';
@@ -349,8 +391,10 @@
 
     var qualityOptions = ['best', '1080', '720', '480', '360', 'worst'].map(function (q) {
       var label = q === 'best' ? t('opt.best') : (q === 'worst' ? t('opt.worst') : q + 'p');
-      return '<option value="' + q + '"' + ((state.plChoice || RT.settings.quality) === q ? ' selected' : '') + '>' + label + '</option>';
-    }).join('');
+      return D.h('option', {
+        value: q, selected: (state.plChoice || RT.settings.quality) === q, text: label
+      });
+    });
 
     /* Список серий: названия есть только для загруженной страницы, остальные
      * показываем номерами — галочка всё равно работает, фон читает нужную
@@ -362,37 +406,35 @@
       var on = pick ? pick.indexOf(i) !== -1 : true;
       var label = meta && meta.title ? meta.title : t('pl.item', { i: i + 1, n: pl.videosCount });
       var dur = meta && meta.durationSec ? L.formatTime(meta.durationSec) : '';
-      rows.push(
-        '<label class="pl-row">' +
-          '<input type="checkbox" data-pl="' + i + '"' + (on ? ' checked' : '') + '>' +
-          '<span class="pl-n">' + (i + 1) + '</span>' +
-          '<span class="pl-t">' + esc(label) + '</span>' +
-          (dur ? '<span class="pl-d">' + esc(dur) + '</span>' : '') +
-        '</label>'
-      );
+      rows.push(D.h('label', { class: 'pl-row' },
+        D.h('input', { type: 'checkbox', 'data-pl': i, checked: on }),
+        D.h('span', { class: 'pl-n', text: i + 1 }),
+        D.h('span', { class: 'pl-t', text: label }),
+        dur ? D.h('span', { class: 'pl-d', text: dur }) : null
+      ));
     }
 
-    setHTML(
-      '<div class="title">' + esc(pl.title) + '</div>' +
-      '<div class="muted" style="margin-bottom:10px">' + esc(t('pl.count', { n: pl.videosCount })) + '</div>' +
-      '<div class="field"><span class="lb">' + esc(t('dl.format')) + '</span>' +
-        '<span class="in"><select data-sel="fmt">' +
-          '<option value="video"' + (audio ? '' : ' selected') + '>' + esc(t('dl.fmtVideo')) + '</option>' +
-          '<option value="audio"' + (audio ? ' selected' : '') + '>' + esc(t('dl.fmtAudio')) + '</option>' +
-        '</select></span></div>' +
-      '<div class="field"><span class="lb">' + esc(t('info.qualities')) + '</span>' +
-        '<span class="in"><select data-sel="q"' + (audio ? ' disabled' : '') + '>' + qualityOptions + '</select></span></div>' +
-      '<div class="pl-head">' +
-        '<span>' + esc(t('pl.selected', { n: count, total: pl.videosCount })) + '</span>' +
-        '<button class="btn ghost small" data-act="pl-all">' + esc(t('pl.all')) + '</button>' +
-        '<button class="btn ghost small" data-act="pl-none">' + esc(t('pl.none')) + '</button>' +
-      '</div>' +
-      '<div class="pl-list">' + rows.join('') + '</div>' +
-      '<div class="row" style="margin-top:10px">' +
-        '<button class="btn" data-act="go-pl"' + (count ? '' : ' disabled') + '>' + esc(t('pl.start')) + '</button>' +
-      '</div>' +
-      '<div class="hint">' + esc(t('pl.delay', { s: 1 })) +
-        (count ? ' · ' + esc(t('info.size')) + ': ~' + esc(L.formatBytes(estimate)) : '') + '</div>'
+    setNodes(
+      D.h('div', { class: 'title', text: pl.title }),
+      D.h('div', { class: 'muted', style: 'margin-bottom:10px', text: t('pl.count', { n: pl.videosCount }) }),
+      field(t('dl.format'), D.h('select', { 'data-sel': 'fmt' },
+        D.h('option', { value: 'video', selected: !audio, text: t('dl.fmtVideo') }),
+        D.h('option', { value: 'audio', selected: audio, text: t('dl.fmtAudio') })
+      )),
+      field(t('info.qualities'), D.h('select', { 'data-sel': 'q', disabled: audio }, qualityOptions)),
+      D.h('div', { class: 'pl-head' },
+        D.h('span', { text: t('pl.selected', { n: count, total: pl.videosCount }) }),
+        btn(t('pl.all'), { class: 'btn ghost small', 'data-act': 'pl-all' }),
+        btn(t('pl.none'), { class: 'btn ghost small', 'data-act': 'pl-none' })
+      ),
+      D.h('div', { class: 'pl-list' }, rows),
+      D.h('div', { class: 'row', style: 'margin-top:10px' },
+        btn(t('pl.start'), { class: 'btn', 'data-act': 'go-pl', disabled: !count })
+      ),
+      D.h('div', { class: 'hint' },
+        t('pl.delay', { s: 1 }),
+        count ? [' · ', t('info.size'), ': ~', L.formatBytes(estimate)] : null
+      )
     );
 
     var sel = $('[data-sel="q"]');
@@ -413,7 +455,6 @@
       box.addEventListener('change', function () {
         plToggle(Number(box.getAttribute('data-pl')), box.checked);
         render();
-        return;
       });
     });
 
@@ -432,7 +473,6 @@
     var go = $('[data-act="go-pl"]');
     if (go) go.addEventListener('click', startPlaylist);
   }
-
   /* ------------------------------------------------------------ вкладка «Кадры» */
 
   function renderFramesTab() {
@@ -441,42 +481,66 @@
     var cur = v ? v.currentTime : 0;
     var fps = (RT.getVideoId() && state.fpsCache[RT.getVideoId()]) || 25;
 
-    setHTML(
-      '<div class="sect">' +
-        '<button class="btn" data-act="shot" style="width:100%">' + esc(t('fr.save')) +
-          ' <kbd style="opacity:.8">' + esc(RT.settings.shotKey) + '</kbd></button>' +
-        '<div class="row" style="margin-top:6px"><button class="btn ghost wide small" data-act="copyshot">' + esc(t('fr.copy')) +
-          ' <kbd style="opacity:.8">c</kbd></button></div>' +
-      '</div>' +
-      '<div class="sect"><h5>' + esc(t('fr.goto')) + '</h5>' +
-        '<div class="row">' +
-          '<input type="number" min="1" data-in="frame" placeholder="' + Math.round(cur * fps) + '" style="flex:1">' +
-          '<button class="btn ghost" data-act="goto">' + esc(t('fr.go')) + '</button>' +
-        '</div>' +
-        '<div class="hint">' + esc(fps) + ' fps · ' + esc(RT.timecode(cur)) + '</div>' +
-      '</div>' +
-      '<div class="sect"><h5>' + esc(t('fr.ab')) + '</h5>' +
-        '<div class="row">' +
-          '<button class="btn ghost wide small" data-act="setA">A: ' + (ab.a == null ? '—' : esc(RT.timecode(ab.a))) + '</button>' +
-          '<button class="btn ghost wide small" data-act="setB">B: ' + (ab.b == null ? '—' : esc(RT.timecode(ab.b))) + '</button>' +
-        '</div>' +
-        '<div class="sw" style="margin-top:8px"><span>' + esc(ab.loop ? t('fr.loopOn') : t('fr.loopOff')) + '</span>' +
-          '<input type="checkbox" data-act="loop"' + (ab.loop ? ' checked' : '') + '></div>' +
-        '<div class="row" style="margin-top:6px"><button class="btn ghost wide small" data-act="abclear">' + esc(t('fr.clear')) + '</button></div>' +
-      '</div>' +
-      '<div class="sect"><h5>' + esc(t('fr.storyboard')) + '</h5>' +
-        '<div class="field"><span class="lb">' + esc(t('fr.every')) + '</span>' +
-          '<span class="in"><input type="number" min="0.2" step="0.5" data-in="every" value="' + esc(state.storyboard.every) + '"></span></div>' +
-        '<div class="field"><span class="lb">' + esc(t('fr.frames')) + '</span>' +
-          '<span class="in"><input type="number" min="1" max="120" data-in="count" value="' + esc(state.storyboard.count) + '"></span></div>' +
-        '<div class="sw" style="margin-bottom:6px"><span>' + esc(t('fr.onlyAB')) + '</span>' +
-          '<input type="checkbox" data-act="useab"' + (state.storyboard.useAB ? ' checked' : '') +
-            (ab.a == null || ab.b == null ? ' disabled' : '') + '></div>' +
-        '<div class="row"><button class="btn ghost wide small" data-act="board">' + esc(t('fr.make')) + '</button>' +
-          '<button class="btn ghost wide small" data-act="sheet">' + esc(t('fr.sheet')) + '</button></div>' +
-      '</div>' +
-      '<div class="sw"><span>' + esc(t('fr.pitch')) + '</span>' +
-        '<input type="checkbox" data-act="pitch"' + (RT.settings.preservePitch ? ' checked' : '') + '></div>'
+    setNodes(
+      section(null,
+        btn([t('fr.save'), ' ', D.h('kbd', { style: 'opacity:.8', text: RT.settings.shotKey })], {
+          class: 'btn', 'data-act': 'shot', style: 'width:100%'
+        }),
+        D.h('div', { class: 'row', style: 'margin-top:6px' },
+          btn([t('fr.copy'), ' ', D.h('kbd', { style: 'opacity:.8', text: 'c' })], {
+            class: 'btn ghost wide small', 'data-act': 'copyshot'
+          })
+        )
+      ),
+      section(t('fr.goto'),
+        D.h('div', { class: 'row' },
+          D.h('input', {
+            type: 'number', min: 1, 'data-in': 'frame', placeholder: Math.round(cur * fps), style: 'flex:1'
+          }),
+          btn(t('fr.go'), { class: 'btn ghost', 'data-act': 'goto' })
+        ),
+        D.h('div', { class: 'hint' }, fps, ' fps · ', RT.timecode(cur))
+      ),
+      section(t('fr.ab'),
+        D.h('div', { class: 'row' },
+          btn('A: ' + (ab.a == null ? '—' : RT.timecode(ab.a)), {
+            class: 'btn ghost wide small', 'data-act': 'setA'
+          }),
+          btn('B: ' + (ab.b == null ? '—' : RT.timecode(ab.b)), {
+            class: 'btn ghost wide small', 'data-act': 'setB'
+          })
+        ),
+        D.h('div', { class: 'sw', style: 'margin-top:8px' },
+          D.h('span', { text: ab.loop ? t('fr.loopOn') : t('fr.loopOff') }),
+          D.h('input', { type: 'checkbox', 'data-act': 'loop', checked: ab.loop })
+        ),
+        D.h('div', { class: 'row', style: 'margin-top:6px' },
+          btn(t('fr.clear'), { class: 'btn ghost wide small', 'data-act': 'abclear' })
+        )
+      ),
+      section(t('fr.storyboard'),
+        field(t('fr.every'), D.h('input', {
+          type: 'number', min: 0.2, step: 0.5, 'data-in': 'every', value: state.storyboard.every
+        })),
+        field(t('fr.frames'), D.h('input', {
+          type: 'number', min: 1, max: 120, 'data-in': 'count', value: state.storyboard.count
+        })),
+        D.h('div', { class: 'sw', style: 'margin-bottom:6px' },
+          D.h('span', { text: t('fr.onlyAB') }),
+          D.h('input', {
+            type: 'checkbox', 'data-act': 'useab', checked: state.storyboard.useAB,
+            disabled: ab.a == null || ab.b == null
+          })
+        ),
+        D.h('div', { class: 'row' },
+          btn(t('fr.make'), { class: 'btn ghost wide small', 'data-act': 'board' }),
+          btn(t('fr.sheet'), { class: 'btn ghost wide small', 'data-act': 'sheet' })
+        )
+      ),
+      D.h('div', { class: 'sw' },
+        D.h('span', { text: t('fr.pitch') }),
+        D.h('input', { type: 'checkbox', 'data-act': 'pitch', checked: RT.settings.preservePitch })
+      )
     );
 
     var shot = $('[data-act="shot"]');
@@ -553,52 +617,55 @@
       RT.applyPitch(RT.getPlayerVideo());
     });
   }
-
   /* ------------------------------------------------------------- вкладка «Ещё» */
 
   function renderMoreTab() {
     if (!state.info) {
-      if (state.infoLoading) return setHTML(spinner(t('panel.loading')));
+      if (state.infoLoading) return setNodes(spinner(t('panel.loading')));
       loadInfo();
-      return setHTML(spinner(t('panel.loading')));
+      return setNodes(spinner(t('panel.loading')));
     }
     var info = state.info;
     var subs = (info.captions || []).map(function (c, i) {
-      return '<div class="item"><span class="nm">' + esc(c.langTitle) +
-        (c.isAuto ? ' · ' + esc(t('more.subAuto')) : '') + ' · ' + esc((c.format || 'srt').toUpperCase()) + '</span>' +
-        '<button class="go" data-sub="' + i + '">' + esc(t('tab.download')) + '</button></div>';
-    }).join('');
+      return D.h('div', { class: 'item' },
+        D.h('span', { class: 'nm' },
+          c.langTitle, c.isAuto ? [' · ', t('more.subAuto')] : null, ' · ', (c.format || 'srt').toUpperCase()),
+        btn(t('tab.download'), { class: 'go', 'data-sub': i })
+      );
+    });
 
     var chapters = (info.cuepoints || []).map(function (c) {
-      return '<div class="item"><span class="nm">' + esc(L.formatTime(c.time)) + ' · ' + esc(c.title || '—') + '</span>' +
-        '<button class="go" data-ch="' + (Number(c.time) || 0) + '">▶</button></div>';
-    }).join('');
+      return D.h('div', { class: 'item' },
+        D.h('span', { class: 'nm' }, L.formatTime(c.time), ' · ', c.title || '—'),
+        btn('▶', { class: 'go', 'data-ch': Number(c.time) || 0 })
+      );
+    });
 
-    setHTML(
-      '<div class="sect"><h5>' + esc(t('more.subtitles')) + '</h5>' +
-        (subs ? '<div class="list">' + subs + '</div>' : '<div class="muted">' + esc(t('more.none')) + '</div>') +
-      '</div>' +
-      '<div class="sect"><h5>' + esc(t('more.thumb')) + '</h5>' +
-        (info.thumbnail
-          ? '<div class="row"><button class="btn ghost wide small" data-act="thumb">' + esc(t('tab.download')) + '</button></div>'
-          : '<div class="muted">' + esc(t('more.none')) + '</div>') +
-      '</div>' +
-      '<div class="sect"><h5>' + esc(t('more.chapters')) + '</h5>' +
-        (chapters
-          ? '<div class="list">' + chapters + '</div>' +
-            '<div class="row" style="margin-top:6px"><button class="btn ghost wide small" data-act="chcopy">' + esc(t('more.copyChapters')) + '</button></div>' +
-            '<div class="row" style="margin-top:6px">' +
-              '<button class="btn ghost wide small" data-act="chtxt">' + esc(t('more.saveChapters')) + '</button>' +
-              '<button class="btn ghost wide small" data-act="chff">' + esc(t('more.saveChaptersFf')) + '</button></div>' +
-            '<div class="hint">' + esc(t('more.chaptersHint')) + '</div>'
-          : '<div class="muted">' + esc(t('more.none')) + '</div>') +
-      '</div>' +
-      '<div class="sect"><h5>' + esc(t('more.copyLink')) + '</h5>' +
-        '<div class="row"><button class="btn ghost wide small" data-act="link">' + esc(t('dl.copyLink')) + '</button></div>' +
-      '</div>' +
-      '<div class="sect"><h5>' + esc(t('more.pip')) + '</h5>' +
-        '<div class="row"><button class="btn ghost wide small" data-act="pip">' + esc(t('more.pip')) + '</button></div>' +
-      '</div>'
+    setNodes(
+      section(t('more.subtitles'),
+        subs.length ? D.h('div', { class: 'list' }, subs) : D.h('div', { class: 'muted', text: t('more.none') })
+      ),
+      section(t('more.thumb'), info.thumbnail
+        ? D.h('div', { class: 'row' }, btn(t('tab.download'), { class: 'btn ghost wide small', 'data-act': 'thumb' }))
+        : D.h('div', { class: 'muted', text: t('more.none') })
+      ),
+      section(t('more.chapters'), chapters.length ? [
+        D.h('div', { class: 'list' }, chapters),
+        D.h('div', { class: 'row', style: 'margin-top:6px' },
+          btn(t('more.copyChapters'), { class: 'btn ghost wide small', 'data-act': 'chcopy' })
+        ),
+        D.h('div', { class: 'row', style: 'margin-top:6px' },
+          btn(t('more.saveChapters'), { class: 'btn ghost wide small', 'data-act': 'chtxt' }),
+          btn(t('more.saveChaptersFf'), { class: 'btn ghost wide small', 'data-act': 'chff' })
+        ),
+        D.h('div', { class: 'hint', text: t('more.chaptersHint') })
+      ] : D.h('div', { class: 'muted', text: t('more.none') })),
+      section(t('more.copyLink'),
+        D.h('div', { class: 'row' }, btn(t('dl.copyLink'), { class: 'btn ghost wide small', 'data-act': 'link' }))
+      ),
+      section(t('more.pip'),
+        D.h('div', { class: 'row' }, btn(t('more.pip'), { class: 'btn ghost wide small', 'data-act': 'pip' }))
+      )
     );
 
     $$('[data-sub]').forEach(function (b) {
@@ -661,36 +728,41 @@
     var pip = $('[data-act="pip"]');
     if (pip) pip.addEventListener('click', function () { RT.togglePip(); });
   }
-
   /* --------------------------------------------------------- вкладка «Инфо» */
 
   function renderInfoTab() {
     if (!state.info) {
-      if (state.infoLoading) return setHTML(spinner(t('panel.loading')));
+      if (state.infoLoading) return setNodes(spinner(t('panel.loading')));
       loadInfo(true);
-      return setHTML(spinner(t('panel.loading')));
+      return setNodes(spinner(t('panel.loading')));
     }
     var info = state.info;
-    if (!state.metaLoaded && !state.metaLoading) {
+    if (!state.metaLoaded && !state.metaLoading && state.metaAttempted !== RT.getVideoId()) {
       loadInfo(true);
     }
     var v0 = variants()[0] || {};
     var meta = info.meta || {};
     var fps = info.fps || v0.frameRate || 0;
 
-    setHTML(
-      '<div class="title">' + esc(info.title) + '</div>' +
-      '<dl class="kv">' +
-        '<dt>' + esc(t('info.author')) + '</dt><dd>' + esc(info.author || '—') + '</dd>' +
-        '<dt>' + esc(t('info.codec')) + '</dt><dd>' + esc(v0.codecs || '—') + '</dd>' +
-        '<dt>' + esc(t('info.fps')) + '</dt><dd>' + esc(fps || '—') + '</dd>' +
-        '<dt>' + esc(t('info.bitrate')) + '</dt><dd>' + (v0.bandwidth ? Math.round(v0.bandwidth / 1000) + ' kbps' : '—') + '</dd>' +
-        '<dt>' + esc(t('info.qualities')) + '</dt><dd>' + esc(variants().map(function (v) { return v.label; }).join(', ')) + '</dd>' +
-        '<dt>' + esc(t('info.size')) + '</dt><dd>' + esc(L.formatBytes(v0.estimatedBytes)) + '</dd>' +
-        (meta.views ? '<dt>' + esc(t('info.views')) + '</dt><dd>' + esc(Number(meta.views).toLocaleString('ru-RU')) + '</dd>' : '') +
-        (meta.created ? '<dt>' + esc(t('info.date')) + '</dt><dd>' + esc(String(meta.created).replace('T', ' ')) + '</dd>' : '') +
-      '</dl>' +
-      '<div class="row" style="margin-top:12px"><button class="btn ghost wide small" data-act="copy">' + esc(t('info.copy')) + '</button></div>'
+    var pairs = [];
+    function kv(label, value) {
+      pairs.push(D.h('dt', { text: label }), D.h('dd', { text: value }));
+    }
+    kv(t('info.author'), info.author || '—');
+    kv(t('info.codec'), v0.codecs || '—');
+    kv(t('info.fps'), fps || '—');
+    kv(t('info.bitrate'), v0.bandwidth ? Math.round(v0.bandwidth / 1000) + ' kbps' : '—');
+    kv(t('info.qualities'), variants().map(function (v) { return v.label; }).join(', '));
+    kv(t('info.size'), L.formatBytes(v0.estimatedBytes));
+    if (meta.views) kv(t('info.views'), Number(meta.views).toLocaleString('ru-RU'));
+    if (meta.created) kv(t('info.date'), String(meta.created).replace('T', ' '));
+
+    setNodes(
+      D.h('div', { class: 'title', text: info.title }),
+      D.h('dl', { class: 'kv' }, pairs),
+      D.h('div', { class: 'row', style: 'margin-top:12px' },
+        btn(t('info.copy'), { class: 'btn ghost wide small', 'data-act': 'copy' })
+      )
     );
 
     var copy = $('[data-act="copy"]');
@@ -823,7 +895,7 @@
           var t = row.querySelector('.pl-t');
           if (t && v.title) t.textContent = v.title;
           var d = row.querySelector('.pl-d');
-          if (d && v.durationSec != null) {
+          if (v.durationSec != null) {
             if (!d) {
               d = document.createElement('span');
               d.className = 'pl-d';
@@ -858,7 +930,7 @@
     var j = state.job;
     if (!j) return;
     var p = state.progress || {};
-    var percent = p.percent || 0;
+    var percent = Math.max(0, Math.min(100, Number(p.percent) || 0));
     var part = p.part || 1, parts = p.parts || 1;
     var isPlaylist = j.kind === 'playlist';
 
@@ -874,57 +946,68 @@
       title = parts > 1 ? t('dl.downloading', { part: part, parts: parts }) : t('dl.downloadingOne');
     }
 
-    var queueLine = '';
+    var children = [];
     if (isPlaylist && p.queue) {
-      queueLine = '<div class="muted" style="margin-bottom:6px">' +
-        esc(t('pl.item', { i: p.queue.index, n: p.queue.total })) +
-        (j.doneCount ? ' · ' + esc(t('pl.savedCount', { n: j.doneCount })) : '') +
-        '<div style="opacity:.8;font-size:11px;margin-top:2px">' + esc((p.queue.title || '').slice(0, 70)) + '</div></div>';
+      children.push(D.h('div', { class: 'muted', style: 'margin-bottom:6px' },
+        t('pl.item', { i: p.queue.index, n: p.queue.total }),
+        j.doneCount ? [' · ', t('pl.savedCount', { n: j.doneCount })] : null,
+        D.h('div', {
+          style: 'opacity:.8;font-size:11px;margin-top:2px',
+          text: (p.queue.title || '').slice(0, 70)
+        })
+      ));
     }
-
-    setHTML(
-      queueLine +
-      '<div class="muted" style="margin-bottom:2px"><span class="spin"></span>' +
-        esc(title) + (j.quality ? ' · ' + esc(j.quality) : '') + '</div>' +
-      '<div class="bar"><i style="width:' + percent + '%"></i></div>' +
-      '<div class="prog"><span>' + percent + '%' +
-        (p.done != null && p.total ? ' · ' + esc(t('dl.segments', { done: p.done, total: p.total })) : '') +
-      '</span><span>' + esc(meta) + '</span></div>' +
-      '<div class="row" style="margin-top:11px">' +
-        (isPlaylist ? '<button class="btn ghost" data-act="pause">' + esc(j.paused ? t('dl.resume') : t('dl.pause')) + '</button>' : '') +
-        '<button class="btn ghost" data-act="cancel" style="flex:1">' + esc(t('dl.cancel')) + '</button>' +
-      '</div>'
+    children.push(
+      D.h('div', { class: 'muted', style: 'margin-bottom:2px' },
+        D.h('span', { class: 'spin' }), title, j.quality ? [' · ', j.quality] : null),
+      D.h('div', { class: 'bar' }, D.h('i', { style: 'width:' + percent + '%' })),
+      D.h('div', { class: 'prog' },
+        D.h('span', null, percent, '%',
+          p.done != null && p.total ? [' · ', t('dl.segments', { done: p.done, total: p.total })] : null),
+        D.h('span', { text: meta })
+      ),
+      D.h('div', { class: 'row', style: 'margin-top:11px' },
+        isPlaylist ? btn(j.paused ? t('dl.resume') : t('dl.pause'), {
+          class: 'btn ghost', 'data-act': 'pause'
+        }) : null,
+        btn(t('dl.cancel'), { class: 'btn ghost', 'data-act': 'cancel', style: 'flex:1' })
+      )
     );
+    setNodes(children);
 
     var cancel = $('[data-act="cancel"]');
     if (cancel) cancel.addEventListener('click', cancelJob);
     var pause = $('[data-act="pause"]');
     if (pause) pause.addEventListener('click', togglePause);
   }
-
   function renderResult() {
     var r = state.result;
     if (!r) return;
 
     if (r.ok) {
-      var files = (r.files || []).map(function (f) { return esc(f); }).join('<br>');
-      setHTML(
-        '<div class="ok" style="font-weight:700;margin-bottom:6px">' + esc(t('dl.done')) + '</div>' +
-        '<div class="muted" style="margin-bottom:8px">' + esc(t('dl.doneSaved')) +
-          (r.mode === 'ts' ? esc(t('dl.doneTs')) : '') + '</div>' +
-        '<div class="title" style="color:#e7e7ee">' + files + '</div>' +
-        (r.subs && r.subs.length
-          ? '<div class="muted" style="margin-top:4px">' + esc(t('dl.subsDone')) + ' ' + r.subs.map(esc).join(', ') + '</div>'
-          : '') +
-        (r.failed && r.failed.length
-          ? '<div class="err" style="margin-top:8px">' + esc(t('pl.failed', { n: r.failed.length })) + '</div>'
-          : '') +
-        '<div class="row" style="margin-top:10px">' +
-          (r.downloadIds && r.downloadIds.length
-            ? '<button class="btn ghost" data-act="show" style="flex:1">' + esc(t('dl.showFile')) + '</button>' : '') +
-          '<button class="btn ghost" data-act="close" style="flex:1">' + esc(t('panel.close')) + '</button>' +
-        '</div>' +
-        '<div class="row"><button class="btn ghost wide small" data-act="again">' + esc(t('dl.again')) + '</button></div>'
+      var files = [];
+      (r.files || []).forEach(function (file, index) {
+        if (index) files.push(D.h('br'));
+        files.push(file);
+      });
+      setNodes(
+        D.h('div', { class: 'ok', style: 'font-weight:700;margin-bottom:6px', text: t('dl.done') }),
+        D.h('div', { class: 'muted', style: 'margin-bottom:8px' },
+          t('dl.doneSaved'), r.mode === 'ts' ? t('dl.doneTs') : null),
+        D.h('div', { class: 'title', style: 'color:#e7e7ee' }, files),
+        r.subs && r.subs.length
+          ? D.h('div', { class: 'muted', style: 'margin-top:4px' }, t('dl.subsDone'), ' ', r.subs.join(', '))
+          : null,
+        r.failed && r.failed.length
+          ? D.h('div', { class: 'err', style: 'margin-top:8px', text: t('pl.failed', { n: r.failed.length }) })
+          : null,
+        D.h('div', { class: 'row', style: 'margin-top:10px' },
+          r.downloadIds && r.downloadIds.length
+            ? btn(t('dl.showFile'), { class: 'btn ghost', 'data-act': 'show', style: 'flex:1' })
+            : null,
+          btn(t('panel.close'), { class: 'btn ghost', 'data-act': 'close', style: 'flex:1' })
+        ),
+        D.h('div', { class: 'row' }, btn(t('dl.again'), { class: 'btn ghost wide small', 'data-act': 'again' }))
       );
       var show = $('[data-act="show"]');
       if (show) show.addEventListener('click', function () {
@@ -954,15 +1037,21 @@
       : code === 'start' ? t('err.start')
       : t('err.download');
 
-    setHTML(
-      '<div class="err" style="margin-bottom:10px">' + esc(message) +
-        (r.detail ? '<div class="muted" style="margin-top:4px">' + esc(String(r.detail).slice(0, 200)) + '</div>' : '') +
-      '</div>' +
-      '<div class="row">' +
-        '<button class="btn ghost wide" data-act="retry">' +
-          esc(state.lastRequest ? t('panel.retryDownload') : t('panel.retry')) + '</button>' +
-      '</div>' +
-      '<div class="row"><button class="btn ghost wide small" data-act="diag">' + esc(t('panel.copyDiag')) + '</button></div>'
+    setNodes(
+      D.h('div', { class: 'err', style: 'margin-bottom:10px' },
+        message,
+        r.detail ? D.h('div', {
+          class: 'muted', style: 'margin-top:4px', text: String(r.detail).slice(0, 200)
+        }) : null
+      ),
+      D.h('div', { class: 'row' },
+        btn(state.lastRequest ? t('panel.retryDownload') : t('panel.retry'), {
+          class: 'btn ghost wide', 'data-act': 'retry'
+        })
+      ),
+      D.h('div', { class: 'row' },
+        btn(t('panel.copyDiag'), { class: 'btn ghost wide small', 'data-act': 'diag' })
+      )
     );
 
     var retry = $('[data-act="retry"]');
@@ -992,7 +1081,6 @@
       });
     });
   }
-
   /* --------------------------------------------------------- сообщения фона */
 
   function onProgress(msg) {
