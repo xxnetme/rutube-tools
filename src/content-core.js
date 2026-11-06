@@ -414,6 +414,8 @@
   }
 
   function ensureUI() {
+    // После unload/jsdom.close MutationObserver может сработать уже без document.
+    if (typeof document === 'undefined' || !document.documentElement) return null;
     var v = findVideo(document);
     var id = getVideoId();
     var plId = getPlaylistId();

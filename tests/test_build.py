@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import tempfile
 import unittest
@@ -37,6 +38,19 @@ class MakeZipTests(unittest.TestCase):
                 self.assertEqual(info.date_time, (1980, 1, 1, 0, 0, 0))
                 self.assertEqual(info.external_attr >> 16, 0o100644)
                 self.assertEqual(archive.read("manifest.json"), payload.read_bytes())
+
+
+class ManifestTests(unittest.TestCase):
+    def test_extension_pages_csp_is_explicit_and_restrictive(self) -> None:
+        expected = "script-src 'self'; object-src 'self';"
+        for name in ("manifest.firefox.json", "manifest.chromium.json"):
+            with self.subTest(manifest=name):
+                manifest = json.loads((ROOT / "src" / name).read_text(encoding="utf-8"))
+                csp = manifest["content_security_policy"]["extension_pages"]
+                self.assertEqual(csp, expected)
+                self.assertNotIn("unsafe", csp)
+                self.assertNotIn("http:", csp)
+                self.assertNotIn("https:", csp)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 let JSDOM = null;
-try { ({ JSDOM } = require('jsdom')); } catch { /* пропуск ниже */ }
+let VirtualConsole = null;
+try { ({ JSDOM, VirtualConsole } = require('jsdom')); } catch { /* пропуск ниже */ }
 const skip = !JSDOM && 'jsdom не установлен';
 
 const SRC = path.resolve(__dirname, '../src');
@@ -30,7 +31,12 @@ const INFO = {
 
 async function openPanel(url, tab, settings) {
   const sent = [];
-  const dom = new JSDOM('<!doctype html><body><video></video></body>', { url, runScripts: 'outside-only', pretendToBeVisual: true });
+  const errors = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', (error) => errors.push(error));
+  const dom = new JSDOM('<!doctype html><body><video></video></body>', {
+    url, runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole
+  });
   const w = dom.window;
   Object.defineProperty(w.navigator, 'languages', { value: ['ru-RU'] });
   Object.defineProperty(w.navigator, 'language', { value: 'ru-RU' });
@@ -64,7 +70,7 @@ async function openPanel(url, tab, settings) {
     while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 10)); }
     throw new Error('не дождались; в панели:\n' + body().textContent.slice(0, 400));
   };
-  return { w, RT, sent, body, until, close: () => w.close() };
+  return { w, RT, sent, body, until, errors, close: () => w.close() };
 }
 
 test('вкладка «Скачать»: переключатель формата, подсказка про звук, запуск с audio:true',
@@ -273,4 +279,12 @@ test('вкладка «Кадры»: копирование, контактны�
   p.RT.render();
   assert.equal(p.body().querySelector('[data-act="useab"]').disabled, false, 'с A и B доступна');
   p.close();
+});
+
+test('MutationObserver после закрытия документа не выбрасывает ошибок', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/');
+  await p.until(() => p.body().querySelector('[data-act="go"]'));
+  p.close();
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.deepEqual(p.errors.map(String), [], 'после close не должно быть отложенных jsdomError');
 });

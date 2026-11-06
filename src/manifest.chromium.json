@@ -5,6 +5,9 @@
   "description": "Покадровая перемотка, кадры в PNG, скачивание фрагментов и плейлистов RuTube в MP4 или только звука в M4A.",
   "homepage_url": "https://github.com/xxnetme/rutube-tools",
   "minimum_chrome_version": "109",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
   "permissions": [
     "storage",
     "downloads",

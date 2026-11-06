@@ -34,6 +34,9 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      - name: JSDoc — tsc --checkJs
+        run: npm run typecheck
+
       - name: Build
         run: python3 build.py
 

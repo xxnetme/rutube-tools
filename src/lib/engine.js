@@ -11,6 +11,84 @@
   var PLAYLIST_API = 'https://rutube.ru/api/playlist/custom/';
   var REQ_TIMEOUT = 45000;
 
+  /**
+   * Вариант качества из master-плейлиста. mirrors содержит все CDN после группировки.
+   * @typedef {Object} RtVariant
+   * @property {string} url
+   * @property {string[]} mirrors
+   * @property {number} height
+   * @property {number} width
+   * @property {number} bandwidth
+   * @property {string} codecs
+   * @property {number} frameRate
+   * @property {string} [label]
+   * @property {number} [estimatedBytes]
+   * @property {boolean} [compatible]
+   */
+
+  /** @typedef {{time: number, title: string}} RtCuepoint */
+  /** @typedef {{code: string, langTitle: string, isAuto: boolean, format: string, url: string}} RtCaption */
+
+  /**
+   * Нормализованный ответ RuTube, который используют панель и фон.
+   * @typedef {Object} RtVideoInfo
+   * @property {string} videoId
+   * @property {string} title
+   * @property {string} author
+   * @property {number} durationMs
+   * @property {number} durationSec
+   * @property {boolean} isLive
+   * @property {boolean} drmProtected
+   * @property {string} masterUrl
+   * @property {RtCaption[]} captions
+   * @property {string} thumbnail
+   * @property {RtCuepoint[]} cuepoints
+   * @property {RtVariant[]} variants
+   * @property {number} fps
+   */
+
+  /**
+   * @typedef {Object} RtMediaPlaylist
+   * @property {string[]} segments
+   * @property {number[]} durations
+   * @property {number} duration
+   * @property {boolean} encrypted
+   * @property {boolean} live
+   * @property {number[]} discontinuities
+   * @property {number} [mirrorIndex]
+   * @property {string} [mirrorUrl]
+   * @property {null} [segments_]
+   */
+
+  /** @typedef {{start: number, end: number, bytes: number}} RtPart */
+  /** @typedef {{done: number, total: number, bytes: number, percent: number}} RtDownloadProgress */
+
+  /**
+   * @typedef {Object} RtDownloadPartConfig
+   * @property {string[]} segments
+   * @property {number} [concurrency]
+   * @property {'mp4'|'m4a'|'ts'} [mode]
+   * @property {AbortSignal} [signal]
+   * @property {(progress: RtDownloadProgress) => void} [onProgress]
+   * @property {any} [muxjs]
+   * @property {any} [audio]
+   * @property {string} [title]
+   * @property {Object} [tags]
+   */
+
+  /**
+   * @typedef {Object} RtDownloadResult
+   * @property {Uint8Array[]} chunks
+   * @property {string} mime
+   * @property {string} ext
+   * @property {number} bytes
+   * @property {number} [durationSec]
+   */
+
+  /** @typedef {{every?: number, count?: number, duration?: number, useAB?: boolean, a?: number|null, b?: number|null}} RtBoardOptions */
+  /** @typedef {{maxSide?: number, gap?: number, captionH?: number, cols?: number, cellW?: number}} RtSheetOptions */
+  /** @typedef {{cols: number, rows: number, cellW: number, cellH: number, gap: number, captionH: number, width: number, height: number}} RtSheetLayout */
+
   /* ---------------------------------------------------------------- utils */
 
   function extractVideoId(input) {
@@ -153,6 +231,12 @@
     });
   }
 
+  /**
+   * Разбирает media playlist в абсолютные URL и длительности сегментов.
+   * @param {string} text
+   * @param {string} playlistUrl
+   * @returns {RtMediaPlaylist}
+   */
   function parseMediaPlaylist(text, playlistUrl) {
     var lines = text.split(/\r?\n/);
     var segments = [], durations = [], dur = 0;
@@ -263,6 +347,12 @@
     }
   }
 
+  /**
+   * Загружает и нормализует метаданные и варианты качества.
+   * @param {string} videoId
+   * @param {{signal?: AbortSignal}} [opts]
+   * @returns {Promise<RtVideoInfo>}
+   */
   async function getVideoInfo(videoId, opts) {
     opts = opts || {};
     var options = await fetchJson(
@@ -337,10 +427,16 @@
     throw lastErr || new Error('Не удалось получить плейлист ни с одного CDN');
   }
 
+  /**
+   * Выбирает best/worst или ближайшую доступную высоту.
+   * @param {RtVariant[]} variants
+   * @param {number|string} [preferHeight]
+   * @returns {RtVariant|undefined}
+   */
   function pickVariant(variants, preferHeight) {
     if (!preferHeight || preferHeight === 'best') return variants[0];
     if (preferHeight === 'worst') return variants[variants.length - 1];
-    var target = parseInt(preferHeight, 10);
+    var target = parseInt(String(preferHeight), 10);
     var best = null;
     variants.forEach(function (v) {
       if (!best || Math.abs(v.height - target) < Math.abs(best.height - target)) best = v;
@@ -403,6 +499,13 @@
 
   /* --------------------------------------------------------------- parts */
 
+  /**
+   * Разбивает сегменты на части по оценке объёма, не меняя их порядок.
+   * @param {number[]} durations
+   * @param {number} bandwidth
+   * @param {number} maxPartBytes
+   * @returns {RtPart[]}
+   */
   function planParts(durations, bandwidth, maxPartBytes) {
     if (!durations.length) return [];
     var bytes = Math.max(1, (bandwidth || 800000) / 8);
@@ -422,6 +525,11 @@
 
   /* ------------------------------------------------------------ downloading */
 
+  /**
+   * Скачивает сегменты параллельно, но подаёт в muxer строго по порядку.
+   * @param {RtDownloadPartConfig} cfg
+   * @returns {Promise<RtDownloadResult>}
+   */
   async function downloadPart(cfg) {
     var segments = cfg.segments;
     var concurrency = Math.max(1, Math.min(8, cfg.concurrency || 4));
@@ -479,6 +587,7 @@
           await new Promise(function (res) { setTimeout(res, 400 * attempt); });
           return fetchSegment(idx, attempt + 1);
         }
+        /** @type {Error & {segmentIndex?: number}} */
         var err = new Error('Сегмент ' + (idx + 1) + ' из ' + total + ': ' + ((e && e.message) || e));
         err.segmentIndex = idx;
         throw err;
@@ -661,6 +770,8 @@
    * Моменты для серии кадров. Без A/B — от начала через every секунд, count штук.
    * С A и B (useAB) — внутри отрезка [A, B], от A через every секунд, не дальше B.
    * Последний кадр не ближе 0.1 с к концу, чтобы seek не упёрся в конец потока.
+   * @param {RtBoardOptions} [opts]
+   * @returns {number[]}
    */
   function boardTimes(opts) {
     opts = opts || {};
@@ -687,6 +798,11 @@
    * Раскладка контактного листа: сколько колонок и какого размера ячейки.
    * Лист не превышает maxSide по любой стороне (по умолчанию 8192 px) —
    * иначе canvas в браузере откажется рисовать.
+   * @param {number} count
+   * @param {number} vw
+   * @param {number} vh
+   * @param {RtSheetOptions} [opts]
+   * @returns {RtSheetLayout}
    */
   function sheetLayout(count, vw, vh, opts) {
     opts = opts || {};

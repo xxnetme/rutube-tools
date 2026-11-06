@@ -14,6 +14,7 @@ Thumbs.db
 tmp/
 *.mp4
 *.ts
+!types/**/*.d.ts
 *.m3u8
 !docs/**/*.png
 node_modules/
