@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>RuTube Tools — скачать видео и звук с RuTube, кадры, субтитры, плейлисты</title>
-<meta name="description" content="Бесплатное расширение для Firefox, Chrome и Edge: скачивание видео и плейлистов RuTube в MP4, только звук в M4A с тегами, выбор серий галочками, докачка и история файлов, покадровая перемотка, кадры в PNG, субтитры SRT. Без рекламы и трекеров.">
+<meta name="description" content="Бесплатное расширение для Firefox, Chrome и Edge: скачивание видео и плейлистов RuTube в MP4, только звук в M4A с тегами, выбор серий галочками, докачка и история файлов, покадровая перемотка, кадры в PNG, JPEG и WebP, субтитры SRT и VTT. Без рекламы и трекеров.">
 <link rel="canonical" href="https://xxnetme.github.io/rutube-tools/">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="author" content="xxnetme">
@@ -20,14 +20,14 @@
 <meta property="og:locale" content="ru_RU">
 <meta property="og:url" content="https://xxnetme.github.io/rutube-tools/">
 <meta property="og:title" content="RuTube Tools — видео, звук, кадры и плейлисты для RuTube">
-<meta property="og:description" content="Расширение для Firefox и Chromium: MP4 и M4A с тегами, плейлисты галочками, докачка и история файлов, кадры в PNG, SRT. Без рекламы и трекеров.">
+<meta property="og:description" content="Расширение для Firefox и Chromium: MP4 и M4A с тегами, плейлисты галочками, докачка и история файлов, кадры в PNG, JPEG и WebP, SRT и VTT. Без рекламы и трекеров.">
 <meta property="og:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="RuTube Tools — расширение для RuTube">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="RuTube Tools — расширение для RuTube">
-<meta name="twitter:description" content="MP4 и звук с тегами, плейлисты галочками, докачка и история файлов, кадры в PNG, субтитры. Без рекламы и трекеров.">
+<meta name="twitter:description" content="MP4 и звук с тегами, плейлисты галочками, докачка и история файлов, кадры в PNG/JPEG/WebP, субтитры SRT и VTT. Без рекламы и трекеров.">
 <meta name="twitter:image" content="https://xxnetme.github.io/rutube-tools/assets/social-preview.png">
 
 <script type="application/ld+json">
@@ -38,12 +38,12 @@
       "@type": "SoftwareApplication",
       "name": "RuTube Tools",
       "alternateName": "RuTube Tools — кадры и MP4",
-      "description": "Расширение для браузера: скачивание видео и плейлистов RuTube в MP4, только звук в M4A, докачка, покадровая перемотка, кадры в PNG, субтитры SRT, обложки, мини-плеер.",
+      "description": "Расширение для браузера: скачивание видео и плейлистов RuTube в MP4, только звук в M4A, докачка, покадровая перемотка, кадры в PNG, JPEG и WebP, субтитры SRT и VTT, обложки, мини-плеер.",
       "applicationCategory": "MultimediaApplication",
       "applicationSubCategory": "Browser extension",
       "operatingSystem": "Windows, macOS, Linux",
       "browserRequirements": "Firefox 140+, Chrome / Edge / Яндекс.Браузер 109+",
-      "softwareVersion": "1.8.0",
+      "softwareVersion": "1.9.0",
       "installUrl": "https://addons.mozilla.org/ru/firefox/addon/rutube-tools/",
       "inLanguage": ["ru", "en"],
       "featureList": [
@@ -51,8 +51,8 @@
         "Только звук в M4A без перекодирования, с обложкой и тегами подкаста",
         "Плейлисты: выбор серий галочками, очередь и пауза",
         "Докачка после сбоя или перезапуска браузера",
-        "Покадровая перемотка и кадры в PNG",
-        "Субтитры SRT одной галочкой, обложка JPG, главы в .txt и .ffmeta",
+        "Покадровая перемотка и кадры в PNG, JPEG и WebP",
+        "Субтитры SRT и экспорт WebVTT, обложка JPG, главы в .txt и .ffmeta",
         "Шаблон имени файла и подпапки для плейлистов",
         "История сохранённых файлов с кнопкой «Показать файл»"
       ],
@@ -93,8 +93,8 @@
         },
         {
           "@type": "Question",
-          "name": "Как сохранить кадр в PNG?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Нажмите S — кадр текущего момента сохранится картинкой с таймкодом в имени файла. Для серии кадров откройте вкладку «Кадры» и задайте интервал раскадровки." }
+          "name": "Как сохранить кадр или серию кадров?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Нажмите S — кадр сохранится в выбранном формате PNG, JPEG или WebP с таймкодом в имени. Во вкладке «Кадры» доступны серия до 120 кадров, диапазон A/B и контактный лист." }
         },
         {
           "@type": "Question",
@@ -104,7 +104,7 @@
         {
           "@type": "Question",
           "name": "Как скачать субтитры и главы с RuTube?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Вкладка «Ещё»: субтитры сохраняются в .srt, включая авто-субтитры; главы — в .txt или .ffmeta для вшивания в MP4; там же обложка JPG и ссылка .m3u8." }
+          "acceptedAnswer": { "@type": "Answer", "text": "Вкладка «Ещё»: субтитры сохраняются в .srt или .vtt, включая авто-субтитры; главы — в .txt или .ffmeta для вшивания в MP4; там же обложка JPG и ссылка .m3u8." }
         },
         {
           "@type": "Question",
@@ -619,14 +619,14 @@ footer a{color:var(--muted)}
   <div class="hero-spot" aria-hidden="true"></div>
   <div class="wrap hero-grid">
     <div>
-      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.8</b> JPEG/WebP, контактный лист и кадры между A/B <span aria-hidden="true">→</span></a>
+      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.9</b> Субтитры SRT теперь сохраняются в WebVTT <span aria-hidden="true">→</span></a>
       <h1>Всё для RuTube<em>прямо в плеере</em></h1>
       <p class="lead">Скачивайте видео и плейлисты в MP4 или только звук в M4A, вырезайте фрагменты, листайте по кадрам, сохраняйте PNG и субтитры. Без рекламы, трекеров и сторонних программ.</p>
       <div class="cta">
         <a class="btn primary" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Firefox (.xpi)</a>
         <a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Chrome / Edge (.zip)</a>
       </div>
-      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.8.0</span></p>
+      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.9.0</span></p>
     </div>
 
     <div aria-hidden="true">
@@ -688,8 +688,8 @@ footer a{color:var(--muted)}
   <div class="stats reveal">
     <div class="stat"><b>0</b><span>трекеров и аналитики</span></div>
     <div class="stat"><b>100%</b><span>работает локально</span></div>
-    <div class="stat"><b>78</b><span>автотестов в CI</span></div>
-    <div class="stat"><b>≈100 КБ</b><span>весь пакет для Firefox</span></div>
+    <div class="stat"><b>130</b><span>автотестов в CI</span></div>
+    <div class="stat"><b>≈115 КБ</b><span>весь пакет для Firefox</span></div>
   </div>
 </div>
 
@@ -713,13 +713,13 @@ footer a{color:var(--muted)}
       <p>Подкасты и лекции без лишнего трафика: берётся самый лёгкий поток, AAC достаётся без перекодирования, название попадает в тег файла.</p>
     </article>
     <article class="card hot">
-      <span class="tag">новое</span>
+      <span class="tag">галочками</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
       <h3>Плейлисты</h3>
       <p>Серии галочками: названия, длительность, «Все» и «Ни одной», счётчик выбора.</p>
     </article>
     <article class="card hot">
-      <span class="tag">новое</span>
+      <span class="tag">менеджер</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
       <h3>Докачка и история</h3>
       <p>Продолжение с нужной части. В окне — история файлов с кнопкой «Показать файл».</p>
@@ -731,13 +731,14 @@ footer a{color:var(--muted)}
     </article>
     <article class="card">
       <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg></div>
-      <h3>Кадры в PNG</h3>
-      <p>Нажмите <kbd>S</kbd> — кадр с таймкодом в имени. Или раскадровка серией до 120 кадров.</p>
+      <h3>Кадры PNG, JPEG и WebP</h3>
+      <p>Нажмите <kbd>S</kbd> — кадр с таймкодом в имени. Серия до 120 кадров, диапазон A/B, контактный лист и копирование в буфер.</p>
     </article>
-    <article class="card w2">
+    <article class="card w2 hot">
+      <span class="tag">новое</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12.5h5"/></svg></div>
-      <h3>Субтитры, обложка и главы</h3>
-      <p>Галочка в «Скачать» — и <code>.srt</code> лежит рядом с видео с тем же именем: плеер подхватит сам. Обложка в JPG, мини-плеер, главы в <code>.txt</code> или <code>.ffmeta</code>, чтобы вшить их в MP4 без перекодирования.</p>
+      <h3>Субтитры SRT и WebVTT</h3>
+      <p>Галочка в «Скачать» — и <code>.srt</code> лежит рядом с видео. Во вкладке «Ещё» его можно локально преобразовать в <code>.vtt</code>. Там же обложка JPG, мини-плеер и главы в <code>.txt</code> или <code>.ffmeta</code>.</p>
     </article>
     <article class="card w2">
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
@@ -846,7 +847,7 @@ footer a{color:var(--muted)}
     <div class="keys reveal">
       <div class="key"><div class="k"><kbd>,</kbd><kbd>.</kbd></div><span>кадр назад / кадр вперёд</span></div>
       <div class="key"><div class="k"><kbd>&lt;</kbd><kbd>&gt;</kbd></div><span>скорость − / + (0.25× … 2×)</span></div>
-      <div class="key"><div class="k"><kbd>s</kbd></div><span>сохранить кадр в PNG</span></div>
+      <div class="key"><div class="k"><kbd>s</kbd></div><span>сохранить кадр</span></div>
       <div class="key"><div class="k"><kbd>p</kbd></div><span>мини-плеер (Picture-in-Picture)</span></div>
       <div class="key"><div class="k"><kbd>?</kbd></div><span>подсказка прямо на странице</span></div>
     </div>
@@ -949,10 +950,10 @@ footer a{color:var(--muted)}
       <p>Да. Во вкладке «Скачать» переключитесь на «Фрагмент» и укажите начало и конец, например <code>12:30</code> и <code>12:45</code>. Кнопка с часами подставит время из плеера. Границы привязываются к фрагментам потока (2–4 секунды), поэтому файл может начинаться на пару секунд раньше.</p></details>
     <details><summary>Как скачать весь плейлист RuTube?</summary>
       <p>Откройте страницу плейлиста (<code>/plst/…</code>) — кнопка станет <b>PL</b>. Отметьте галочками нужные серии: в списке видно название и длительность каждой, рядом счётчик «Выбрано 10 из 12», а кнопки «Все» и «Ни одной» снимают рутину с длинных сезонов. Затем «Скачать плейлист» — видео загружаются по очереди с паузой, очередь можно поставить на паузу или отменить.</p></details>
-    <details><summary>Как сохранить кадр в PNG?</summary>
-      <p>Нажмите <kbd>s</kbd> — кадр текущего момента сохранится картинкой с таймкодом в имени файла. Для серии кадров откройте вкладку «Кадры» и задайте интервал раскадровки (до 120 кадров).</p></details>
+    <details><summary>Как сохранить кадр или серию кадров?</summary>
+      <p>Нажмите <kbd>s</kbd> — кадр сохранится в выбранном формате PNG, JPEG или WebP с таймкодом в имени. Во вкладке «Кадры» доступны серия до 120 кадров, диапазон A/B, контактный лист и копирование кадра в буфер.</p></details>
     <details><summary>Как скачать субтитры и главы?</summary>
-      <p>Вкладка «Ещё». Субтитры сохраняются в <code>.srt</code>, включая авто-субтитры RuTube. Главы можно скопировать текстом или сохранить в <code>.txt</code> и <code>.ffmeta</code>; второй формат вшивается в MP4 командой <code>ffmpeg</code>, она показана в панели. Там же обложка в JPG и ссылка <code>.m3u8</code>.</p></details>
+      <p>Вкладка «Ещё». Субтитры сохраняются в <code>.srt</code> или конвертируются в <code>.vtt</code>, включая авто-субтитры RuTube. Главы можно скопировать текстом или сохранить в <code>.txt</code> и <code>.ffmeta</code>; второй формат вшивается в MP4 командой <code>ffmpeg</code>, она показана в панели. Там же обложка в JPG и ссылка <code>.m3u8</code>.</p></details>
     <details><summary>Почему видео сохранилось как .ts, а не .mp4?</summary>
       <p>Так бывает с кодеками HEVC и AV1: собрать из них MP4 в браузере нельзя без перекодирования. Файл сохраняется как <code>.ts</code> и открывается в VLC. Видео в H.264 всегда собираются в обычный MP4. Режим «Только звук» от кодека видео не зависит.</p></details>
     <details><summary>Почему не скачивается прямой эфир или платное видео?</summary>
@@ -1004,7 +1005,7 @@ footer a{color:var(--muted)}
 
 <footer>
   <div class="wrap">
-    <span>RuTube Tools v1.8.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
+    <span>RuTube Tools v1.9.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
     <span><a href="privacy.html">Приватность</a> · Не обходит DRM, скачивайте только то, на что у вас есть право.</span>
   </div>
 </footer>
