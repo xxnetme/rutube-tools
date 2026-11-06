@@ -271,6 +271,17 @@
 
   <div class="sub" id="keysHint" style="margin:11px 0 0 2px"></div>
 
+  <div class="group-label" data-i18n="pop.secBackup"></div>
+  <div class="group">
+    <div class="row">
+      <span class="label" data-i18n="pop.backup"></span>
+      <button id="exportSettings" type="button" data-i18n="pop.export"></button>
+      <button id="importSettings" type="button" data-i18n="pop.import"></button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+  </div>
+  <div class="sub" id="backupStatus" role="status" aria-live="polite" style="margin:7px 0 0 2px;min-height:16px"></div>
+
   <div class="foot">
     <div class="author">
       <span class="avatar" aria-hidden="true">xx</span>
@@ -289,6 +300,7 @@
 
   <script src="lib/dom.js"></script>
   <script src="lib/i18n.js"></script>
+  <script src="lib/settings.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

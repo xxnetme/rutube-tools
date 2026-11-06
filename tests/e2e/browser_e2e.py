@@ -322,6 +322,66 @@ def probe(path: Path) -> dict:
     return data
 
 
+def exercise_popup_settings(driver, directory: Path) -> dict:
+    """Popup в настоящем Chromium: импорт, отказ схемы и откат ошибки storage."""
+    targets = driver.execute_cdp_cmd("Target.getTargets", {})["targetInfos"]
+    extension_ids = [t["url"].split("/")[2] for t in targets if t["url"].startswith("chrome-extension://")]
+    assert extension_ids, targets
+    driver.get(f"chrome-extension://{extension_ids[0]}/popup.html")
+    WebDriverWait(driver, 15).until(lambda d: d.find_element("id", "importFile"))
+
+    def write_backup(name: str, settings: dict) -> Path:
+        path = directory / name
+        path.write_text(json.dumps({
+            "app": "rutube-tools", "schemaVersion": 1, "settings": settings
+        }), encoding="utf-8")
+        return path
+
+    def status_after(path: Path) -> str:
+        driver.execute_script("document.querySelector('#backupStatus').textContent = ''")
+        driver.find_element("id", "importFile").send_keys(str(path))
+        return WebDriverWait(driver, 15).until(
+            lambda d: d.find_element("id", "backupStatus").text)
+
+    def stored() -> dict:
+        return driver.execute_async_script(
+            "const done = arguments[arguments.length - 1]; chrome.storage.local.get(null).then(done)")
+
+    valid = write_backup("settings-valid.json", {
+        "quality": "1080", "maxPartMB": 400, "nameTemplate": "<img src=x>", "futureKey": 1
+    })
+    assert status_after(valid)
+    data = stored()
+    assert data["quality"] == "1080" and data["maxPartMB"] == 400
+    assert "futureKey" not in data
+    assert driver.find_element("id", "nameTemplate").get_attribute("value") == "<img src=x>"
+    assert not driver.find_elements("css selector", 'img[src="x"]')
+
+    invalid = write_backup("settings-invalid.json", {"quality": 720})
+    assert status_after(invalid)
+    assert stored()["quality"] == "1080", "невалидный файл изменил настройки"
+
+    other = write_backup("settings-rollback.json", {"quality": "720"})
+    driver.execute_script("""
+      window.__setCalls = [];
+      window.__originalSet = chrome.storage.local.set.bind(chrome.storage.local);
+      window.__failSet = true;
+      chrome.storage.local.set = function (data) {
+        window.__setCalls.push(data);
+        if (window.__failSet) {
+          window.__failSet = false;
+          return Promise.reject(new Error('forced E2E write failure'));
+        }
+        return window.__originalSet(data);
+      };
+    """)
+    assert status_after(other)
+    calls = driver.execute_script("return window.__setCalls.map(function (x) { return x.quality; })")
+    assert calls == ["720", "1080"], calls
+    assert stored()["quality"] == "1080", "rollback не восстановил прежнее значение"
+    return {"validImport": "passed", "invalidRejected": "passed", "writeRollback": "passed"}
+
+
 def run_browser(name: str, proxy_port: int, proxy_log: Recorder, https_log: Recorder) -> dict:
     directory = OUT / name
     directory.mkdir(parents=True, exist_ok=True)
@@ -365,6 +425,8 @@ def run_browser(name: str, proxy_port: int, proxy_log: Recorder, https_log: Reco
             "file": downloaded.name, "bytes": downloaded.stat().st_size,
             "ffprobe": media_info
         })
+        if name == "chromium":
+            report["popupSettings"] = exercise_popup_settings(driver, directory)
     except Exception as exc:
         report["error"] = str(exc)
         if driver is not None:

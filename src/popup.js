@@ -3,25 +3,10 @@
   var api = globalThis.browser || globalThis.chrome;
   var I = globalThis.RTI18n;
   var D = globalThis.RTDom;
-  if (!I || !D) return;
+  var S = globalThis.RTSettings;
+  if (!I || !D || !S) return;
 
-  var DEFAULTS = {
-    fps: 'auto',
-    youtubeKeys: false,
-    showButton: true,
-    quality: 'best',
-    maxPartMB: 220,
-    lang: 'auto',
-    frameKeys: 'comma',
-    shotKey: 's',
-    frameFormat: 'png',
-    frameQuality: 92,
-    preservePitch: true,
-    rememberPos: true,
-    defaultFormat: 'video',
-    nameTemplate: '{title}',
-    saveSubs: false
-  };
+  var DEFAULTS = S.DEFAULTS;
 
   var SELECTS = ['quality', 'fps', 'maxPartMB', 'frameKeys', 'shotKey', 'frameFormat', 'frameQuality', 'lang', 'defaultFormat'];
   var TEXTS = ['nameTemplate'];
@@ -129,6 +114,65 @@
     I.setLang(DEFAULTS.lang);
     applyI18n();
     apply(DEFAULTS);
+  });
+
+  /* ------------------------------------------ экспорт / импорт настроек */
+
+  function backupStatus(key) {
+    el('backupStatus').textContent = key ? I.t(key) : '';
+  }
+
+  el('exportSettings').addEventListener('click', async function () {
+    var button = el('exportSettings');
+    button.disabled = true;
+    backupStatus('');
+    var blobUrl = null;
+    try {
+      var current = await api.storage.local.get(DEFAULTS);
+      var backup = S.makeBackup(current);
+      var blob = new Blob([JSON.stringify(backup, null, 2) + '\n'], { type: 'application/json' });
+      blobUrl = URL.createObjectURL(blob);
+      await api.downloads.download({
+        url: blobUrl, filename: 'rutube-tools-settings-v1.json', saveAs: true
+      });
+      backupStatus('pop.exportDone');
+    } catch (e) {
+      backupStatus('pop.exportFail');
+    } finally {
+      button.disabled = false;
+      if (blobUrl) setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 30000);
+    }
+  });
+
+  el('importSettings').addEventListener('click', function () {
+    backupStatus('');
+    el('importFile').click();
+  });
+
+  el('importFile').addEventListener('change', async function () {
+    var input = el('importFile');
+    var file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      if (file.size > 65536) throw new Error('backup-too-large');
+      var next = S.parseBackup(await file.text());
+      var previous = await api.storage.local.get(DEFAULTS);
+      try {
+        await api.storage.local.set(next);
+      } catch (writeError) {
+        // Даже частично записанный импорт не должен оставить смесь старых и новых значений.
+        try { await api.storage.local.set(previous); } catch (e) {}
+        throw writeError;
+      }
+      I.setLang(next.lang);
+      applyI18n();
+      apply(next);
+      backupStatus('pop.importDone');
+    } catch (e) {
+      backupStatus('pop.importFail');
+    } finally {
+      input.value = '';
+    }
   });
 
   /* ---------------------------------------------- незавершённые загрузки */
