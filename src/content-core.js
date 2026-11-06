@@ -28,6 +28,7 @@
     preservePitch: true,
     rememberPos: true,
     rememberRate: true,
+    useOpfs: false,
     defaultFormat: 'video', // video | audio — с чего открывается вкладка «Скачать»
     nameTemplate: '{title}',// {title} {author} {quality} {date} {playlist}, «/» — подпапка
     saveSubs: false,        // класть .srt рядом с видео
@@ -136,7 +137,7 @@
   function sendMessage(msg) {
     return new Promise(function (resolve) {
       try {
-        var p = api.runtime.sendMessage(msg);
+        var p = api.runtime.sendMessage(globalThis.RTProtocol ? globalThis.RTProtocol.stamp(msg) : msg);
         if (p && p.then) p.then(resolve, function (e) { resolve({ ok: false, error: String((e && e.message) || e) }); });
         else resolve({ ok: false, error: 'no response' });
       } catch (e) { resolve({ ok: false, error: String((e && e.message) || e) }); }
@@ -535,7 +536,7 @@
 
   function openPanel() {
     if (!ui) return;
-    if (!state.panelOpen) ui.returnFocus = document.activeElement;
+    if (!state.panelOpen) ui.returnFocus = ui.root.activeElement || document.activeElement;
     state.panelOpen = true;
     ui.card.hidden = false;
     ui.card.setAttribute('aria-modal', 'true');
@@ -616,7 +617,8 @@
    * абсолютный индекс после seek: для VFR показываем только честный таймкод. */
   function attachFrameProbe(v) {
     if (!v) return null;
-    if (state.frameProbe && state.frameProbe.video === v) return state.frameProbe;
+    if (state.frameProbe && state.frameProbe.video === v &&
+        (state.frameProbe.supported || typeof v.requestVideoFrameCallback !== 'function')) return state.frameProbe;
     var probe = {
       video: v, vfr: false, supported: typeof v.requestVideoFrameCallback === 'function',
       lastTime: null, lastFrames: null, rates: []
@@ -633,10 +635,12 @@
           if (isFinite(rate) && rate > 0 && rate < 1000) {
             probe.rates.push(rate);
             if (probe.rates.length > 8) probe.rates.shift();
-            if (probe.rates.length >= 3) {
+            if (probe.rates.length >= 5) {
               var min = Math.min.apply(Math, probe.rates), max = Math.max.apply(Math, probe.rates);
               var avg = probe.rates.reduce(function (sum, x) { return sum + x; }, 0) / probe.rates.length;
-              if (max - min > Math.max(0.05, avg * 0.03)) probe.vfr = true;
+              /* Небольшой jitter и один dropped frame не объявляют VFR.
+               * Нужна серия заметно разных интервалов, иначе честнее CFR=unknown. */
+              if (max - min > Math.max(0.2, avg * 0.15)) probe.vfr = true;
             }
           }
         }
@@ -813,11 +817,14 @@
     if (state.rateRestoredFor === id && state.rateVideo === v) return;
     state.rateRestoredFor = id;
     state.rateVideo = v;
+    var rateAtRequest = v.playbackRate || 1;
     var p = api.storage.local.get(RATE_KEY);
     if (!p || !p.then) return;
     p.then(function (got) {
       // Пользователь мог уже уйти на другое видео или поменять скорость сам.
       if (getVideoId() !== id || state.rateVideo !== v) return;
+      // Если пользователь уже изменил скорость, ответ storage не должен её перезаписать.
+      if (Math.abs((v.playbackRate || 1) - rateAtRequest) > 0.001) return;
       var map = got && got[RATE_KEY];
       var rec = map && map[id];
       if (!rec || !isFinite(rec.rate)) return;
@@ -1053,33 +1060,53 @@
     }
     applyAB(v);
     if (!deferRender && window.RTPanel && state.panelOpen) window.RTPanel.render();
-    if (withPreview !== false) captureABPreview(which, v);
+    if (withPreview !== false) return captureABPreview(which, v);
+    return Promise.resolve();
   }
 
   function captureABPreview(which, v) {
-    if (!v || !v.videoWidth) return;
+    if (!v || !v.videoWidth) return Promise.resolve();
     var ab = state.ab;
     var time = which === 'a' ? ab.a : ab.b;
-    if (time == null) return;
+    if (time == null) return Promise.resolve();
+
+    /* Один сеанс на серию быстрых A/B-кликов: исходная позиция не заменяется
+     * промежуточным кадром, а seek-операции не перекрывают друг друга. */
+    if (!ab.previewing || ab.previewVideo !== v) {
+      ab.previewOriginal = v.currentTime || 0;
+      ab.previewWasPaused = v.paused;
+      ab.previewVideo = v;
+      ab.previewQueue = Promise.resolve();
+      ab.previewing = true;
+      try { v.pause(); } catch (e) {}
+    }
     var token = ++ab.previewToken;
-    var original = v.currentTime || 0;
-    var wasPaused = v.paused;
-    ab.previewing = true;
-    v.pause();
-    seekTo(v, time).then(function () { return waitForPresentedFrame(v); }).then(function () {
-      if (token !== ab.previewToken) return;
-      try {
-        var canvas = grabCanvas(v);
-        var data = canvas.toDataURL('image/jpeg', 0.72);
-        if (which === 'a') ab.previewA = data; else ab.previewB = data;
-      } catch (e) {}
-    }).catch(function () {}).then(function () {
-      if (token === ab.previewToken) ab.previewing = false;
-      return seekTo(v, original).then(function () {
-        if (!wasPaused) v.play().catch(function () {});
-        if (window.RTPanel && state.panelOpen) window.RTPanel.render();
+    function run() {
+      if (state.ab !== ab) return null;
+      return seekTo(v, time).then(function () { return waitForPresentedFrame(v); }).then(function () {
+        if (state.ab !== ab) return;
+        try {
+          var canvas = grabCanvas(v);
+          var data = canvas.toDataURL('image/jpeg', 0.72);
+          if (which === 'a') ab.previewA = data; else ab.previewB = data;
+        } catch (e) {}
+      }).catch(function () {}).then(function () {
+        if (state.ab !== ab || token !== ab.previewToken) return null;
+        /* Даже если пользователь нажал другой маркер во время восстановления,
+         * финальный сеанс вернёт именно исходную позицию. */
+        return seekTo(v, ab.previewOriginal).then(function () {
+          if (state.ab !== ab || token !== ab.previewToken) return;
+          ab.previewing = false;
+          ab.previewVideo = null;
+          if (!ab.previewWasPaused) {
+            try { var playing = v.play(); if (playing && playing.catch) playing.catch(function () {}); } catch (e) {}
+          }
+          if (window.RTPanel && state.panelOpen) window.RTPanel.render();
+        });
       });
-    });
+    }
+    ab.previewQueue = ab.previewQueue.then(run, run);
+    return ab.previewQueue;
   }
 
   function applyAB(v) {

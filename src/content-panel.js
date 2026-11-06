@@ -185,7 +185,7 @@
       return D.h('label', { class: v.compatible ? '' : 'dis' },
         D.h('input', { type: 'radio', name: 'rq', value: v.height, checked: checked }),
         D.h('span', { class: 'radio' }),
-        D.h('span', { class: 'lbl' }, v.label, v.compatible ? null : ' · .ts'),
+        D.h('span', { class: 'lbl' }, v.label, v.compatible ? null : ' · MP4/.ts'),
         D.h('span', { class: 'est', text: v.estimatedBytes ? L.formatBytes(v.estimatedBytes) : '' })
       );
     });
@@ -214,7 +214,7 @@
     } else {
       children.push(D.h('div', { class: 'q' }, rows));
       if (chosen && !chosen.compatible) {
-        children.push(D.h('div', { class: 'hint', style: 'margin-bottom:8px' }, '⚠ ', t('dl.tsWarn')));
+        children.push(D.h('div', { class: 'hint', style: 'margin-bottom:8px' }, t('dl.tsWarn')));
       }
     }
 
@@ -939,6 +939,7 @@
       from: from,
       to: to,
       maxPartMB: RT.settings.maxPartMB,
+      opfs: !!RT.settings.useOpfs,
       nameTemplate: RT.settings.nameTemplate || '',
       subsUrl: sub ? sub.url : '',
       subsExt: sub ? (sub.format || 'srt') : ''
@@ -975,6 +976,7 @@
       toIndex: full ? null : pick[pick.length - 1] + 1,
       indices: full ? null : pick,
       maxPartMB: RT.settings.maxPartMB,
+      opfs: !!RT.settings.useOpfs,
       nameTemplate: RT.settings.nameTemplate || ''
     }).then(function (r) {
       if (!r || !r.ok) {
@@ -1257,7 +1259,7 @@
       state.job.doneCount = (state.job.doneCount || 0) + 1;
       state.job.filesSaved = (state.job.filesSaved || 0) + ((msg.files || []).length);
       state.progress = { phase: 'meta', queue: state.job.queue, percent: 0 };
-      RT.toast((state.job.queue ? state.job.queue.title : '') + ' — готово', { duration: 1400 });
+      RT.toast(t('pl.queueDone', { title: state.job.queue ? state.job.queue.title : '' }), { duration: 1400 });
       render();
       return;
     }

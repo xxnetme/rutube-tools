@@ -31,6 +31,8 @@ const INFO = {
 
 async function openPanel(url, tab, settings, data) {
   const sent = [];
+  const storageWrites = [];
+  const storageData = Object.assign({}, settings || {}, (data && data.storage) || {});
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (error) => errors.push(error));
@@ -53,12 +55,19 @@ async function openPanel(url, tab, settings, data) {
       onMessage: { addListener() {} },
       getManifest: () => ({ version: 'test' })
     },
-    storage: { local: { get: async () => (settings || {}), set: async () => {} }, onChanged: { addListener() {} } }
+    storage: { local: {
+      get: async () => JSON.parse(JSON.stringify(storageData)),
+      set: async (patch) => { storageWrites.push(patch); Object.assign(storageData, patch); }
+    }, onChanged: { addListener() {} } }
   };
+  w.eval(read('lib/protocol.js'));
   w.eval(read('lib/network.js'));
   w.eval(read('lib/dom.js'));
   w.eval(read('lib/engine.js'));
+  w.eval(read('lib/i18n-uk.js'));
+  w.eval(read('lib/i18n-be.js'));
   w.eval(read('lib/i18n.js'));
+  w.eval(read('lib/settings.js'));
   w.eval(read('content-core.js'));
   w.eval(read('content-panel.js'));
   const RT = w.__RT;
@@ -72,7 +81,7 @@ async function openPanel(url, tab, settings, data) {
     while (Date.now() < end) { if (pred()) return; await new Promise((r) => setTimeout(r, 10)); }
     throw new Error('не дождались; в панели:\n' + body().textContent.slice(0, 400));
   };
-  return { w, RT, sent, body, until, errors, close: () => w.close() };
+  return { w, RT, sent, body, until, errors, storageData, storageWrites, close: () => w.close() };
 }
 
 test('вкладка «Скачать»: переключатель формата, подсказка про звук, запуск с audio:true',
@@ -294,6 +303,107 @@ test('вкладка «Кадры»: копирование, контактны�
   p.RT.state.ab.a = 10; p.RT.state.ab.b = 40;
   p.RT.render();
   assert.equal(p.body().querySelector('[data-act="useab"]').disabled, false, 'с A и B доступна');
+  p.close();
+});
+
+test('A/B: маркеры, клавиатура и оба preview возвращают исходную позицию', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/', 'frames');
+  await p.until(() => p.body().querySelector('[data-marker="a"]'));
+  const v = p.w.document.querySelector('video');
+  let time = 12;
+  let paused = false;
+  Object.defineProperty(v, 'duration', { configurable: true, value: 100 });
+  Object.defineProperty(v, 'currentTime', { configurable: true, get: () => time, set: (value) => {
+    time = value;
+    v.dispatchEvent(new p.w.Event('seeked'));
+  } });
+  Object.defineProperty(v, 'paused', { configurable: true, get: () => paused });
+  Object.defineProperty(v, 'videoWidth', { configurable: true, value: 160 });
+  Object.defineProperty(v, 'videoHeight', { configurable: true, value: 90 });
+  v.pause = () => { paused = true; };
+  v.play = () => { paused = false; return Promise.resolve(); };
+  p.w.HTMLCanvasElement.prototype.getContext = () => ({ drawImage() {} });
+  p.w.HTMLCanvasElement.prototype.toDataURL = () => 'data:image/jpeg;base64,preview';
+
+  await p.RT.setABMarker('a', 20, v, false);
+  await p.RT.setABMarker('b', 80, v, false);
+  p.RT.render();
+  const marker = p.body().querySelector('[data-marker="a"]');
+  assert.equal(marker.getAttribute('role'), 'slider');
+  marker.dispatchEvent(new p.w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+  assert.ok(p.RT.state.ab.a > 20, 'ArrowRight двигает A');
+
+  time = 12;
+  const first = p.RT.setABMarker('a', 30, v, true);
+  const second = p.RT.setABMarker('b', 70, v, true);
+  await Promise.all([first, second]);
+  assert.equal(time, 12, 'после серии preview восстановлена исходная позиция');
+  assert.equal(p.RT.state.ab.previewing, false);
+  assert.equal(p.RT.state.ab.previewA, 'data:image/jpeg;base64,preview');
+  assert.equal(p.RT.state.ab.previewB, 'data:image/jpeg;base64,preview');
+  p.close();
+});
+
+test('VFR: нестабильные mediaTime не дают абсолютный номер, everyFrame блокируется', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/', 'frames');
+  await p.until(() => p.body().querySelector('[data-in="frame"]'));
+  const v = p.w.document.querySelector('video');
+  const callbacks = [];
+  v.requestVideoFrameCallback = (fn) => { callbacks.push(fn); return callbacks.length; };
+  const probe = p.RT.attachFrameProbe(v);
+  const times = [0, 0.04, 0.12, 0.16, 0.4, 0.44, 0.9, 0.94, 1.5];
+  times.forEach((mediaTime, i) => {
+    const fn = callbacks.shift();
+    if (fn) fn({ mediaTime, presentedFrames: i + 1 });
+  });
+  assert.equal(probe.vfr, true);
+  p.RT.render();
+  assert.equal(p.body().querySelector('[data-in="frame"]').disabled, true);
+  assert.equal(p.body().querySelector('[data-act="everyframe"]').disabled, true);
+  assert.match(p.body().textContent, /VFR/);
+  p.close();
+});
+
+test('playbackRate: сохранение по videoId, восстановление и лимит 50 записей', { skip }, async () => {
+  const rates = {};
+  for (let i = 0; i < 55; i++) rates['old' + i] = { rate: 1, at: i };
+  rates[ID] = { rate: 1.5, at: 1000 };
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/', null, { rememberRate: true }, {
+    storage: { rtPlaybackRates: rates }
+  });
+  const v = p.w.document.querySelector('video');
+  p.RT.maybeRestoreRate(v);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(v.playbackRate, 1.5);
+  p.RT.changeSpeed(v, 1);
+  await new Promise((r) => setTimeout(r, 30));
+  const saved = p.storageData.rtPlaybackRates;
+  assert.equal(saved[ID].rate, 1.75);
+  assert.ok(Object.keys(saved).length <= 50);
+  p.close();
+});
+
+test('a11y: вкладки, focus trap и возврат фокуса на кнопку плеера', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/');
+  await p.until(() => p.body().querySelector('[data-act="go"]'));
+  const ui = p.RT.ui();
+  const selected = ui.tabs.querySelector('[aria-selected="true"]');
+  selected.dispatchEvent(new p.w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+  assert.equal(ui.tabs.querySelector('[aria-selected="true"]').getAttribute('data-tab'), 'frames');
+  assert.equal(ui.body.getAttribute('role'), 'tabpanel');
+  assert.equal(ui.live.getAttribute('aria-live'), 'polite');
+
+  const focusables = Array.from(ui.card.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+  const last = focusables[focusables.length - 1];
+  last.focus();
+  last.dispatchEvent(new p.w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+  assert.equal(ui.root.activeElement, focusables[0], 'Tab с последнего элемента возвращает к первому');
+
+  ui.pill.focus();
+  p.RT.closePanel();
+  p.RT.openPanel();
+  p.RT.closePanel();
+  assert.equal(ui.root.activeElement, ui.pill, 'фокус возвращается на pill внутри shadow DOM');
   p.close();
 });
 

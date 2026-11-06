@@ -43,15 +43,17 @@
       "applicationSubCategory": "Browser extension",
       "operatingSystem": "Windows, macOS, Linux",
       "browserRequirements": "Firefox 140+, Chrome / Edge / Яндекс.Браузер 109+",
-      "softwareVersion": "1.9.0",
+      "softwareVersion": "2.0.0",
       "installUrl": "https://addons.mozilla.org/ru/firefox/addon/rutube-tools/",
-      "inLanguage": ["ru", "en"],
+      "inLanguage": ["ru", "en", "uk", "be"],
       "featureList": [
         "Скачивание видео RuTube в MP4 целиком или фрагментом",
         "Только звук в M4A без перекодирования, с обложкой и тегами подкаста",
         "Плейлисты: выбор серий галочками, очередь и пауза",
         "Докачка после сбоя или перезапуска браузера",
         "Покадровая перемотка и кадры в PNG, JPEG и WebP",
+        "A/B-preview, rVFC и честный VFR, скорость по videoId",
+        "HEVC/AV1 в fMP4 с hvcC/av1C; OPFS opt-in с докачкой по сегментам",
         "Субтитры SRT и экспорт WebVTT, обложка JPG, главы в .txt и .ffmeta",
         "Шаблон имени файла и подпапки для плейлистов",
         "История сохранённых файлов с кнопкой «Показать файл»"
@@ -109,7 +111,7 @@
         {
           "@type": "Question",
           "name": "Почему видео сохранилось как .ts, а не .mp4?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Так бывает с кодеками HEVC и AV1: собрать из них MP4 в браузере нельзя без перекодирования. Файл сохраняется как .ts и открывается в VLC. Видео в H.264 всегда собираются в обычный MP4." }
+          "acceptedAnswer": { "@type": "Answer", "text": "Для HEVC и AV1 сначала пробуется fMP4 без перекодирования. Если конкретный контейнер не читается (например, AV1 в MPEG-TS), сохраняется исходный .ts для VLC; audio-only MP4 не выдаётся за видео. H.264/AAC собираются в обычный MP4." }
         },
         {
           "@type": "Question",
@@ -619,14 +621,14 @@ footer a{color:var(--muted)}
   <div class="hero-spot" aria-hidden="true"></div>
   <div class="wrap hero-grid">
     <div>
-      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>1.9</b> Субтитры SRT теперь сохраняются в WebVTT <span aria-hidden="true">→</span></a>
+      <a class="news" href="https://github.com/xxnetme/rutube-tools/blob/main/docs/CHANGELOG.md"><b>2.0</b> HEVC/AV1 в fMP4, A/B-preview и OPFS opt-in <span aria-hidden="true">→</span></a>
       <h1>Всё для RuTube<em>прямо в плеере</em></h1>
       <p class="lead">Скачивайте видео и плейлисты в MP4 или только звук в M4A, вырезайте фрагменты, листайте по кадрам, сохраняйте PNG и субтитры. Без рекламы, трекеров и сторонних программ.</p>
       <div class="cta">
         <a class="btn primary" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Firefox (.xpi)</a>
         <a class="btn ghost" href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-chromium.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>Chrome / Edge (.zip)</a>
       </div>
-      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 1.9.0</span></p>
+      <p class="micro"><span>Бесплатно, MIT</span><span>Всё локально</span><span>Сборка 2.0.0</span></p>
     </div>
 
     <div aria-hidden="true">
@@ -688,8 +690,8 @@ footer a{color:var(--muted)}
   <div class="stats reveal">
     <div class="stat"><b>0</b><span>трекеров и аналитики</span></div>
     <div class="stat"><b>100%</b><span>работает локально</span></div>
-    <div class="stat"><b>130</b><span>автотестов в CI</span></div>
-    <div class="stat"><b>≈115 КБ</b><span>весь пакет для Firefox</span></div>
+    <div class="stat"><b>148</b><span>автотестов в CI</span></div>
+    <div class="stat"><b>≈255 КБ</b><span>весь пакет для Firefox</span></div>
   </div>
 </div>
 
@@ -727,12 +729,24 @@ footer a{color:var(--muted)}
     <article class="card">
       <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg></div>
       <h3>Покадровая перемотка</h3>
-      <p>Шаг на один кадр, номер кадра и таймкод, петля A/B, переход по номеру.</p>
+      <p>Шаг на один кадр, rVFC, A/B-маркеры с preview и честный VFR: для неравномерного FPS показывается время, а не выдуманный номер.</p>
     </article>
     <article class="card">
       <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg></div>
       <h3>Кадры PNG, JPEG и WebP</h3>
       <p>Нажмите <kbd>S</kbd> — кадр с таймкодом в имени. Серия до 120 кадров, диапазон A/B, контактный лист и копирование в буфер.</p>
+    </article>
+    <article class="card w2 hot">
+      <span class="tag">2.0</span>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9v6M12 9v6M16 9v6M6 7h12M6 17h12"/></svg></div>
+      <h3>HEVC и AV1 в fMP4</h3>
+      <p>Дорожки переносятся без перекодирования: <code>hvcC</code> и <code>av1C</code> проверяются тестами. Если конкретный контейнер не читается, остаётся честный <code>.ts</code> fallback — не audio-only MP4.</p>
+    </article>
+    <article class="card w2 hot">
+      <span class="tag">opt-in</span>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg></div>
+      <h3>OPFS и докачка по сегментам</h3>
+      <p>В настройках можно включить Worker + OPFS. Индекс продолжает часть со следующего сегмента, очищает stale-файлы и при квоте возвращается в старый memory-путь. Большой benchmark и границы — в отчёте.</p>
     </article>
     <article class="card w2 hot">
       <span class="tag">новое</span>
@@ -955,7 +969,7 @@ footer a{color:var(--muted)}
     <details><summary>Как скачать субтитры и главы?</summary>
       <p>Вкладка «Ещё». Субтитры сохраняются в <code>.srt</code> или конвертируются в <code>.vtt</code>, включая авто-субтитры RuTube. Главы можно скопировать текстом или сохранить в <code>.txt</code> и <code>.ffmeta</code>; второй формат вшивается в MP4 командой <code>ffmpeg</code>, она показана в панели. Там же обложка в JPG и ссылка <code>.m3u8</code>.</p></details>
     <details><summary>Почему видео сохранилось как .ts, а не .mp4?</summary>
-      <p>Так бывает с кодеками HEVC и AV1: собрать из них MP4 в браузере нельзя без перекодирования. Файл сохраняется как <code>.ts</code> и открывается в VLC. Видео в H.264 всегда собираются в обычный MP4. Режим «Только звук» от кодека видео не зависит.</p></details>
+      <p>Для HEVC и AV1 сначала пробуется fMP4 без перекодирования. Если конкретный контейнер не читается (например, AV1 в MPEG-TS), сохраняется исходный <code>.ts</code> для VLC; audio-only MP4 не выдаётся за видео. H.264/AAC собираются в обычный MP4. Режим «Только звук» от кодека видео не зависит.</p></details>
     <details><summary>Почему не скачивается прямой эфир или платное видео?</summary>
       <p>Прямые трансляции и видео с DRM-защитой не поддерживаются — это осознанное ограничение. Расширение не обходит защиту.</p></details>
     <details><summary>Расширение что-то отправляет на серверы?</summary>
@@ -1005,7 +1019,7 @@ footer a{color:var(--muted)}
 
 <footer>
   <div class="wrap">
-    <span>RuTube Tools v1.9.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
+    <span>RuTube Tools v2.0.0 · MIT · <a href="https://github.com/xxnetme">xxnetme</a></span>
     <span><a href="privacy.html">Приватность</a> · Не обходит DRM, скачивайте только то, на что у вас есть право.</span>
   </div>
 </footer>

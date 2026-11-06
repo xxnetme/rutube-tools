@@ -74,6 +74,31 @@ test('OPFS engine: после сбоя продолжает со следующ�
   assert.equal(progress.at(-1).done, 2);
 });
 
+test('OPFS engine: квота на output тоже очищает файл и повторяет часть в памяти', async () => {
+  const store = { nextSegment: 0, bytes: 0, chunks: [] };
+  const media = fakeMedia(store);
+  media.transmuxOpfs = async () => {
+    const error = new Error('output quota'); error.code = 'opfs-quota'; throw error;
+  };
+  let usedMemory = false;
+  const originalTransmux = media.transmuxChunks;
+  media.transmuxChunks = async (chunks) => { usedMemory = true; return originalTransmux(chunks); };
+  let requests = 0;
+  globalThis.RTNetwork = { fetch: async () => { requests++; return response([9]); } };
+  const saved = [];
+  const storage = [];
+  const out = await L.downloadPart({
+    segments: [URLS[0]], mode: 'mp4', media, resumeKey: 'job', opfs: true,
+    validate: false, onSegmentSaved: (x) => saved.push(x), onStorage: (x) => storage.push(x)
+  });
+  assert.equal(out.ext, 'mp4');
+  assert.equal(usedMemory, true);
+  assert.equal(requests, 2);
+  assert.equal(store.cleaned, 1);
+  assert.equal(saved.at(-1).reset, true);
+  assert.equal(storage.at(-1).state, 'memory');
+});
+
 test('OPFS engine: opfs-quota очищает незавершённый индекс и повторяет часть в памяти', async () => {
   const store = { nextSegment: 0, bytes: 0, chunks: [] };
   let usedMemory = false;

@@ -1,9 +1,10 @@
 # Публикация RuTube Tools в магазинах дополнений
 
-Текущая сборка в `main` — **1.9.0**, `gecko.id` закреплён, `addons-linter` проходит без ошибок
-(одно предупреждение о минимальной версии Firefox для Android — разбор в §9). **GitHub Release
-`v1.9.0` опубликован; публичная AMO — 1.7.0, сайт обновлён до 1.9.0.** <!-- ver:prev -->
-Подача 1.9.0 в AMO ещё впереди. Тексты карточек и картинки лежат в репозитории.
+Подготавливаемая сборка в `main` — **2.0.0**, `gecko.id` закреплён. **GitHub Release
+`v1.9.0` уже опубликован; публичная AMO — 1.7.0.** <!-- ver:prev --> Release 2.0.0 и подача
+в магазины являются отдельными следующими шагами и не считаются выполненными до подтверждения.
+Тексты карточек и картинки лежат в репозитории. Результат `addons-linter` для каждой новой
+сборки проверяется отдельно; старый результат не переносится на 2.0.0 автоматически.
 
 Ниже — актуальное состояние каналов и инструкции для следующих обновлений.
 
@@ -30,7 +31,7 @@
 
 | Требование магазина | Где лежит |
 |---|---|
-| Манифест MV3 | `src/manifest.firefox.json`, `src/manifest.chromium.json` (обе версии 1.9.0) |
+| Манифест MV3 | `src/manifest.firefox.json`, `src/manifest.chromium.json` (обе версии 2.0.0) |
 | Постоянный `gecko.id` | `rutube-tools@xxnetme.github.io` — **после первой публикации менять нельзя** |
 | `data_collection_permissions` | `{ "required": ["none"] }`, обязательное поле для новых дополнений AMO |
 | Минимальный Firefox | 140.0 — с этой версии поле выше поддерживается. Одно предупреждение линтера остаётся: оно про Android 142, на десктоп не влияет (см. §9) |
@@ -44,11 +45,12 @@
 | Обоснование разрешений и заметки ревьюеру | `docs/store/listing-ru.md`, разделы в конце |
 | История изменений для карточки | `docs/CHANGELOG.md` |
 | Контрольные суммы | `release/SHA256SUMS`, создаётся командой `python3 build.py`; mtime исходников не влияет на байты ZIP |
-| Provenance | Release workflow создаёт GitHub attestations для трёх пакетов каждого тега; на `v1.9.0` шаг успешно проверен |
+| Provenance | Release workflow создаёт GitHub attestations для трёх пакетов каждого тега; на `v1.9.0` шаг успешно проверен <!-- ver:prev --> |
 
 Порядок сборки и пакеты:
 
 ```bash
+npm ci
 python3 build.py
 # release/rutube-tools-firefox.zip     — для AMO
 # release/rutube-tools-firefox.xpi     — для установки вручную
@@ -206,9 +208,9 @@ AMO_JWT_ISSUER='user:...' AMO_JWT_SECRET='...' \
    собираются из раздела текущей версии в `docs/CHANGELOG.md`.
 3. Проверить успех workflows **Checks**, **Release** и **Pages**. Для новых тегов Release
    также создаёт build-provenance attestations через GitHub OIDC/Sigstore.
-4. Обновления: поднять версию в двух манифестах и `docs/CHANGELOG.md`, выполнить
-   `python3 build.py` и `python3 tools/check-versions.py`, затем загрузить новый zip в магазины.
-   `gecko.id` не меняется.
+4. Обновления: поднять версию в двух манифестах, `package.json`/lock и `docs/CHANGELOG.md`,
+   выполнить `npm ci`, полный регресс, browser E2E, `python3 build.py` и
+   `python3 tools/check-versions.py`, затем загрузить новый zip в магазины. `gecko.id` не меняется.
 
 ### Проверка загруженных файлов
 

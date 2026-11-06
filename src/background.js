@@ -17,8 +17,9 @@
 
   if (typeof importScripts === 'function' &&
       (typeof RTNetwork === 'undefined' || typeof RTLib === 'undefined' ||
-       typeof muxjs === 'undefined' || typeof RTAudio === 'undefined' || typeof RTMedia === 'undefined')) {
+       typeof muxjs === 'undefined' || typeof RTAudio === 'undefined' || typeof RTMedia === 'undefined' || typeof RTProtocol === 'undefined')) {
     try {
+      if (typeof RTProtocol === 'undefined') importScripts('lib/protocol.js');
       if (typeof RTNetwork === 'undefined') importScripts('lib/network.js');
       if (typeof muxjs === 'undefined') importScripts('lib/mux-mp4.min.js');
       if (typeof RTMedia === 'undefined') importScripts('lib/media.js');
@@ -126,7 +127,7 @@
   function sendTab(tabId, msg) {
     if (tabId === undefined || tabId === null) return;
     try {
-      var p = api.tabs.sendMessage(tabId, msg);
+      var p = api.tabs.sendMessage(tabId, globalThis.RTProtocol ? globalThis.RTProtocol.stamp(msg) : msg);
       if (p && p.catch) p.catch(function () {});
     } catch (e) {}
   }
@@ -134,7 +135,7 @@
   function sendExt(msg) {
     return new Promise(function (resolve) {
       try {
-        var p = api.runtime.sendMessage(msg);
+        var p = api.runtime.sendMessage(globalThis.RTProtocol ? globalThis.RTProtocol.stamp(msg) : msg);
         if (p && p.then) p.then(resolve, function (e) { resolve({ ok: false, error: String((e && e.message) || e) }); });
         else resolve({ ok: false, error: 'no-response' });
       } catch (e) { resolve({ ok: false, error: String((e && e.message) || e) }); }
@@ -323,6 +324,7 @@
           runId: runId, segments: segments, mode: mode, concurrency: 5,
           title: job.title, tags: job.tags, validate: true, expectedDurationSec: job.partDurationSec,
           expectedBytes: expectedBytes, resumeKey: resumeKey, fingerprint: fingerprint,
+          opfs: job.opfs === true,
           pendingId: job.segmentPendingId || null
         }
       });
@@ -347,6 +349,7 @@
       expectedBytes: expectedBytes,
       resumeKey: resumeKey,
       fingerprint: fingerprint,
+      opfs: job.opfs === true,
       signal: job.controller.signal,
       onSegmentSaved: function (info) {
         if (!job.segmentPendingId) return null;
@@ -420,6 +423,7 @@
 
     try {
       job.segmentPendingId = opts.pendingId || null;
+      job.opfs = opts.opfs === true;
       post({ phase: 'meta' });
       var info = await RTLib.getVideoInfo(opts.videoId, { signal: job.controller.signal });
       if (info.isLive) throw new Error('live');
@@ -713,6 +717,7 @@
           height: opts.height,
           audio: opts.audio,
           maxPartMB: opts.maxPartMB,
+          opfs: opts.opfs === true,
           nameTemplate: opts.nameTemplate,
           playlistTitle: pl.title,
           from: null,
@@ -728,7 +733,7 @@
           // теряет уже сохранённые части, даже когда общая очередь завершилась.
           pendingUpsert({
             id: newId('video'), kind: 'video', videoId: v.id, height: opts.height, audio: !!opts.audio,
-            from: null, to: null, maxPartMB: opts.maxPartMB, nameTemplate: opts.nameTemplate || '',
+            from: null, to: null, maxPartMB: opts.maxPartMB, opfs: opts.opfs === true, nameTemplate: opts.nameTemplate || '',
             subsUrl: '', subsExt: '', title: v.title,
             nextPart: r.nextPart || 0, partsTotal: r.partsTotal || 0, savedFiles: r.savedFiles || [],
             status: 'error', error: String(r.error || 'download').slice(0, 200), createdAt: Date.now(),
@@ -785,7 +790,7 @@
     }
     pendingUpsert({
       id: job.pendingId, kind: 'video', videoId: p.videoId, height: p.height, audio: !!p.audio,
-      from: p.from, to: p.to, maxPartMB: p.maxPartMB,
+      from: p.from, to: p.to, maxPartMB: p.maxPartMB, opfs: p.opfs === true,
       nameTemplate: p.nameTemplate || '', subsUrl: p.subsUrl || '', subsExt: p.subsExt || '',
       title: resume ? resume.title : '', nextPart: resume ? resume.nextPart || 0 : 0,
       partsTotal: resume ? resume.partsTotal || 0 : 0, savedFiles: resume ? resume.savedFiles || [] : [],
@@ -794,7 +799,7 @@
 
     runVideo(job, {
       videoId: p.videoId, height: p.height, audio: !!p.audio,
-      from: p.from, to: p.to, maxPartMB: p.maxPartMB,
+      from: p.from, to: p.to, maxPartMB: p.maxPartMB, opfs: p.opfs === true,
       nameTemplate: p.nameTemplate || '', subsUrl: p.subsUrl || '', subsExt: p.subsExt || '',
       pendingId: job.pendingId,
       startPart: resume ? resume.nextPart || 0 : 0,
@@ -822,7 +827,7 @@
     }
     pendingUpsert({
       id: job.pendingId, kind: 'playlist', playlistId: p.playlistId, height: p.height, audio: !!p.audio,
-      fromIndex: originalFrom, toIndex: p.toIndex || null, nextIndex: startAt, maxPartMB: p.maxPartMB,
+      fromIndex: originalFrom, toIndex: p.toIndex || null, nextIndex: startAt, maxPartMB: p.maxPartMB, opfs: p.opfs === true,
       nameTemplate: p.nameTemplate || '',
       indices: resume ? (resume.indices || null) : (p.indices || null),
       title: resume ? resume.title : '', status: 'running', createdAt: resume ? resume.createdAt : Date.now()
@@ -833,7 +838,7 @@
       indices: resume ? (resume.indices || null) : (p.indices || null),
       playlistId: p.playlistId, height: p.height, audio: !!p.audio,
       fromIndex: startAt, originalFrom: originalFrom, toIndex: p.toIndex,
-      delayMs: p.delayMs || 800, maxPartMB: p.maxPartMB, pendingId: job.pendingId
+      delayMs: p.delayMs || 800, maxPartMB: p.maxPartMB, opfs: p.opfs === true, pendingId: job.pendingId
     }).finally(function () { jobs.delete(jobId); });
     return jobId;
   }
@@ -929,6 +934,7 @@
           from: msg.from != null ? msg.from : null,
           to: msg.to != null ? msg.to : null,
           maxPartMB: msg.maxPartMB,
+          opfs: msg.opfs === true,
           nameTemplate: msg.nameTemplate || '',
           subsUrl: msg.subsUrl || '',
           subsExt: msg.subsExt || ''
@@ -947,7 +953,7 @@
           toIndex: msg.toIndex,
           indices: msg.indices,
           delayMs: msg.delayMs || 800,
-          maxPartMB: msg.maxPartMB
+          maxPartMB: msg.maxPartMB, opfs: msg.opfs === true
         }, tabId2, null);
         return { ok: true, jobId: jobId2 };
       }
@@ -1091,6 +1097,10 @@
 
   api.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     if (!msg || typeof msg.type !== 'string') return false;
+    if (globalThis.RTProtocol && !globalThis.RTProtocol.accepts(msg)) {
+      sendResponse({ ok: false, error: 'protocol-version' });
+      return false;
+    }
 
     if (msg.type === 'rt:offscreen-segment') {
       if (msg.pendingId) {

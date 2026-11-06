@@ -9,7 +9,7 @@
 
   function post(msg) {
     try {
-      var p = api.runtime.sendMessage(msg);
+      var p = api.runtime.sendMessage(globalThis.RTProtocol ? globalThis.RTProtocol.stamp(msg) : msg);
       if (p && p.catch) p.catch(function () {});
     } catch (e) {}
   }
@@ -38,6 +38,8 @@
         expectedBytes: cfg.expectedBytes,
         resumeKey: cfg.resumeKey,
         fingerprint: cfg.fingerprint,
+        opfs: cfg.opfs === true,
+        media: globalThis.RTMedia,
         signal: ctrl.signal,
         onSegmentSaved: function (info) {
           post({
@@ -77,6 +79,10 @@
 
   api.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     if (!msg || typeof msg.type !== 'string') return false;
+    if (globalThis.RTProtocol && !globalThis.RTProtocol.accepts(msg)) {
+      sendResponse({ ok: false, error: 'protocol-version' });
+      return false;
+    }
 
     if (msg.type === 'rt:offscreen-ping') {
       sendResponse({ ok: librariesReady() });

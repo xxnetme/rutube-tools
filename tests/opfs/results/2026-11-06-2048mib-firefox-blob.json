@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-06T07:56:41.178750+00:00",
+  "requestedBytes": 2147483648,
+  "chunkBytes": 1048576,
+  "expectedCrc32": "0719ec1a",
+  "host": {
+    "platform": "Linux-6.1.189+-x86_64-with-glibc2.41",
+    "python": "3.13.16",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+    "logicalCpuCount": 2,
+    "memoryKiB": 2030416
+  },
+  "runs": [
+    {
+      "browser": "firefox",
+      "mode": "blob",
+      "status": "failed",
+      "version": "159.0",
+      "pageCapabilities": {
+        "opfsOnMain": true,
+        "secure": true,
+        "worker": true
+      },
+      "error": "HTTPConnectionPool(host='localhost', port=54263): Read timed out. (read timeout=120)",
+      "processMemory": {
+        "method": "Linux /proc VmRSS, сумма дерева WebDriver и браузерных процессов; не чистый размер данных",
+        "baselineKiB": 688660,
+        "peakKiB": 1433588,
+        "peakDeltaKiB": 744928,
+        "samples": 19
+      }
+    }
+  ],
+  "interpretation": [
+    "Каждый режим запускался в свежем браузерном процессе.",
+    "peakDeltaKiB — пик суммарного RSS дерева процессов относительно страницы до запуска, не точный размер данных.",
+    "Нельзя сравнивать абсолютный RSS разных браузеров или переносить один замер на файлы 2 ГиБ без отдельного прогона."
+  ]
+}

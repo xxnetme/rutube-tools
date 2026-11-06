@@ -142,6 +142,32 @@ class RuTubeHandler(BaseHTTPRequestHandler):
         if body:
             self.wfile.write(body)
 
+    def send_range(self, body: bytes, content_type: str) -> None:
+        """Минимальный RFC 7233 ответ для seek в локальном MP4."""
+        value = self.headers.get("Range") or ""
+        match = re.fullmatch(r"bytes=(\d+)-(\d*)", value.strip())
+        if not match:
+            return self.send_data(200, body, content_type)
+        start = int(match.group(1))
+        end = int(match.group(2)) if match.group(2) else len(body) - 1
+        end = min(end, len(body) - 1)
+        if start >= len(body) or end < start:
+            self.send_response(416)
+            self.send_header("Content-Range", f"bytes */{len(body)}")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        part = body[start:end + 1]
+        self.send_response(206)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(part)))
+        self.send_header("Content-Range", f"bytes {start}-{end}/{len(body)}")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(part)
+
     def do_GET(self) -> None:  # noqa: N802 — API BaseHTTPRequestHandler
         path = urllib.parse.urlsplit(self.path).path
         host = (self.headers.get("Host") or "").split(":")[0]
@@ -173,6 +199,9 @@ https://cdn.rtbcdn.ru/{VIDEO_ID}/90/index.m3u8
         if path == f"/{VIDEO_ID}/90/index.m3u8":
             body = (self.server.media / "index.m3u8").read_bytes()
             return self.send_data(200, body, "application/vnd.apple.mpegurl")
+        if path == f"/{VIDEO_ID}/preview.mp4":
+            body = (self.server.media / "preview.mp4").read_bytes()
+            return self.send_range(body, "video/mp4")
         match = re.fullmatch(rf"/{VIDEO_ID}/90/(segment\d+\.ts)", path)
         if match:
             segment = self.server.media / match.group(1)
@@ -192,6 +221,16 @@ def generate_media(work: Path) -> Path:
         "-g", "10", "-c:a", "aac", "-b:a", "64k",
         "-f", "hls", "-hls_time", "1", "-hls_playlist_type", "vod",
         "-hls_segment_filename", str(media / "segment%d.ts"), str(media / "index.m3u8")
+    ], check=True)
+    # Отдельный обычный MP4 нужен плеерным проверкам rVFC/A/B; HLS-стенд выше
+    # по-прежнему используется для настоящего сетевого скачивания.
+    subprocess.run([
+        "ffmpeg", "-v", "error", "-y",
+        "-f", "lavfi", "-i", "testsrc=size=160x90:rate=10",
+        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
+        "-t", "2", "-c:v", "libx264", "-profile:v", "baseline", "-pix_fmt", "yuv420p",
+        "-g", "10", "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart",
+        str(media / "preview.mp4")
     ], check=True)
     return media
 
@@ -301,13 +340,14 @@ def make_driver(name: str, proxy_port: int, directory: Path) -> webdriver.Remote
             f"--load-extension={extension}", f"--disable-extensions-except={extension}",
             "--disable-background-networking", "--disable-component-update", "--disable-default-apps",
             "--disable-sync", "--metrics-recording-only", "--no-first-run", "--no-default-browser-check",
-            "--disable-client-side-phishing-detection", "--safebrowsing-disable-auto-update",
-            "--disable-features=MediaRouter,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled"
+            "--disable-client-side-phishing-detection", "--safebrowsing-disable-auto-update", "--disable-autofill",
+            "--disable-features=MediaRouter,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,AutofillServerCommunication"
         ]:
             options.add_argument(arg)
         options.add_experimental_option("prefs", {
             "download.default_directory": str(directory), "download.prompt_for_download": False,
-            "download.directory_upgrade": True, "safebrowsing.enabled": False
+            "download.directory_upgrade": True, "safebrowsing.enabled": False,
+            "autofill.profile_enabled": False, "autofill.credit_card_enabled": False
         })
         driver = webdriver.Chrome(service=chrome_service(options.binary_location), options=options)
     else:
@@ -382,6 +422,116 @@ def probe(path: Path) -> dict:
     return data
 
 
+def exercise_player(driver) -> dict:
+    """Real video element: rVFC, A/B previews, keyboard markers and focus trap."""
+    driver.execute_script(f"""
+      const v = document.querySelector('video');
+      v.muted = true;
+      v.crossOrigin = 'anonymous';
+      v.src = 'https://cdn.rtbcdn.ru/{VIDEO_ID}/preview.mp4';
+      v.load();
+    """)
+    WebDriverWait(driver, 20).until(lambda d: d.execute_script(
+        "const v=document.querySelector('video'); return v && v.readyState >= 2 && v.videoWidth > 0"
+    ))
+    driver.execute_script("document.querySelector('video').play().catch(function () {})")
+    WebDriverWait(driver, 20).until(lambda d: d.execute_script(
+        "const v=document.querySelector('video'); return v && v.currentTime > 0.12"
+    ))
+    driver.execute_script("document.querySelector('video').pause()")
+    driver.execute_script("arguments[0].click()", shadow(driver, '[data-tab="frames"]'))
+    WebDriverWait(driver, 15).until(lambda d: shadow(d, '[data-marker="a"]'))
+    assert driver.execute_script("return typeof document.querySelector('video').requestVideoFrameCallback === 'function'")
+    assert not shadow(driver, '[data-in="frame"]').get_property("disabled")
+
+    def seek(value: float) -> None:
+        driver.execute_async_script("""
+          const v = document.querySelector('video'), value = arguments[0];
+          const done = arguments[arguments.length - 1];
+          const timer = setTimeout(() => done(), 1500);
+          v.addEventListener('seeked', () => { clearTimeout(timer); done(); }, {once: true});
+          v.currentTime = value;
+        """, value)
+
+    seek(0.2)
+    before_a = driver.execute_script("return document.querySelector('video').currentTime")
+    driver.execute_script("arguments[0].click()", shadow(driver, '[data-act="setA"]'))
+    WebDriverWait(driver, 15).until(lambda d: d.execute_script(
+        "const r=document.querySelector('#rt-tools-host').shadowRoot; return r.querySelectorAll('.ab-preview img').length >= 1"
+    ))
+    after_a = driver.execute_script("return document.querySelector('video').currentTime")
+    assert abs(after_a - before_a) < 0.2, (before_a, after_a)
+
+    seek(1.0)
+    before_b = driver.execute_script("return document.querySelector('video').currentTime")
+    driver.execute_script("arguments[0].click()", shadow(driver, '[data-act="setB"]'))
+    WebDriverWait(driver, 15).until(lambda d: d.execute_script(
+        "const r=document.querySelector('#rt-tools-host').shadowRoot; return r.querySelectorAll('.ab-preview img').length >= 2"
+    ))
+    after_b = driver.execute_script("return document.querySelector('video').currentTime")
+    assert abs(after_b - before_b) < 0.2, (before_b, after_b)
+
+    old_value = float(shadow(driver, '[data-marker="a"]').get_attribute("aria-valuenow"))
+    driver.execute_script("""
+      const marker = arguments[0];
+      marker.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}));
+    """, shadow(driver, '[data-marker="a"]'))
+    new_value = float(shadow(driver, '[data-marker="a"]').get_attribute("aria-valuenow"))
+    assert new_value > old_value, (old_value, new_value)
+
+    trapped = driver.execute_script("""
+      const root = document.querySelector('#rt-tools-host').shadowRoot;
+      const card = root.querySelector('.card');
+      const list = Array.from(card.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+      const last = list[list.length - 1];
+      last.focus();
+      last.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', bubbles: true}));
+      return root.activeElement === list[0];
+    """)
+    assert trapped
+    driver.execute_script("arguments[0].click()", shadow(driver, '[data-tab="download"]'))
+    WebDriverWait(driver, 15).until(lambda d: shadow(d, '[data-act="go"]'))
+    return {"rVFC": "passed", "abPreviewRestore": "passed", "keyboardMarkers": "passed", "focusTrap": "passed"}
+
+
+def open_popup(driver, name: str) -> None:
+    if name == "chromium":
+        targets = driver.execute_cdp_cmd("Target.getTargets", {})["targetInfos"]
+        ids = [t["url"].split("/")[2] for t in targets if t["url"].startswith("chrome-extension://")]
+        assert ids, targets
+        driver.get(f"chrome-extension://{ids[0]}/popup.html")
+    else:
+        driver.set_context(driver.CONTEXT_CHROME)
+        uuid = driver.execute_script(
+            "return WebExtensionPolicy.getByID('rutube-tools@xxnetme.github.io').mozExtensionHostname"
+        )
+        driver.set_context(driver.CONTEXT_CONTENT)
+        driver.get(f"moz-extension://{uuid}/popup.html")
+    WebDriverWait(driver, 20).until(lambda d: d.find_element("id", "quality"))
+
+
+def exercise_locales(driver, name: str) -> dict:
+    expected = {"uk": "Завантажити", "be": "Спампаваць"}
+    for lang, text in expected.items():
+        open_popup(driver, name)
+        driver.execute_async_script("""
+          const lang = arguments[0], done = arguments[arguments.length - 1];
+          const api = globalThis.browser || globalThis.chrome;
+          api.storage.local.set({lang}).then(() => done(true), error => done(String(error)));
+        """, lang)
+        driver.get(f"https://rutube.ru/video/{VIDEO_ID}/")
+        WebDriverWait(driver, 35).until(lambda d: shadow(d, ".pill"))
+        driver.execute_script("arguments[0].click()", shadow(driver, ".pill"))
+        WebDriverWait(driver, 35).until(lambda d: shadow(d, '[data-act="go"]'))
+        assert text in shadow_text(driver), (lang, shadow_text(driver))
+    open_popup(driver, name)
+    driver.execute_async_script("""
+      const done = arguments[arguments.length - 1], api = globalThis.browser || globalThis.chrome;
+      api.storage.local.set({lang: 'auto'}).then(() => done(true));
+    """)
+    return {"uk": "passed", "be": "passed"}
+
+
 def exercise_popup_settings(driver, directory: Path) -> dict:
     """Popup в настоящем Chromium: импорт, отказ схемы и откат ошибки storage."""
     targets = driver.execute_cdp_cmd("Target.getTargets", {})["targetInfos"]
@@ -450,6 +600,8 @@ def run_browser(name: str, proxy_port: int, proxy_log: Recorder, https_log: Reco
     report = {"browser": name, "status": "failed"}
     try:
         log(f"{name}: запуск")
+        if name == "firefox":
+            os.environ["MOZ_REMOTE_ALLOW_SYSTEM_ACCESS"] = "1"
         driver = make_driver(name, proxy_port, directory)
         report["version"] = driver.capabilities.get("browserVersion")
         driver.get(f"https://rutube.ru/video/{VIDEO_ID}/")
@@ -457,6 +609,7 @@ def run_browser(name: str, proxy_port: int, proxy_log: Recorder, https_log: Reco
         driver.execute_script("arguments[0].click()", shadow(driver, ".pill"))
         WebDriverWait(driver, 35).until(lambda d: shadow(d, '[data-act="go"]'))
         assert "E2E: локальный стенд" in shadow_text(driver), shadow_text(driver)
+        report["player"] = exercise_player(driver)
         driver.execute_script("arguments[0].click()", shadow(driver, '[data-act="go"]'))
 
         def finished(d):
@@ -487,6 +640,7 @@ def run_browser(name: str, proxy_port: int, proxy_log: Recorder, https_log: Reco
         })
         if name == "chromium":
             report["popupSettings"] = exercise_popup_settings(driver, directory)
+        report["locales"] = exercise_locales(driver, name)
     except Exception as exc:
         report["error"] = str(exc)
         if driver is not None:

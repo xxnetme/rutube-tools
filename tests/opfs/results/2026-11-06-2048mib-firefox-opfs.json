@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-06T07:42:28.807178+00:00",
+  "requestedBytes": 2147483648,
+  "chunkBytes": 1048576,
+  "expectedCrc32": "0719ec1a",
+  "host": {
+    "platform": "Linux-6.1.189+-x86_64-with-glibc2.41",
+    "python": "3.13.16",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+    "logicalCpuCount": 2,
+    "memoryKiB": 2030416
+  },
+  "runs": [
+    {
+      "browser": "firefox",
+      "mode": "opfs",
+      "status": "passed",
+      "version": "159.0",
+      "pageCapabilities": {
+        "opfsOnMain": true,
+        "secure": true,
+        "worker": true
+      },
+      "opfsCleanupAfter500ms": {
+        "exists": false,
+        "quota": 2618198835,
+        "usage": 491520
+      },
+      "result": {
+        "capabilities": {
+          "blobStream": true,
+          "opfs": true,
+          "syncAccessHandle": true,
+          "worker": true
+        },
+        "chunkBytes": 1048576,
+        "crc32": "0719ec1a",
+        "mode": "opfs",
+        "requestedBytes": 2147483648,
+        "size": 2147483648,
+        "storageAfterCleanup": {
+          "quota": 2618198835,
+          "usage": 491520
+        },
+        "storageAfterWrite": {
+          "quota": 2618198835,
+          "usage": 2147975168
+        },
+        "storageBefore": {
+          "quota": 2618198835,
+          "usage": 491520
+        },
+        "timingMs": {
+          "finalize": 39,
+          "generate": 6950,
+          "readAndVerify": 32028,
+          "total": 41317,
+          "writeOrRetain": 2201
+        },
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:159.0) Gecko/20100101 Firefox/159.0",
+        "verifiedBytes": 2147483648
+      },
+      "processMemory": {
+        "method": "Linux /proc VmRSS, сумма дерева WebDriver и браузерных процессов; не чистый размер данных",
+        "baselineKiB": 710488,
+        "peakKiB": 838092,
+        "peakDeltaKiB": 127604,
+        "samples": 394
+      }
+    }
+  ],
+  "interpretation": [
+    "Каждый режим запускался в свежем браузерном процессе.",
+    "peakDeltaKiB — пик суммарного RSS дерева процессов относительно страницы до запуска, не точный размер данных.",
+    "Нельзя сравнивать абсолютный RSS разных браузеров или переносить один замер на файлы 2 ГиБ без отдельного прогона."
+  ]
+}

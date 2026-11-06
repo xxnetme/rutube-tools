@@ -1,8 +1,8 @@
 {
   "name": "rutube-tools",
-  "version": "1.9.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Расширение для RuTube: кадры, MP4, звук M4A. Зависимостей в рантайме нет; package.json нужен только для тестов и линтера.",
+  "description": "Расширение для RuTube: кадры, MP4, звук M4A. Autonomous runtime; npm нужен для сборки, тестов и линтера.",
   "license": "MIT",
   "scripts": {
     "test": "node --test tests/*.test.js",
@@ -10,6 +10,7 @@
     "typecheck": "npx --yes -p typescript@7.0.2 tsc -p jsconfig.json",
     "build": "python3 build.py",
     "test:e2e": "python3 tests/e2e/browser_e2e.py --browser all",
+    "test:e2e:opfs": "python3 tests/e2e/opfs_e2e.py --browser all",
     "bench:opfs": "python3 tests/opfs/opfs_bench.py --browser all --size-mib 64"
   },
   "devDependencies": {

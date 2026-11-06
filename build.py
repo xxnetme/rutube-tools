@@ -27,7 +27,7 @@ EXCLUDE_BY_FLAVOR = {
 }
 
 REQUIRED = {"manifest.json", "background.js", "content-core.js", "content-panel.js",
-            "lib/network.js", "lib/dom.js", "lib/engine.js", "lib/audio.js", "lib/i18n.js", "lib/settings.js", "lib/mux-mp4.min.js", "lib/media.js", "lib/opfs-worker.js",
+            "lib/protocol.js", "lib/network.js", "lib/dom.js", "lib/engine.js", "lib/audio.js", "lib/i18n-uk.js", "lib/i18n-be.js", "lib/i18n.js", "lib/settings.js", "lib/mux-mp4.min.js", "lib/media.js", "lib/opfs-worker.js",
             "lib/mediabunny.LICENSE", "popup.html", "popup.js"}
 REQUIRED_BY_FLAVOR = {"chromium": {"offscreen.html", "offscreen.js"}}
 

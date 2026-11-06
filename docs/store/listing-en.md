@@ -28,6 +28,7 @@ RuTube Tools adds to RuTube what it lacks: frame-by-frame stepping and saving vi
 
 Frame by frame
 — Comma steps back, period steps forward: the video pauses and the position snaps to exact frames, with the frame number and timecode shown in the panel.
+— A/B markers with previews and requestVideoFrameCallback; VFR shows an honest time step instead of a fabricated absolute frame number. Playback speed is remembered per videoId.
 — Angle brackets change speed from 0.25x to 2x.
 — S saves the current frame as a PNG, with the timecode in the file name.
 — Question mark shows the keyboard cheat sheet right on the page.
@@ -49,7 +50,8 @@ MP4 download
 
 Honest limitations
 — Live streams and DRM-protected videos are not supported.
-— HEVC/AV1 tracks (rare) are saved as .ts and open in VLC.
+— HEVC/AV1 tracks are first copied into fMP4 without re-encoding; if a particular container cannot be read (for example AV1 in MPEG-TS), the original .ts is saved for VLC.
+— OPFS is opt-in: segment-level resume, cleanup and memory fallback on quota errors; the proven legacy path remains the default.
 — Download speed is limited by what RuTube serves.
 — Videos blocked in your region cannot be downloaded: the extension does not bypass restrictions.
 

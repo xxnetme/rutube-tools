@@ -1,6 +1,6 @@
 /*!
- * RuTube Tools — мини-локализация RU/EN без внешних зависимостей.
- * Использование: RTI18n.setLang('auto'|'ru'|'en'); RTI18n.t('key', {n: 5})
+ * RuTube Tools — мини-локализация RU/EN/UK/BE без внешних зависимостей.
+ * Использование: RTI18n.setLang('auto'|'ru'|'en'|'uk'|'be'); RTI18n.t('key', {n: 5})
  */
 (function (global) {
   'use strict';
@@ -54,7 +54,7 @@
     'dl.doneTs': ' (поток .ts — открывается в VLC)',
     'dl.showFile': 'Показать файл',
     'dl.frameHint': 'Кадр текущего момента — клавиша {key}',
-    'dl.tsWarn': 'Это видео в HEVC/AV1: без перекодирования файл сохранится как .ts и откроется в VLC. Для MP4 выберите H.264, HEVC или AV1.',
+    'dl.tsWarn': 'HEVC/AV1: сначала пробуем fMP4 без перекодирования. Если конкретный поток нельзя прочитать, останется честный .ts fallback для VLC.',
     'dl.again': 'Скачать ещё',
     'dl.subs': 'Субтитры .srt рядом с видео',
     'dl.subsLang': 'Язык',
@@ -82,6 +82,7 @@
     'pl.failed': 'Не удалось скачать: {n}',
     'pl.delay': 'Пауза между видео: {s} с',
     'pl.savedCount': 'готово {n}',
+    'pl.queueDone': '{title} — готово',
 
     /* кадры */
     'fr.save': 'Сохранить кадр',
@@ -94,7 +95,7 @@
     'fr.everyFrame': 'Каждый кадр (только CFR)',
     'fr.vfrSeries': 'Обнаружен VFR: серия «каждый кадр» отключена, используйте временной шаг.',
     'fr.vfrReadout': 'Обнаружен VFR · абсолютный номер кадра не показываем',
-    'fr.readoutVfr': 'VFR · {tc} · шаг по ближайшему показанному кадру',
+    'fr.readoutVfr': 'VFR · {tc} · шаг по времени, номер кадра не показан',
     'fr.vfrGoto': 'Для VFR абсолютный переход по номеру кадра недоступен; используйте таймкод.',
     'fr.clear': 'Сброс',
     'fr.loopOn': 'Повтор включён',
@@ -203,6 +204,8 @@
     'pop.pitch': 'Сохранять тон голоса при ускорении',
     'pop.remember': 'Запоминать позицию просмотра',
     'pop.rememberRate': 'Запоминать скорость для каждого видео',
+    'pop.useOpfs': 'Эксперимент: OPFS для больших загрузок',
+    'pop.useOpfsHint': 'По умолчанию выключено: старый путь стабильнее. Worker и квота проверяются перед записью.',
     'pop.reset': 'Сбросить',
     'pop.secBackup': 'Резервная копия',
     'pop.backup': 'Настройки в JSON',
@@ -298,7 +301,7 @@
     'dl.doneTs': ' (.ts stream — opens in VLC)',
     'dl.showFile': 'Show file',
     'dl.frameHint': 'Current frame — press {key}',
-    'dl.tsWarn': 'This video is HEVC/AV1: without transcoding it will be saved as .ts and opens in VLC. Choose H.264, HEVC or AV1 for MP4.',
+    'dl.tsWarn': 'HEVC/AV1: we try fMP4 without transcoding first. If this particular stream cannot be read, an honest .ts fallback for VLC remains.',
     'dl.again': 'Download another',
     'dl.subs': 'Subtitles .srt next to the video',
     'dl.subsLang': 'Language',
@@ -324,6 +327,7 @@
     'pl.failed': 'Failed: {n}',
     'pl.delay': 'Delay between videos: {s} s',
     'pl.savedCount': '{n} done',
+    'pl.queueDone': '{title} — done',
 
     'fr.save': 'Save frame',
     'fr.goto': 'Go to frame',
@@ -335,7 +339,7 @@
     'fr.everyFrame': 'Every frame (CFR only)',
     'fr.vfrSeries': 'VFR detected: every-frame series is disabled; use a time interval.',
     'fr.vfrReadout': 'VFR detected · no absolute frame number shown',
-    'fr.readoutVfr': 'VFR · {tc} · nearest presented-frame step',
+    'fr.readoutVfr': 'VFR · {tc} · time-based step, no frame number shown',
     'fr.vfrGoto': 'Absolute frame-number navigation is unavailable for VFR; use a timecode.',
     'fr.clear': 'Reset',
     'fr.loopOn': 'Loop on',
@@ -440,6 +444,8 @@
     'pop.pitch': 'Preserve pitch when speeding up',
     'pop.remember': 'Remember playback position',
     'pop.rememberRate': 'Remember speed for each video',
+    'pop.useOpfs': 'Experimental: OPFS for large downloads',
+    'pop.useOpfsHint': 'Off by default: the legacy path is more stable. Worker support and quota are checked before writing.',
     'pop.reset': 'Reset',
     'pop.secBackup': 'Backup',
     'pop.backup': 'Settings as JSON',
@@ -488,11 +494,17 @@
     'unit.perSec': '/s'
   };
 
-  var DICTS = { ru: RU, en: EN };
+  var UK = global.RT_LOCALE_UK;
+  var BE = global.RT_LOCALE_BE;
+  if (typeof module !== 'undefined' && module.exports) {
+    UK = require('./i18n-uk.js');
+    BE = require('./i18n-be.js');
+  }
+  var DICTS = { ru: RU, en: EN, uk: UK || {}, be: BE || {} };
   var current = 'ru';
 
   function detect(pref) {
-    if (pref === 'ru' || pref === 'en') return pref;
+    if (pref === 'ru' || pref === 'en' || pref === 'uk' || pref === 'be') return pref;
     var langs = [];
     try {
       if (navigator.languages && navigator.languages.length) langs = Array.prototype.slice.call(navigator.languages);
@@ -500,7 +512,9 @@
     } catch (e) {}
     for (var i = 0; i < langs.length; i++) {
       var l = String(langs[i]).toLowerCase();
-      if (l.indexOf('ru') === 0 || l.indexOf('uk') === 0 || l.indexOf('be') === 0 || l.indexOf('kk') === 0) return 'ru';
+      if (l.indexOf('uk') === 0) return 'uk';
+      if (l.indexOf('be') === 0) return 'be';
+      if (l.indexOf('ru') === 0 || l.indexOf('kk') === 0) return 'ru';
       if (l.indexOf('en') === 0) return 'en';
     }
     return 'ru';

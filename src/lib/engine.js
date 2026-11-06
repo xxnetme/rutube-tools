@@ -741,7 +741,7 @@
     var total = segments.length;
     var resumeStart = 0;
 
-    if (useMedia && cfg.resumeKey && cfg.opfs !== false && typeof mediaLib.createOpfsSession === 'function') {
+    if (useMedia && cfg.resumeKey && cfg.opfs === true && typeof mediaLib.createOpfsSession === 'function') {
       try {
         session = await mediaLib.createOpfsSession({
           key: cfg.resumeKey,
@@ -895,10 +895,29 @@
       if (session) {
         var activeSession = session;
         session = null;
-        mediaResult = await mediaLib.transmuxOpfs(activeSession, {
-          signal: signal,
-          expectedDurationSec: cfg.expectedDurationSec
-        });
+        try {
+          mediaResult = await mediaLib.transmuxOpfs(activeSession, {
+            signal: signal,
+            expectedDurationSec: cfg.expectedDurationSec
+          });
+        } catch (error) {
+          var outputOpfsFailure = error && /^opfs-/.test(error.code || '');
+          if (!outputOpfsFailure || (signal && signal.aborted)) throw error;
+          await activeSession.close({ discardOutput: true }).catch(function () {});
+          if (typeof cfg.onSegmentSaved === 'function') {
+            await Promise.resolve().then(function () {
+              return cfg.onSegmentSaved({ key: cfg.resumeKey, reset: true });
+            }).catch(function () {});
+          }
+          if (typeof mediaLib.cleanupOpfs === 'function') {
+            await mediaLib.cleanupOpfs(cfg.resumeKey).catch(function () {});
+          }
+          if (typeof cfg.onStorage === 'function') {
+            await cfg.onStorage({ state: 'memory', reason: error.code });
+          }
+          // Квота может закончиться только при записи output, уже после всех сегментов.
+          return downloadPart(Object.assign({}, cfg, { opfs: false, resumeKey: null }));
+        }
       } else {
         mediaResult = await mediaLib.transmuxChunks(mediaChunks, {
           signal: signal,

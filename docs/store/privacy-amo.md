@@ -13,7 +13,7 @@
 ```
 RuTube Tools не собирает, не хранит и не передаёт персональные данные.
 
-Вся работа происходит в вашем браузере. Сохраняются только настройки расширения (качество, частота кадров, набор клавиш) и позиция просмотра — локально, в хранилище браузера. Наружу не уходит ничего, кроме запросов к самому RuTube и его CDN, откуда вы и так смотрите видео; cookie при этих запросах не передаются.
+Вся работа происходит в вашем браузере. Сохраняются только настройки расширения (качество, частота кадров, набор клавиш, язык, скорость по videoId и OPFS opt-in) и позиция просмотра — локально, в хранилище браузера. При включённом OPFS незавершённые части и их индекс хранятся в Origin Private File System и очищаются после завершения. Наружу не уходит ничего, кроме запросов к самому RuTube и его CDN, откуда вы и так смотрите видео; cookie при этих запросах не передаются.
 
 Нет аналитики, телеметрии, рекламы и трекеров. Нет собственных серверов. Нет доступа к другим сайтам: скрипт работает только на rutube.ru.
 
@@ -25,7 +25,7 @@ RuTube Tools не собирает, не хранит и не передаёт �
 ```
 RuTube Tools does not collect, store or transmit personal data.
 
-Everything runs in your browser. Only extension settings (quality, frame rate, key set), unfinished downloads, the list of the last 30 saved files (name and time) and playback position are stored locally in browser storage. Nothing leaves your device except requests to RuTube and its CDN — the same servers that deliver the video you are watching; those requests are made without cookies.
+Everything runs in your browser. Only extension settings (quality, frame rate, key set, language, per-video speed and OPFS opt-in), unfinished downloads, the list of the last 30 saved files (name and time) and playback position are stored locally in browser storage. When OPFS is enabled, unfinished parts and their segment index use the browser's Origin Private File System and are cleaned up after completion. Nothing leaves your device except requests to RuTube and its CDN — the same servers that deliver the video you are watching; those requests are made without cookies.
 
 No analytics, telemetry, ads or trackers. No own servers. No access to other sites: the content script runs on rutube.ru only.
 

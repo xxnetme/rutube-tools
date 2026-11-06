@@ -74,7 +74,7 @@
 
   <!-- ================= версия и платформы ================= -->
   <g font-family="JetBrains Mono" font-size="12" fill="#6f7079">
-    <text x="64" y="240">v1.9.0</text>
+    <text x="64" y="240">v2.0.0</text>
     <circle cx="126" cy="236" r="1.5" fill="#4a4b53"/>
     <text x="140" y="240">Firefox 140+ · Chromium MV3</text>
     <circle cx="330" cy="236" r="1.5" fill="#4a4b53"/>
@@ -96,7 +96,7 @@
     <g>
       <circle cx="470" cy="276" r="9" fill="#f2413a" fill-opacity="0.16"/>
       <path d="M466.2 276.2l2.6 2.6 5-5.2" fill="none" stroke="#ff8f86" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="487" y="280">130 автотестов</text>
+      <text x="487" y="280">148 автотестов</text>
     </g>
   </g>
 

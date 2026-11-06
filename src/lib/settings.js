@@ -19,6 +19,7 @@
     preservePitch: true,
     rememberPos: true,
     rememberRate: true,
+    useOpfs: false,
     defaultFormat: 'video',
     nameTemplate: '{title}',
     saveSubs: false
@@ -45,6 +46,7 @@
     preservePitch: function (v) { return typeof v === 'boolean'; },
     rememberPos: function (v) { return typeof v === 'boolean'; },
     rememberRate: function (v) { return typeof v === 'boolean'; },
+    useOpfs: function (v) { return typeof v === 'boolean'; },
     defaultFormat: oneOf(['video', 'audio']),
     nameTemplate: function (v) {
       return typeof v === 'string' && v.length <= 256 && !/[\x00-\x1f\x7f]/.test(v);

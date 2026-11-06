@@ -12,6 +12,7 @@ RuTube Tools добавляет в RuTube то, чего в нём не хват
 
 **Покадрово**
 • Клавиша «,» — кадр назад, «.» — кадр вперёд: видео ставится на паузу, позиция пересчитывается в точные кадры (внизу видно номер кадра и таймкод).
+• A/B-маркеры с preview, ожидание показанного кадра через rVFC; для VFR показывается честный временной шаг. Скорость запоминается по videoId.
 • <kbd>&lt;</kbd> и <kbd>&gt;</kbd> — скорость от 0.25× до 2×.
 • <kbd>s</kbd> — сохранить текущий кадр в PNG (в имени файла таймкод).
 • <kbd>?</kbd> — подсказка по клавишам прямо на странице.
@@ -36,7 +37,8 @@ RuTube Tools добавляет в RuTube то, чего в нём не хват
 
 **Честные ограничения**
 • Прямые эфиры и видео с DRM не скачиваются.
-• HEVC/AV1-дорожки (редко) сохраняются в формате .ts — открываются в VLC.
+• HEVC/AV1 сначала переносятся в fMP4 без перекодирования; если конкретный контейнер не читается (например, AV1 в MPEG-TS), сохраняется .ts для VLC.
+• OPFS можно включить в настройках: докачка со следующего сегмента, очистка и memory fallback при квоте. По умолчанию используется проверенный старый путь.
 • Скорость ограничена отдачей RuTube.
 • Видео, закрытые для вашего региона, не скачиваются — расширение не обходит ограничения.
 
@@ -51,6 +53,7 @@ RuTube Tools добавляет в RuTube то, чего в нём не хват
 
 Покадрово
 — «,» — кадр назад, «.» — кадр вперёд: видео ставится на паузу, позиция пересчитывается в точные кадры, внизу видно номер кадра и таймкод.
+— A/B-маркеры с preview, rVFC и честный VFR; скорость запоминается по videoId.
 — «<» и «>» — скорость от 0.25× до 2×.
 — «s» — сохранить текущий кадр в PNG, таймкод попадает в имя файла.
 — «?» — подсказка по клавишам прямо на странице.
@@ -68,7 +71,8 @@ RuTube Tools добавляет в RuTube то, чего в нём не хват
 
 Честные ограничения
 — Прямые эфиры и видео с DRM не скачиваются.
-— Дорожки HEVC/AV1 (редко) сохраняются в .ts — открываются в VLC.
+— HEVC/AV1 сначала переносятся в fMP4 без перекодирования; если конкретный контейнер не читается (например, AV1 в MPEG-TS), сохраняется .ts для VLC.
+— OPFS — opt-in: докачка со следующего сегмента, очистка и memory fallback при квоте; по умолчанию используется проверенный старый путь.
 — Скорость ограничена отдачей RuTube.
 — Видео, закрытые для вашего региона, не скачиваются: расширение не обходит ограничения.
 
@@ -89,7 +93,7 @@ RuTube Tools добавляет в RuTube то, чего в нём не хват
 
 **host_permissions: *://rutube.ru/*, *://*.rutube.ru/*, *://*.rtbcdn.ru/*, *://*.rtbcdn.net/* ** — расширение работает только на RuTube. Скрипт добавляет панель на страницу видео, читает идентификатор видео со страницы и запрашивает у RuTube данные о качествах. Медиафайлы загружаются с тех же CDN (rtbcdn), с которых их получает и сам плеер. Разрешения на другие сайты не запрашиваются.
 
-**Удалённый код:** нет. Все скрипты входят в пакет, eval/new Function не используются; mux.js собран локально и указан в THIRD-PARTY-NOTICES.md.
+**Удалённый код:** нет. Все скрипты входят в пакет, eval/new Function не используются; mux.js и Mediabunny собраны локально, их лицензии указаны в THIRD-PARTY-NOTICES.md.
 
 **Единственное назначение:** скачивание видео и кадров с RuTube и покадровая навигация в плеере.
 
@@ -97,7 +101,7 @@ RuTube Tools добавляет в RuTube то, чего в нём не хват
 
 RuTube Tools is a Firefox/Chromium extension for rutube.ru, a Russian video hosting site. It adds two things to the player: frame-by-frame stepping and saving video to MP4.
 
-- No remote code. All scripts are bundled; eval and new Function are not used. mux.js (Apache-2.0) is included locally and listed in THIRD-PARTY-NOTICES.md.
+- No remote code. All scripts are bundled; eval and new Function are not used. mux.js (Apache-2.0) and Mediabunny (MPL-2.0) are included locally and listed in THIRD-PARTY-NOTICES.md.
 - No network requests to any server except rutube.ru and its CDN (rtbcdn.ru, rtbcdn.net). Requests are made without cookies (credentials: 'omit').
 - Host permissions are limited to those domains. The extension does not read other sites.
 - Data collection: none. Settings and playback position stay in storage.local.

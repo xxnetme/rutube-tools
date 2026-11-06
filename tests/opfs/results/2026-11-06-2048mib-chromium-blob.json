@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-06T07:51:36.922731+00:00",
+  "requestedBytes": 2147483648,
+  "chunkBytes": 1048576,
+  "expectedCrc32": "0719ec1a",
+  "host": {
+    "platform": "Linux-6.1.189+-x86_64-with-glibc2.41",
+    "python": "3.13.16",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+    "logicalCpuCount": 2,
+    "memoryKiB": 2030416
+  },
+  "runs": [
+    {
+      "browser": "chromium",
+      "mode": "blob",
+      "status": "failed",
+      "version": "158.0.8127.18",
+      "pageCapabilities": {
+        "opfsOnMain": true,
+        "secure": true,
+        "worker": true
+      },
+      "error": "Message: tab crashed\n  (Session info: chrome=158.0.8127.18)\n",
+      "processMemory": {
+        "method": "Linux /proc VmRSS, сумма дерева WebDriver и браузерных процессов; не чистый размер данных",
+        "baselineKiB": 1096692,
+        "peakKiB": 1654048,
+        "peakDeltaKiB": 557356,
+        "samples": 19
+      }
+    }
+  ],
+  "interpretation": [
+    "Каждый режим запускался в свежем браузерном процессе.",
+    "peakDeltaKiB — пик суммарного RSS дерева процессов относительно страницы до запуска, не точный размер данных.",
+    "Нельзя сравнивать абсолютный RSS разных браузеров или переносить один замер на файлы 2 ГиБ без отдельного прогона."
+  ]
+}

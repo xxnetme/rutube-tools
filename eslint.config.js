@@ -9,7 +9,7 @@ const browserGlobals = {
   chrome: 'readonly', browser: 'readonly', getComputedStyle: 'readonly', requestAnimationFrame: 'readonly',
   cancelAnimationFrame: 'readonly', MutationObserver: 'readonly', HTMLElement: 'readonly', Event: 'readonly',
   KeyboardEvent: 'readonly', MouseEvent: 'readonly', CSS: 'readonly', Image: 'readonly', FileReader: 'readonly',
-  Buffer: 'readonly', module: 'writable', muxjs: 'readonly', RTLib: 'readonly', RTAudio: 'readonly',
+  Buffer: 'readonly', module: 'writable', require: 'readonly', muxjs: 'readonly', RTLib: 'readonly', RTAudio: 'readonly',
   RTI18n: 'readonly', RTNetwork: 'readonly', Promise: 'readonly', Map: 'readonly', Set: 'readonly', Uint8Array: 'readonly',
   Intl: 'readonly', Date: 'readonly', alert: 'readonly', prompt: 'readonly', screen: 'readonly'
 };

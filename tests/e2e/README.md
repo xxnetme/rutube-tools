@@ -7,6 +7,15 @@ content scripts вручную. На локальной имитации RuTube 
 popup: валидный и невалидный импорт настроек, отсутствие посторонних ключей и откат после
 принудительной ошибки `storage.set`.
 
+В обоих браузерах дополнительно проверяются настоящий `<video>` с HTTP Range: rVFC,
+A/B preview с восстановлением исходной позиции, клавиатурные маркеры, focus trap и
+переключение полных UK/BE-словарей через `storage.local`.
+
+Отдельный production OPFS-сценарий (`opfs_e2e.py`) использует bundled `RTLib.downloadPart`:
+докачка после abort со следующего сегмента без повторного запроса сохранённого, сброс
+повреждённого индекса, memory fallback при отказе квоты, HEVC `hvcC` и AV1 `av1C`, а также
+экспорт OPFS `File` через `downloads.download()` с последующим `ffprobe`.
+
 ## Запуск
 
 Нужны Node.js 22+, Python 3.12+, `ffmpeg`, `ffprobe` и `openssl`.
@@ -16,6 +25,7 @@ npm ci
 npx playwright install --with-deps chromium firefox
 python3 -m pip install -r tests/e2e/requirements.txt
 npm run test:e2e
+npm run test:e2e:opfs
 ```
 
 Только один браузер:
@@ -50,6 +60,7 @@ CI-runner: неявный driver из `PATH` не используется. Вы
 - `<browser>-report.json` — версия, результат, размер и вывод `ffprobe`;
 - `<browser>-network.json` — все наблюдённые соединения и HTTP-запросы;
 - `<browser>/*.mp4` — фактически скачанный файл;
-- `<browser>-failure.png` и `<browser>-page.txt` — диагностика при падении.
+- `<browser>-failure.png` и `<browser>-page.txt` — диагностика при падении;
+- `tmp/opfs-production/<browser>-report.json` — resume/quota/index/codecs/export и сетевой журнал OPFS-сценария.
 
 В GitHub Actions эти файлы прикладываются к job `browser-e2e`.

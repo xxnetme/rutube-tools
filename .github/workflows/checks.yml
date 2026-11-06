@@ -119,11 +119,17 @@ jobs:
         timeout-minutes: 8
         run: npm run test:e2e
 
+      - name: Production OPFS, resume, codecs и downloads в Firefox и Chromium
+        timeout-minutes: 5
+        run: npm run test:e2e:opfs
+
       - name: Отчёты, сеть и скачанные MP4
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: browser-e2e
-          path: tmp/e2e/
+          path: |
+            tmp/e2e/
+            tmp/opfs-production/
           if-no-files-found: warn
           retention-days: 14

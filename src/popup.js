@@ -10,7 +10,7 @@
 
   var SELECTS = ['quality', 'fps', 'maxPartMB', 'frameKeys', 'shotKey', 'frameFormat', 'frameQuality', 'lang', 'defaultFormat'];
   var TEXTS = ['nameTemplate'];
-  var CHECKS = ['showButton', 'youtubeKeys', 'preservePitch', 'rememberPos', 'rememberRate'];
+  var CHECKS = ['showButton', 'youtubeKeys', 'preservePitch', 'rememberPos', 'rememberRate', 'useOpfs'];
 
   function el(id) { return document.getElementById(id); }
 
@@ -187,7 +187,7 @@
 
   function send(msg) {
     try {
-      var r = api.runtime.sendMessage(msg);
+      var r = api.runtime.sendMessage(globalThis.RTProtocol ? globalThis.RTProtocol.stamp(msg) : msg);
       return r && r.then ? r.catch(function () { return null; }) : Promise.resolve(null);
     } catch (e) { return Promise.resolve(null); }
   }
