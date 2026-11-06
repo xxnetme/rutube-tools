@@ -1,23 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="RuTube Tools">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15151b"/><stop offset="1" stop-color="#09090b"/></linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.38" r="0.5"><stop offset="0" stop-color="#f2413a" stop-opacity="0.28"/><stop offset="1" stop-color="#f2413a" stop-opacity="0"/></radialGradient>
-    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6b50"/><stop offset="1" stop-color="#cf2635"/></linearGradient>
-    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#fff" fill-opacity="0.05"/></pattern>
-  </defs>
-  <rect width="1280" height="640" fill="url(#bg)"/><rect width="1280" height="640" fill="url(#dots)"/><rect width="1280" height="640" fill="url(#glow)"/>
-  <g transform="translate(552,96)">
-    <rect width="176" height="176" rx="44" fill="url(#lg)"/>
-    <rect x="1" y="1" width="174" height="174" rx="43" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="2"/>
-    <path transform="scale(.34375)" fill="#fff" fill-rule="evenodd" d="M128 108V404H214V332H244L312 404H412L340 321C384 298 410 262 410 220C410 151 362 108 284 108H128ZM214 174H282C316 174 334 190 334 220C334 247 316 266 282 266H214V174Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="RuTube Tools" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+  <rect width="1280" height="640" fill="#f5f5f7"/>
+
+  <g transform="translate(560 80) scale(.3125)">
+    <path fill="#ff3b30" d="M256 0C480 0 512 32 512 256C512 480 480 512 256 512C32 512 0 480 0 256C0 32 32 0 256 0Z"/>
+    <path d="M156 372V140H266C326 140 360 168 360 218C360 266 326 294 266 294H156M268 294L356 372" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M212 177L290 217L212 257Z" fill="#fff"/>
   </g>
-  <text x="640" y="362" text-anchor="middle" font-family="Inter" font-size="78" font-weight="700" letter-spacing="-3" fill="#f4f5f7">RuTube Tools</text>
-  <text x="640" y="418" text-anchor="middle" font-family="Inter" font-size="30" fill="#a2a3ad">MP4 и звук · плейлисты · покадровая перемотка</text>
-  <g transform="translate(-42,0)" font-family="Inter" font-size="20" font-weight="500" text-anchor="middle" fill="#e2e4e8">
-    <rect x="354" y="458" width="150" height="46" rx="23" fill="#fff" fill-opacity="0.06" stroke="#fff" stroke-opacity="0.12"/><text x="429" y="488">MP4</text>
-    <rect x="516" y="458" width="170" height="46" rx="23" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.5"/><text x="601" y="488" fill="#ffb3ad">Звук · M4A</text>
-    <rect x="698" y="458" width="150" height="46" rx="23" fill="#fff" fill-opacity="0.06" stroke="#fff" stroke-opacity="0.12"/><text x="773" y="488">Кадры PNG</text>
-    <rect x="860" y="458" width="150" height="46" rx="23" fill="#f2413a" fill-opacity="0.16" stroke="#f2413a" stroke-opacity="0.5"/><text x="935" y="488" fill="#ffb3ad">Докачка</text>
-  </g>
-  <text x="640" y="580" text-anchor="middle" font-family="JetBrains Mono" font-size="17" letter-spacing="1.5" fill="#6f7079">FIREFOX 140+ · CHROMIUM MV3 · MIT · github.com/xxnetme/rutube-tools</text>
+
+  <text x="640" y="342" text-anchor="middle" font-size="76" font-weight="600" letter-spacing="-3" fill="#1d1d1f">RuTube Tools</text>
+  <text x="640" y="402" text-anchor="middle" font-size="27" fill="#6e6e73">Видео, звук и кадры — прямо в плеере RuTube</text>
+  <text x="640" y="464" text-anchor="middle" font-size="17" font-weight="500" fill="#3a3a3c">MP4 · M4A · Плейлисты · Кадры PNG · Докачка</text>
+  <text x="640" y="562" text-anchor="middle" font-size="15" fill="#86868b">Firefox · Chromium · github.com/xxnetme/rutube-tools</text>
 </svg>
