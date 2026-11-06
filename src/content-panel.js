@@ -448,7 +448,7 @@
           '<input type="number" min="1" data-in="frame" placeholder="' + Math.round(cur * fps) + '" style="flex:1">' +
           '<button class="btn ghost" data-act="goto">' + esc(t('fr.go')) + '</button>' +
         '</div>' +
-        '<div class="hint">' + fps + ' fps · ' + esc(RT.timecode(cur)) + '</div>' +
+        '<div class="hint">' + esc(fps) + ' fps · ' + esc(RT.timecode(cur)) + '</div>' +
       '</div>' +
       '<div class="sect"><h5>' + esc(t('fr.ab')) + '</h5>' +
         '<div class="row">' +
@@ -461,9 +461,9 @@
       '</div>' +
       '<div class="sect"><h5>' + esc(t('fr.storyboard')) + '</h5>' +
         '<div class="field"><span class="lb">' + esc(t('fr.every')) + '</span>' +
-          '<span class="in"><input type="number" min="0.2" step="0.5" data-in="every" value="' + state.storyboard.every + '"></span></div>' +
+          '<span class="in"><input type="number" min="0.2" step="0.5" data-in="every" value="' + esc(state.storyboard.every) + '"></span></div>' +
         '<div class="field"><span class="lb">' + esc(t('fr.frames')) + '</span>' +
-          '<span class="in"><input type="number" min="1" max="120" data-in="count" value="' + state.storyboard.count + '"></span></div>' +
+          '<span class="in"><input type="number" min="1" max="120" data-in="count" value="' + esc(state.storyboard.count) + '"></span></div>' +
         '<div class="row"><button class="btn ghost wide small" data-act="board">' + esc(t('fr.make')) + '</button></div>' +
       '</div>' +
       '<div class="sw"><span>' + esc(t('fr.pitch')) + '</span>' +
@@ -552,7 +552,7 @@
 
     var chapters = (info.cuepoints || []).map(function (c) {
       return '<div class="item"><span class="nm">' + esc(L.formatTime(c.time)) + ' · ' + esc(c.title || '—') + '</span>' +
-        '<button class="go" data-ch="' + c.time + '">▶</button></div>';
+        '<button class="go" data-ch="' + (Number(c.time) || 0) + '">▶</button></div>';
     }).join('');
 
     setHTML(
@@ -664,11 +664,11 @@
       '<dl class="kv">' +
         '<dt>' + esc(t('info.author')) + '</dt><dd>' + esc(info.author || '—') + '</dd>' +
         '<dt>' + esc(t('info.codec')) + '</dt><dd>' + esc(v0.codecs || '—') + '</dd>' +
-        '<dt>' + esc(t('info.fps')) + '</dt><dd>' + (fps || '—') + '</dd>' +
+        '<dt>' + esc(t('info.fps')) + '</dt><dd>' + esc(fps || '—') + '</dd>' +
         '<dt>' + esc(t('info.bitrate')) + '</dt><dd>' + (v0.bandwidth ? Math.round(v0.bandwidth / 1000) + ' kbps' : '—') + '</dd>' +
         '<dt>' + esc(t('info.qualities')) + '</dt><dd>' + esc(variants().map(function (v) { return v.label; }).join(', ')) + '</dd>' +
         '<dt>' + esc(t('info.size')) + '</dt><dd>' + esc(L.formatBytes(v0.estimatedBytes)) + '</dd>' +
-        (meta.views ? '<dt>' + esc(t('info.views')) + '</dt><dd>' + meta.views.toLocaleString('ru-RU') + '</dd>' : '') +
+        (meta.views ? '<dt>' + esc(t('info.views')) + '</dt><dd>' + esc(Number(meta.views).toLocaleString('ru-RU')) + '</dd>' : '') +
         (meta.created ? '<dt>' + esc(t('info.date')) + '</dt><dd>' + esc(String(meta.created).replace('T', ' ')) + '</dd>' : '') +
       '</dl>' +
       '<div class="row" style="margin-top:12px"><button class="btn ghost wide small" data-act="copy">' + esc(t('info.copy')) + '</button></div>'

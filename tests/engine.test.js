@@ -246,3 +246,12 @@ test('filenameFromTemplate: подпапка, мусор и запасное и�
   assert.equal(L.filenameFromTemplate('{нет}', v), 'Лекция введение', 'пустой шаблон — имя видео');
   assert.ok(L.filenameFromTemplate('{title}', { title: 'я'.repeat(400) }).length <= 110);
 });
+
+test('filenameFromTemplate: «..» и абсолютные пути не дают выйти из папки загрузок', () => {
+  const L = require('../src/lib/engine.js');
+  const name = L.filenameFromTemplate('../../etc/{title}', { title: 'passwd' });
+  assert.ok(!/(^|\/)\.\.(\/|$)/.test(name), name);
+  assert.ok(!name.startsWith('/'), name);
+  const abs = L.filenameFromTemplate('/{title}', { title: 'v' });
+  assert.ok(!abs.startsWith('/'), abs);
+});

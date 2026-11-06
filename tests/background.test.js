@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveObjectURL } = require('node:buffer');
+const { resolveObjectURL, Blob } = require('node:buffer');
 const { createBrowser, createServer, vid } = require('./helpers/fake-env.js');
 const { parseM4a } = require('./helpers/ts-builder.js');
 
@@ -366,4 +366,52 @@ test('история: новый файл встаёт сверху, а сама
   assert.equal(hist.length, 30, 'больше 30 записей не копим');
   assert.equal(hist[0].name, 'Тестовое видео.ts');
   assert.equal(hist.filter((r) => r.id === 129).length, 0, 'самая старая вытеснена');
+});
+
+test('rt:save-url: чужие хосты и не-http схемы отклоняются, CDN RuTube проходит', async () => {
+  const b = createBrowser();
+  for (const url of [
+    'https://evil.example/a.srt',
+    'https://rutube.ru.evil.example/a.srt',     // похожий хост
+    'https://notrutube.ru/a.srt',               // суффикс без точки
+    'file:///etc/passwd',
+    'javascript:alert(1)',
+    'data:text/html,<script>1</script>',
+    'не url'
+  ]) {
+    const r = await b.call({ type: 'rt:save-url', url, filename: 'x.srt' });
+    assert.equal(r.ok, false, url);
+    assert.equal(r.error, 'url-not-allowed', url);
+  }
+  assert.equal(b.downloads.length, 0, 'ни одной загрузки не стартовало');
+
+  const ok = await b.call({ type: 'rt:save-url', url: 'https://pic.rtbcdn.ru/video/cover.jpg', filename: 'cover.jpg' });
+  assert.equal(ok.ok, true);
+  assert.equal(b.downloads.length, 1);
+});
+
+test('rt:save-data-url: принимает кадры и текст, отклоняет всё остальное', async () => {
+  // fetch подменён соседними тестами: для data: делаем свой, чтобы тест не зависел от порядка
+  globalThis.fetch = async (u) => ({ ok: true, blob: async () => new Blob([String(u)]) });
+  const b = createBrowser();
+  const bad = [
+    'data:text/html;base64,PHNjcmlwdD4=',
+    'data:image/svg+xml;base64,PHN2Zz4=',
+    'https://rutube.ru/x.png',
+    'javascript:alert(1)',
+    null,
+    42
+  ];
+  for (const dataUrl of bad) {
+    const r = await b.call({ type: 'rt:save-data-url', dataUrl, filename: 'x.png' });
+    assert.equal(r.ok, false, String(dataUrl));
+    assert.equal(r.error, 'bad-data-url', String(dataUrl));
+  }
+  assert.equal(b.downloads.length, 0);
+
+  const png = 'data:image/png;base64,iVBORw0KGgo=';
+  const txt = 'data:text/plain;charset=utf-8,' + encodeURIComponent('0:00 Начало');
+  assert.equal((await b.call({ type: 'rt:save-data-url', dataUrl: png, filename: 'кадр.png' })).ok, true);
+  assert.equal((await b.call({ type: 'rt:save-data-url', dataUrl: txt, filename: 'главы.txt' })).ok, true);
+  assert.equal(b.downloads.length, 2);
 });

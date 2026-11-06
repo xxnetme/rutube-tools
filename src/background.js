@@ -225,9 +225,33 @@
     }
   }
 
+  /* Отложенное освобождение blob-ссылки. В Node (тесты) таймер не держит процесс. */
+  function revokeLater(url) {
+    var t = setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 5 * 60000);
+    if (t && t.unref) t.unref();
+  }
+
   function retainUrl(url, downloadId) {
     if (downloadId !== undefined && downloadId !== null) urlById.set(downloadId, url);
-    else setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 5 * 60000);
+    else revokeLater(url);
+  }
+
+  /* Сохранять по ссылке можно только то, что отдаёт сам RuTube и его CDN:
+   * запрос приходит из content-скрипта, а тот живёт на странице. */
+  var ALLOWED_HOSTS = /(^|\.)(rutube\.ru|rtbcdn\.ru|rtbcdn\.net)$/i;
+  function isAllowedUrl(raw) {
+    try {
+      var u = new URL(String(raw));
+      return (u.protocol === 'https:' || u.protocol === 'http:') && ALLOWED_HOSTS.test(u.hostname);
+    } catch (e) { return false; }
+  }
+
+  /* Через data-URL приходят кадры (image/png|jpeg|webp в base64) и текст глав (text/plain);
+   * всё остальное — отказ. Лимит защищает от мусора. */
+  var MAX_DATA_URL = 40 * 1024 * 1024;
+  function isImageDataUrl(raw) {
+    return typeof raw === 'string' && raw.length <= MAX_DATA_URL &&
+      /^data:(image\/(png|jpeg|webp);base64|text\/plain;charset=utf-8),/.test(raw);
   }
 
   try {
@@ -243,7 +267,7 @@
         var u = urlById.get(d.id);
         if (u) {
           urlById.delete(d.id);
-          setTimeout(function () { try { URL.revokeObjectURL(u); } catch (e) {} }, 5 * 60000);
+          revokeLater(u);
         }
       }
     });
@@ -903,6 +927,7 @@
 
       case 'rt:save-url': {
         try {
+          if (!isAllowedUrl(msg.url)) return { ok: false, error: 'url-not-allowed' };
           var name = RTLib.sanitizeFilename(msg.filename || 'file');
           var dl = await saveRemote(msg.url, name);
           return { ok: true, name: dl.name, id: dl.id };
@@ -913,6 +938,7 @@
 
       case 'rt:save-data-url': {
         try {
+          if (!isImageDataUrl(msg.dataUrl)) return { ok: false, error: 'bad-data-url' };
           var fname = RTLib.sanitizeFilename(msg.filename || 'кадр.png');
           var blobUrl;
           if (CAN_OFFSCREEN) {
