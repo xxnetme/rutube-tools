@@ -19,4 +19,6 @@ tmp/
 node_modules/
 __pycache__/
 *.pyc
-.amo-apply-all.log
+
+# отчёт ежедневного монитора RuTube API
+api-monitor-report.md

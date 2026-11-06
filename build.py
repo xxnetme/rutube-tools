@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Сборка пакетов расширения RuTube Tools (Firefox / Chromium) — только стандартная библиотека."""
+import hashlib
 import json
 import shutil
 import sys
@@ -39,11 +40,18 @@ def collect_files(skip=frozenset()):
 
 
 def make_zip(target_dir: Path, zip_path: Path):
-    """Упаковывает готовую папку (с manifest.json) в zip."""
+    """Упаковывает папку воспроизводимо: mtime исходников не влияет на байты zip."""
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for item in sorted(target_dir.rglob("*")):
             if item.is_file():
-                z.write(item, item.relative_to(target_dir).as_posix())
+                info = zipfile.ZipInfo(
+                    item.relative_to(target_dir).as_posix(),
+                    date_time=(1980, 1, 1, 0, 0, 0),
+                )
+                info.create_system = 3
+                info.external_attr = 0o100644 << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                z.writestr(info, item.read_bytes())
 
 
 def build_all():
@@ -85,6 +93,18 @@ def build_all():
     xpi = RELEASE / "rutube-tools-firefox.xpi"
     shutil.copy2(RELEASE / "rutube-tools-firefox.zip", xpi)
     made.append(xpi)
+
+    # Контрольные суммы нужны и локально, и в GitHub Release. Формат понимает
+    # sha256sum -c, а release workflow передаёт этот же файл в attestation action.
+    checksums = RELEASE / "SHA256SUMS"
+    checksums.write_text(
+        "".join(
+            f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n"
+            for path in sorted(made, key=lambda item: item.name)
+        ),
+        encoding="utf-8",
+    )
+    made.append(checksums)
 
     for p in made:
         print(f"{p.relative_to(ROOT)!s:44s} {p.stat().st_size / 1024:7.1f} KB")

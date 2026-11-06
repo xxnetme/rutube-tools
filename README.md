@@ -77,7 +77,7 @@ python3 build.py
 ```
 
 Нужен только Python 3: сборка проверяет обязательные файлы, манифест и отсутствие `eval`,
-затем складывает распакованные версии в `build/`, а архивы и `.xpi` — в `release/`.
+затем складывает распакованные версии в `build/`, а воспроизводимые архивы, `.xpi` и `SHA256SUMS` — в `release/`.
 
 </details>
 
@@ -221,22 +221,32 @@ flowchart LR
 
 ## Качество
 
-Проект покрыт автотестами (`npm test`, 78 проверок), в CI они идут вместе с ESLint и `addons-linter`:
+Проект покрыт автотестами (`npm test`, 78 JS-проверок, плюс Python unit-тесты инфраструктуры),
+в CI они идут вместе с ESLint и `addons-linter`:
 
 - разбор HLS, диапазоны, разбиение на части, главы (результат принимает `ffmpeg`);
 - извлечение звука: байт-в-байт сверка кадров, склейка кадров на границах PES и сегментов, настоящий поток от `ffmpeg` и проверка `ffprobe`;
 - сквозные сценарии фона с подменёнными браузером и RuTube: докачка, «перезапуск браузера», зеркала CDN, отмена;
-- смоук-тест панели в jsdom.
+- смоук-тест панели в jsdom;
+- валидатор публичного API и JWT-издатель AMO — отдельно, без сети и настоящих секретов.
 
 Тесты ищут реальные ошибки: код намеренно ломали (потеря хвоста кадра, неверное смещение, докачка с нуля), и тесты падали.
+
+Отдельный workflow **RuTube API** раз в сутки делает один read-only запрос к публичному
+`play/options`: при изменении контракта ведёт одно issue, после восстановления закрывает его,
+а сетевую ошибку не выдаёт за изменение API. Для следующих тегов Release прикладывает
+`SHA256SUMS` и создаёт GitHub build-provenance attestations для трёх пакетов.
 
 <details>
 <summary>Запуск проверок</summary>
 
 ```bash
+npm install --no-save jsdom    # включает тест панели
 npm test                       # нужен Node 20+
 npm run lint                   # ESLint
-npm install --no-save jsdom    # по желанию: включает тест панели
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 build.py
+(cd release && sha256sum -c SHA256SUMS)
 ```
 
 Тесты звука используют `ffmpeg`/`ffprobe`, если они установлены, и пропускают эти проверки, если нет.
@@ -261,12 +271,12 @@ rutube-tools/
 │   ├── lib/mux-mp4.min.js       mux.js, Apache 2.0
 │   ├── popup.html, popup.js     настройки и незавершённые загрузки
 │   └── offscreen.html, .js      сборка файла для Chromium
-├── tests/                       npm test: движок, звук, фон, панель (jsdom)
-├── build.py                     сборка и проверки, только stdlib
+├── tests/                       JS: движок, звук, фон, панель; Python: монитор и AMO JWT
+├── build.py                     сборка, проверки и SHA256SUMS, только stdlib
 ├── eslint.config.js, package.json   только для тестов и линтера
 ├── docs/                        сайт (галерея тянется мышью, демо кадров), privacy.html, CHANGELOG, ROADMAP
 ├── assets/                      баннеры и обложка, исходники в SVG
-└── .github/workflows/           checks и release по тегу
+└── .github/workflows/           checks, release по тегу и ежедневный монитор RuTube API
 ```
 
 ---

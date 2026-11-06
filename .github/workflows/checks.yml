@@ -28,11 +28,18 @@ jobs:
           npm install --no-save jsdom
           npm test
 
+      - name: Валидатор монитора API — unit-тесты без сети
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
       - name: ESLint
         run: npm run lint
 
       - name: Build
         run: python3 build.py
+
+      - name: Контрольные суммы пакетов
+        working-directory: release
+        run: sha256sum -c SHA256SUMS
 
       - name: No remote code / eval
         run: |

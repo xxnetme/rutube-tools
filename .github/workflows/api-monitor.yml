@@ -1,0 +1,129 @@
+name: RuTube API
+
+# Раз в сутки читает один публичный play/options. Только GET, без cookies и секретов.
+# Изменение контракта ведёт одно issue; сетевая ошибка issue не создаёт.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: rutube-api-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RUTUBE_API_REPORT: api-monitor-report.md
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Проверить play/options
+        id: api
+        # Код нужен следующим шагам, поэтому здесь он сохраняется в output.
+        # Финальный шаг ниже вернёт ненулевой статус самому прогону.
+        run: |
+          if python3 tools/check-rutube-api.py; then code=0; else code=$?; fi
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Создать или обновить одно issue при смене контракта
+        if: steps.api.outputs.exit_code == '2'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- rutube-api-monitor -->';
+            const title = 'RuTube API: изменился ответ play/options';
+            const report = fs.existsSync(process.env.RUTUBE_API_REPORT)
+              ? fs.readFileSync(process.env.RUTUBE_API_REPORT, 'utf8')
+              : 'Валидатор сообщил об изменении контракта.';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `${marker}\n${report}\n[Открыть прогон](${runUrl})\n\n` +
+              'Issue ведётся автоматически: повторная ошибка обновит этот текст, ' +
+              'а успешная проверка закроет issue. Перед правками проверьте, не изменил ли ' +
+              'владелец сам контрольный ролик.';
+
+            const all = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100
+            });
+            const existing = all.find(issue =>
+              !issue.pull_request && issue.body && issue.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                title,
+                body,
+                state: 'open'
+              });
+              core.info(`Обновлено issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['bug']
+              });
+              core.info(`Создано issue #${created.data.number}`);
+            }
+
+      - name: Закрыть issue после восстановления
+        if: steps.api.outputs.exit_code == '0'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- rutube-api-monitor -->';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const all = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            const monitored = all.filter(issue =>
+              !issue.pull_request && issue.body && issue.body.includes(marker)
+            );
+            for (const issue of monitored) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Публичный API снова проходит проверку контракта. [Прогон](${runUrl})`
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed'
+              });
+              core.info(`Закрыто issue #${issue.number}`);
+            }
+
+      - name: Вернуть результат проверки
+        if: always() && steps.api.outputs.exit_code != '0'
+        run: |
+          code='${{ steps.api.outputs.exit_code }}'
+          if [ "$code" = '2' ]; then
+            echo 'Контракт API изменился: issue создано или обновлено.'
+          else
+            echo 'API недоступно из GitHub Actions. Issue не создано: это может быть сеть или геоблокировка.'
+          fi
+          exit 1

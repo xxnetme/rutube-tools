@@ -75,10 +75,10 @@ def release_notes() -> dict:
 
 
 def jwt(issuer: str, secret: str, ttl: int = 60) -> str:
-    """HS256 JWT, как того требует AMO: iss = ключ, jti = секрет."""
+    """HS256 JWT для AMO: iss = ключ, jti = уникальный nonce, не секрет."""
     now = int(time.time())
     head = {"alg": "HS256", "typ": "JWT"}
-    body = {"iss": issuer, "jti": secret, "iat": now, "exp": now + ttl}
+    body = {"iss": issuer, "jti": uuidlib.uuid4().hex, "iat": now, "exp": now + ttl}
 
     def seg(obj: dict) -> bytes:
         raw = json.dumps(obj, separators=(",", ":")).encode()
@@ -218,27 +218,27 @@ def previews(issuer: str, secret: str) -> None:
     """Догрузка скриншотов: у AMO жёсткий лимит загрузок, поэтому пауза между файлами."""
     token = lambda: jwt(issuer, secret)  # noqa: E731
     shots = [
-        (1, "01-frame-step.png", "Кнопка MP4 в плеере: панель открывается одним щелчком"),
+        (1, "01-frame-step.png", "Покадровая перемотка: внизу номер кадра и таймкод"),
         (2, "02-download.png", "Скачивание: видео в MP4 или только звук в M4A, качества и размеры"),
         (3, "03-frames.png", "Кадры: PNG, переход по номеру, петля A/B, раскадровка"),
-        (4, "04-more.png", "Субтитры в SRT, обложка, главы, ссылка .m3u8 и мини-плеер"),
-        (5, "05-info.png", "Сведения о видео: кодек, fps, битрейт, размер файла"),
+        (4, "04-more.png", "Ещё: субтитры SRT, обложка, главы, ссылка .m3u8 и мини-плеер"),
+        (5, "05-info.png", "Сведения о видео: кодек, fps, битрейт и размер файла"),
         (6, "06-progress.png", "Загрузка: прогресс, сегменты, скорость и кнопка «Отменить»"),
         (7, "07-done.png", "Готово: файл сохранён в папку «Загрузки»"),
-        (8, "08-playlist.png", "Плейлист: формат, качество и диапазон серий"),
-        (9, "09-popup.png", "Окно расширения: докачка после сбоя и настройки"),
+        (8, "08-playlist.png", "Плейлист: выбор серий галочками, названия, длительность и счётчик"),
+        (9, "09-popup.png", "Окно расширения: докачка после сбоя, история файлов и настройки"),
     ]
     detail = call("GET", f"/addons/addon/{SLUG}/?lang=ru", token)
-    have = {(p.get("caption") or {}).get("ru"): p.get("id") for p in detail.get("previews", [])}
-    taken = {p.get("position") for p in detail.get("previews", [])}
+    by_position = {p.get("position"): p for p in detail.get("previews", [])}
 
     for pos, name, caption in shots:
-        if pos in taken:
-            pid = next((p.get("id") for p in detail.get("previews", []) if p.get("position") == pos), None)
-            if pid and caption not in have:
+        existing = by_position.get(pos)
+        if existing:
+            current_caption = (existing.get("caption") or {}).get("ru", "")
+            if existing.get("id") and current_caption != caption:
                 time.sleep(3)
-                call("PATCH", f"/addons/addon/{SLUG}/previews/{pid}/", token,
-                     payload={"caption": {"ru": caption}})
+                call("PATCH", f"/addons/addon/{SLUG}/previews/{existing['id']}/", token,
+                     payload={"caption": {"ru": caption}, "position": pos})
                 print(f"  {name}: подпись добавлена")
             continue
         time.sleep(8)

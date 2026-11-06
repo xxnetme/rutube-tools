@@ -6,7 +6,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write       # опубликовать GitHub Release
+  id-token: write       # OIDC для Sigstore
+  attestations: write   # сохранить build provenance в GitHub
 
 jobs:
   build:
@@ -33,6 +35,16 @@ jobs:
               assert 'content-core.js' in z.namelist(), name
               print(name, 'ok ·', m['version'], '·', len(z.namelist()), 'files')
           PY
+
+      - name: Проверить SHA-256
+        working-directory: release
+        run: sha256sum -c SHA256SUMS
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          # В файле ровно три пакета; сам SHA256SUMS не становится субъектом.
+          subject-checksums: release/SHA256SUMS
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -66,4 +78,5 @@ jobs:
             release/rutube-tools-firefox.xpi
             release/rutube-tools-firefox.zip
             release/rutube-tools-chromium.zip
+            release/SHA256SUMS
           body_path: ${{ steps.notes.outputs.file }}

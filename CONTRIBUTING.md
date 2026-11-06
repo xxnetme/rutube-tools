@@ -19,9 +19,10 @@ python3 build.py            # сборка + проверки
 В самом расширении зависимостей нет. Для сборки нужен Python 3, для проверок — Node 20+:
 
 ```bash
-npm test        # 55 проверок: движок, звук, фон, панель
+npm install --no-save jsdom   # включает смоук-тест панели
+npm test        # 78 проверок: движок, звук, фон, панель
 npm run lint    # ESLint
-npm install --no-save jsdom   # по желанию: включает смоук-тест панели
+python3 -m unittest discover -s tests -p 'test_*.py' -v   # монитор API и AMO JWT
 ```
 
 Тесты звука используют `ffmpeg`/`ffprobe`, если они установлены, и пропускают эти проверки, если нет.
@@ -43,6 +44,7 @@ npm install --no-save jsdom   # по желанию: включает смоук
 
 ## Перед PR
 
-- [ ] `python3 build.py`, `npm test` и `npm run lint` без ошибок
+- [ ] `python3 build.py`, `npm test`, `npm run lint` и Python unit-тесты без ошибок
+- [ ] `(cd release && sha256sum -c SHA256SUMS)` после сборки
 - [ ] Проверено в Firefox и Chromium
 - [ ] Обновлён `docs/CHANGELOG.md` (одна строка, понятная не-технарю)
