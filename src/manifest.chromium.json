@@ -29,6 +29,7 @@
         "*://*.rutube.ru/*"
       ],
       "js": [
+        "lib/network.js",
         "lib/dom.js",
         "lib/engine.js",
         "lib/i18n.js",

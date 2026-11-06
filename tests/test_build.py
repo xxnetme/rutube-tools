@@ -52,6 +52,22 @@ class ManifestTests(unittest.TestCase):
                 self.assertNotIn("http:", csp)
                 self.assertNotIn("https:", csp)
 
+    def test_network_policy_loads_before_engine_in_every_context(self) -> None:
+        for name in ("manifest.firefox.json", "manifest.chromium.json"):
+            with self.subTest(manifest=name):
+                manifest = json.loads((ROOT / "src" / name).read_text(encoding="utf-8"))
+                scripts = manifest["content_scripts"][0]["js"]
+                self.assertLess(scripts.index("lib/network.js"), scripts.index("lib/engine.js"))
+                if name == "manifest.firefox.json":
+                    background = manifest["background"]["scripts"]
+                    self.assertLess(background.index("lib/network.js"), background.index("lib/engine.js"))
+
+        offscreen = (ROOT / "src" / "offscreen.html").read_text(encoding="utf-8")
+        self.assertLess(offscreen.index('src="lib/network.js"'), offscreen.index('src="lib/engine.js"'))
+        worker = (ROOT / "src" / "background.js").read_text(encoding="utf-8")
+        self.assertLess(worker.index("importScripts('lib/network.js')"),
+                        worker.index("importScripts('lib/engine.js')"))
+
 
 if __name__ == "__main__":
     unittest.main()

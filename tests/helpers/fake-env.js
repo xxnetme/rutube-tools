@@ -39,6 +39,7 @@ function createBrowser(store) {
   };
 
   globalThis.browser = api;
+  globalThis.RTNetwork = require('../../src/lib/network.js');
   globalThis.RTLib = require('../../src/lib/engine.js');
   globalThis.RTAudio = require('../../src/lib/audio.js');
   delete require.cache[BG];
@@ -106,12 +107,12 @@ function createServer(videos, opts) {
       return json({
         title: v.title,
         author: v.author ? { name: v.author } : undefined,
-        thumbnail_url: v.thumbnail ? 'https://cdn.test/' + m[1] + '/cover.jpg' : undefined,
+        thumbnail_url: v.thumbnail ? (typeof v.thumbnail === 'string' ? v.thumbnail : 'https://cdn.rutube.ru/' + m[1] + '/cover.jpg') : undefined,
         duration: v.durationSec * 1000,
-        video_balancer: { default: 'https://cdn.test/' + m[1] + '/master.m3u8' }
+        video_balancer: { default: 'https://cdn.rutube.ru/' + m[1] + '/master.m3u8' }
       });
     }
-    m = url.match(/cdn\.test\/([0-9a-f]{32})\/master\.m3u8/);
+    m = url.match(/cdn\.rutube\.ru\/([0-9a-f]{32})\/master\.m3u8/);
     if (m) {
       const v = videos[m[1]];
       return text('#EXTM3U\n' + v.variants.map((x) => x.mirrors.map((h) =>
@@ -129,7 +130,10 @@ function createServer(videos, opts) {
       const x = videos[m[2]].variants.find((q) => String(q.height) === m[3]);
       return body(segmentBuffer(x, Number(m[4])));
     }
-    m = url.match(/^https:\/\/cdn\.test\/([0-9a-f]{32})\/cover\.jpg$/);
+    if (/^https:\/\/cdn\.rutube\.ru\/sub\//.test(url)) {
+      return { ok: true, status: 200, blob: async () => new Blob(['1\n00:00:00,000 --> 00:00:01,000\nТест\n']) };
+    }
+    m = url.match(/^https:\/\/cdn\.rutube\.ru\/([0-9a-f]{32})\/cover\.jpg$/);
     if (m && videos[m[1]].thumbnail) {
       return { ok: true, status: 200, arrayBuffer: async () => {
         const b = Buffer.from('\xff\xd8\xff\xe0test-jpeg\xff\xd9', 'latin1');

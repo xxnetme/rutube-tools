@@ -143,10 +143,17 @@
     }
   }
 
+  function networkFetch(url, opts) {
+    if (!global.RTNetwork || typeof global.RTNetwork.fetch !== 'function') {
+      throw new Error('Сетевой модуль не загружен');
+    }
+    return global.RTNetwork.fetch(url, opts);
+  }
+
   async function fetchText(url, opts) {
     opts = opts || {};
     return withAbort(opts.signal, async function (signal) {
-      var r = await fetch(url, {
+      var r = await networkFetch(url, {
         signal: signal,
         credentials: 'omit',
         cache: 'no-store',
@@ -577,12 +584,14 @@
       if (signal && signal.aborted) throw new Error('Отменено пользователем');
       try {
         return await withAbort(signal, async function (sig) {
-          var r = await fetch(segments[idx], { signal: sig, credentials: 'omit', cache: 'no-store' });
+          var r = await networkFetch(segments[idx], { signal: sig, credentials: 'omit', cache: 'no-store' });
           if (!r.ok) throw new Error('HTTP ' + r.status);
           return new Uint8Array(await r.arrayBuffer());
         });
       } catch (e) {
         if (signal && signal.aborted) throw e;
+        // Нарушение сетевой политики детерминировано: повтор только зря задержал бы ошибку.
+        if (e && /^(url|redirect|method)-not-allowed$|^too-many-redirects$/.test(e.code)) throw e;
         if (attempt < 3) {
           await new Promise(function (res) { setTimeout(res, 400 * attempt); });
           return fetchSegment(idx, attempt + 1);

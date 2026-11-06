@@ -5,6 +5,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+globalThis.RTNetwork = require('../src/lib/network.js');
 const L = require('../src/lib/engine.js');
 const A = require('../src/lib/audio.js');
 const { adtsFrame, buildTs } = require('./helpers/ts-builder.js');
@@ -66,7 +67,7 @@ test('parseMaster + groupVariants: зеркала одного качества 
 });
 
 test('pickVariant и pickAudioVariant', () => {
-  const g = L.groupVariants(L.parseMaster(MASTER, 'https://x/m.m3u8'));
+  const g = L.groupVariants(L.parseMaster(MASTER, 'https://cdn.rutube.ru/m.m3u8'));
   assert.equal(L.pickVariant(g, 'best').height, 1080);
   assert.equal(L.pickVariant(g, 'worst').height, 144);
   assert.equal(L.pickVariant(g, '600').height, 720, 'ближайшее по высоте');
@@ -96,9 +97,9 @@ test('parseMediaPlaylist', () => {
   assert.equal(m.duration, 10.5);
   assert.equal(m.live, false);
   assert.equal(m.encrypted, false);
-  assert.equal(L.parseMediaPlaylist('#EXT-X-KEY:METHOD=AES-128,URI="k"\n#EXTINF:1,\na.ts', 'https://x/p.m3u8').encrypted, true);
-  assert.equal(L.parseMediaPlaylist('#EXT-X-KEY:METHOD=NONE\n#EXTINF:1,\na.ts', 'https://x/p.m3u8').encrypted, false);
-  assert.equal(L.parseMediaPlaylist('#EXTINF:1,\na.ts', 'https://x/p.m3u8').live, true, 'без ENDLIST — прямой эфир');
+  assert.equal(L.parseMediaPlaylist('#EXT-X-KEY:METHOD=AES-128,URI="k"\n#EXTINF:1,\na.ts', 'https://cdn.rutube.ru/p.m3u8').encrypted, true);
+  assert.equal(L.parseMediaPlaylist('#EXT-X-KEY:METHOD=NONE\n#EXTINF:1,\na.ts', 'https://cdn.rutube.ru/p.m3u8').encrypted, false);
+  assert.equal(L.parseMediaPlaylist('#EXTINF:1,\na.ts', 'https://cdn.rutube.ru/p.m3u8').live, true, 'без ENDLIST — прямой эфир');
 });
 
 test('segmentRange: границы по сегментам', () => {
@@ -170,7 +171,7 @@ test('downloadPart (ts): сегменты идут строго по поряд�
   try {
     const progress = [];
     const out = await L.downloadPart({
-      segments: [0, 1, 2, 3, 4].map((i) => 'https://x/s' + i + '.ts'),
+      segments: [0, 1, 2, 3, 4].map((i) => 'https://cdn.rutube.ru/s' + i + '.ts'),
       mode: 'ts', concurrency: 5, onProgress: (p) => progress.push(p.done)
     });
     assert.equal(out.ext, 'ts');
@@ -185,7 +186,7 @@ test('downloadPart: временный сбой сегмента повторя�
   let calls = 0;
   const restore = fakeFetch(async () => (++calls < 3 ? bad(503) : ok(Buffer.from([9]))));
   try {
-    const out = await L.downloadPart({ segments: ['https://x/a.ts'], mode: 'ts' });
+    const out = await L.downloadPart({ segments: ['https://cdn.rutube.ru/a.ts'], mode: 'ts' });
     assert.equal(out.bytes, 1);
     assert.equal(calls, 3);
   } finally { restore(); }
@@ -194,7 +195,7 @@ test('downloadPart: временный сбой сегмента повторя�
 test('downloadPart: постоянный сбой — ошибка с номером сегмента', async () => {
   const restore = fakeFetch(async (url) => (url.endsWith('b.ts') ? bad(404) : ok(Buffer.from([1]))));
   try {
-    await assert.rejects(L.downloadPart({ segments: ['https://x/a.ts', 'https://x/b.ts'], mode: 'ts' }),
+    await assert.rejects(L.downloadPart({ segments: ['https://cdn.rutube.ru/a.ts', 'https://cdn.rutube.ru/b.ts'], mode: 'ts' }),
       (e) => /Сегмент 2 из 2/.test(e.message) && e.segmentIndex === 1);
   } finally { restore(); }
 });
@@ -203,7 +204,7 @@ test('downloadPart: отмена прерывает загрузку', async () 
   const ctrl = new AbortController();
   const restore = fakeFetch(async () => { ctrl.abort(); return ok(Buffer.from([1])); });
   try {
-    await assert.rejects(L.downloadPart({ segments: ['https://x/a.ts', 'https://x/b.ts'], mode: 'ts', signal: ctrl.signal }), /Отменено/);
+    await assert.rejects(L.downloadPart({ segments: ['https://cdn.rutube.ru/a.ts', 'https://cdn.rutube.ru/b.ts'], mode: 'ts', signal: ctrl.signal }), /Отменено/);
   } finally { restore(); }
 });
 
@@ -213,7 +214,7 @@ test('downloadPart (m4a): из потока TS получается M4A', async 
   const segs = [buildTs([es.subarray(0, 1000)]), buildTs([es.subarray(1000)])];
   const restore = fakeFetch(async (url) => ok(segs[Number(url.match(/s(\d)/)[1])]));
   try {
-    const out = await L.downloadPart({ segments: ['https://x/s0.ts', 'https://x/s1.ts'], mode: 'm4a', audio: A, title: 'T' });
+    const out = await L.downloadPart({ segments: ['https://cdn.rutube.ru/s0.ts', 'https://cdn.rutube.ru/s1.ts'], mode: 'm4a', audio: A, title: 'T' });
     assert.equal(out.ext, 'm4a');
     assert.equal(out.mime, 'audio/mp4');
     assert.equal(Buffer.concat(out.chunks.map(Buffer.from)).length, out.bytes);
@@ -223,8 +224,34 @@ test('downloadPart (m4a): из потока TS получается M4A', async 
 test('downloadPart (m4a): без модуля звука — явная ошибка, а не молчаливая подмена режима', async () => {
   const saved = globalThis.RTAudio;
   globalThis.RTAudio = undefined;
-  await assert.rejects(L.downloadPart({ segments: ['https://x/s0.ts'], mode: 'm4a' }), /Модуль извлечения звука/);
+  await assert.rejects(L.downloadPart({ segments: ['https://cdn.rutube.ru/s0.ts'], mode: 'm4a' }), /Модуль извлечения звука/);
   globalThis.RTAudio = saved;
+});
+
+test('сетевая политика: чужой master из ответа API не получает запрос', async () => {
+  const calls = [];
+  const restore = fakeFetch(async (url) => {
+    calls.push(url);
+    return { ok: true, status: 200, text: async () => JSON.stringify({
+      duration: 1000,
+      video_balancer: { default: 'https://evil.example/master.m3u8' }
+    }) };
+  });
+  try {
+    await assert.rejects(L.getVideoInfo(ID), (e) => e.code === 'url-not-allowed');
+    assert.equal(calls.length, 1, 'выполнен только разрешённый запрос API');
+    assert.match(calls[0], /^https:\/\/rutube\.ru\/api\/play\/options\//);
+  } finally { restore(); }
+});
+
+test('сетевая политика: чужой сегмент отклонён без fetch и без повторов', async () => {
+  let calls = 0;
+  const restore = fakeFetch(async () => { calls++; return ok(Buffer.from([1])); });
+  try {
+    await assert.rejects(L.downloadPart({ segments: ['https://evil.example/seg.ts'], mode: 'ts' }),
+      (e) => e.code === 'url-not-allowed');
+    assert.equal(calls, 0);
+  } finally { restore(); }
 });
 
 test('applyNameTemplate: переменные и пустые значения', () => {
@@ -248,7 +275,8 @@ test('filenameFromTemplate: подпапка, мусор и запасное и�
 });
 
 test('filenameFromTemplate: «..» и абсолютные пути не дают выйти из папки загрузок', () => {
-  const L = require('../src/lib/engine.js');
+  globalThis.RTNetwork = require('../src/lib/network.js');
+const L = require('../src/lib/engine.js');
   const name = L.filenameFromTemplate('../../etc/{title}', { title: 'passwd' });
   assert.ok(!/(^|\/)\.\.(\/|$)/.test(name), name);
   assert.ok(!name.startsWith('/'), name);

@@ -10,7 +10,7 @@ const browserGlobals = {
   cancelAnimationFrame: 'readonly', MutationObserver: 'readonly', HTMLElement: 'readonly', Event: 'readonly',
   KeyboardEvent: 'readonly', MouseEvent: 'readonly', CSS: 'readonly', Image: 'readonly', FileReader: 'readonly',
   Buffer: 'readonly', module: 'writable', muxjs: 'readonly', RTLib: 'readonly', RTAudio: 'readonly',
-  RTI18n: 'readonly', Promise: 'readonly', Map: 'readonly', Set: 'readonly', Uint8Array: 'readonly',
+  RTI18n: 'readonly', RTNetwork: 'readonly', Promise: 'readonly', Map: 'readonly', Set: 'readonly', Uint8Array: 'readonly',
   Intl: 'readonly', Date: 'readonly', alert: 'readonly', prompt: 'readonly', screen: 'readonly'
 };
 
@@ -40,7 +40,8 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 2022, sourceType: 'commonjs',
       globals: { require: 'readonly', module: 'writable', __dirname: 'readonly', process: 'readonly', Buffer: 'readonly',
-        globalThis: 'readonly', setTimeout: 'readonly', console: 'readonly', fetch: 'readonly', AbortController: 'readonly' }
+        globalThis: 'readonly', setTimeout: 'readonly', console: 'readonly', fetch: 'readonly', AbortController: 'readonly',
+        URL: 'readonly', Headers: 'readonly', Blob: 'readonly' }
     },
     rules: { 'no-undef': 'error', 'no-unused-vars': ['warn', { args: 'none' }] }
   }

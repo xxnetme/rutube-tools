@@ -57,11 +57,15 @@
     if (!msg || typeof msg.type !== 'string') return false;
 
     if (msg.type === 'rt:offscreen-ping') {
-      sendResponse({ ok: !!(L && globalThis.muxjs && globalThis.RTAudio) });
+      sendResponse({ ok: !!(L && globalThis.RTNetwork && globalThis.muxjs && globalThis.RTAudio) });
       return true;
     }
 
     if (msg.type === 'rt:offscreen-data-url') {
+      if (!globalThis.RTNetwork || !globalThis.RTNetwork.isAllowedDataUrl(msg.dataUrl)) {
+        sendResponse({ ok: false, error: 'bad-data-url' });
+        return true;
+      }
       fetch(msg.dataUrl)
         .then(function (r) { return r.blob(); })
         .then(function (blob) {

@@ -16,8 +16,10 @@
   if (typeof self !== 'undefined' && typeof self.window === 'undefined') self.window = self;
 
   if (typeof importScripts === 'function' &&
-      (typeof RTLib === 'undefined' || typeof muxjs === 'undefined' || typeof RTAudio === 'undefined')) {
+      (typeof RTNetwork === 'undefined' || typeof RTLib === 'undefined' ||
+       typeof muxjs === 'undefined' || typeof RTAudio === 'undefined')) {
     try {
+      if (typeof RTNetwork === 'undefined') importScripts('lib/network.js');
       if (typeof muxjs === 'undefined') importScripts('lib/mux-mp4.min.js');
       if (typeof RTLib === 'undefined') importScripts('lib/engine.js');
       if (typeof RTAudio === 'undefined') importScripts('lib/audio.js');
@@ -184,7 +186,7 @@
   async function fetchCover(url) {
     if (!url) return null;
     try {
-      var r = await fetch(url, { credentials: 'omit' });
+      var r = await RTNetwork.fetch(url, { credentials: 'omit' });
       if (!r.ok) return null;
       var buf = new Uint8Array(await r.arrayBuffer());
       if (!buf.length || buf.length > 2 * 1024 * 1024) return null;
@@ -207,21 +209,19 @@
     return res;
   }
 
-  /**
-   * Сохраняет удалённый файл: сначала пробует отдать ссылку браузеру напрямую,
-   * а если сервер не отдаёт её без заголовков страницы — тянет в blob.
-   * Так работают и субтитры с CDN, и «Скачать» в разделе «Ещё».
-   */
+  /** Субтитры и превью небольшие: скачиваем через проверенный fetch в blob.
+   * Прямой downloads.download(remoteUrl) не используем — его редиректы расширение не контролирует. */
   async function saveRemote(url, name) {
+    var resp = await RTNetwork.fetch(url, { credentials: 'omit' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var u = URL.createObjectURL(await resp.blob());
     try {
-      return await downloadUrl(url, name);
-    } catch (e) {
-      var resp = await fetch(url, { credentials: 'omit' });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      var u = URL.createObjectURL(await resp.blob());
       var dl = await downloadUrl(u, name);
       retainUrl(u, dl.id);
       return dl;
+    } catch (e) {
+      try { URL.revokeObjectURL(u); } catch (ignore) {}
+      throw e;
     }
   }
 
@@ -234,24 +234,6 @@
   function retainUrl(url, downloadId) {
     if (downloadId !== undefined && downloadId !== null) urlById.set(downloadId, url);
     else revokeLater(url);
-  }
-
-  /* Сохранять по ссылке можно только то, что отдаёт сам RuTube и его CDN:
-   * запрос приходит из content-скрипта, а тот живёт на странице. */
-  var ALLOWED_HOSTS = /(^|\.)(rutube\.ru|rtbcdn\.ru|rtbcdn\.net)$/i;
-  function isAllowedUrl(raw) {
-    try {
-      var u = new URL(String(raw));
-      return (u.protocol === 'https:' || u.protocol === 'http:') && ALLOWED_HOSTS.test(u.hostname);
-    } catch (e) { return false; }
-  }
-
-  /* Через data-URL приходят кадры (image/png|jpeg|webp в base64) и текст глав (text/plain);
-   * всё остальное — отказ. Лимит защищает от мусора. */
-  var MAX_DATA_URL = 40 * 1024 * 1024;
-  function isImageDataUrl(raw) {
-    return typeof raw === 'string' && raw.length <= MAX_DATA_URL &&
-      /^data:(image\/(png|jpeg|webp);base64|text\/plain;charset=utf-8),/.test(raw);
   }
 
   try {
@@ -927,7 +909,7 @@
 
       case 'rt:save-url': {
         try {
-          if (!isAllowedUrl(msg.url)) return { ok: false, error: 'url-not-allowed' };
+          if (!RTNetwork.isAllowedUrl(msg.url)) return { ok: false, error: 'url-not-allowed' };
           var name = RTLib.sanitizeFilename(msg.filename || 'file');
           var dl = await saveRemote(msg.url, name);
           return { ok: true, name: dl.name, id: dl.id };
@@ -938,7 +920,7 @@
 
       case 'rt:save-data-url': {
         try {
-          if (!isImageDataUrl(msg.dataUrl)) return { ok: false, error: 'bad-data-url' };
+          if (!RTNetwork.isAllowedDataUrl(msg.dataUrl)) return { ok: false, error: 'bad-data-url' };
           var fname = RTLib.sanitizeFilename(msg.filename || 'кадр.png');
           var blobUrl;
           if (CAN_OFFSCREEN) {

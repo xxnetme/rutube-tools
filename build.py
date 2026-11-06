@@ -26,7 +26,7 @@ EXCLUDE_BY_FLAVOR = {
 }
 
 REQUIRED = {"manifest.json", "background.js", "content-core.js", "content-panel.js",
-            "lib/dom.js", "lib/engine.js", "lib/audio.js", "lib/i18n.js", "lib/mux-mp4.min.js", "popup.html", "popup.js"}
+            "lib/network.js", "lib/dom.js", "lib/engine.js", "lib/audio.js", "lib/i18n.js", "lib/mux-mp4.min.js", "popup.html", "popup.js"}
 REQUIRED_BY_FLAVOR = {"chromium": {"offscreen.html", "offscreen.js"}}
 
 # AMO/CWS не любят удалённый код и eval — проверяем свои файлы (кроме вендорного mux.js)

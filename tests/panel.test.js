@@ -55,6 +55,7 @@ async function openPanel(url, tab, settings, data) {
     },
     storage: { local: { get: async () => (settings || {}), set: async () => {} }, onChanged: { addListener() {} } }
   };
+  w.eval(read('lib/network.js'));
   w.eval(read('lib/dom.js'));
   w.eval(read('lib/engine.js'));
   w.eval(read('lib/i18n.js'));
