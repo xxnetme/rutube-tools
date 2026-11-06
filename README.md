@@ -1,14 +1,6 @@
 <div align="center">
 
-<p><img src="assets/logo.png" width="76" height="76" alt="RuTube Tools"></p>
-
-<h1>RuTube Tools</h1>
-
-**Видео, звук и точная работа с кадрами — прямо в плеере RuTube.**<br>
-MP4 и M4A, плейлисты, A/B-навигация, субтитры и докачка.<br>
-Без рекламы, аналитики и сторонних серверов.
-
-<img src="assets/badges.svg" width="930" alt="Release 2.0.0 · Firefox 140+ · Chromium 109+ · 148 тестов · 0 трекеров · MIT">
+<img src="assets/banner.png" width="100%" alt="RuTube Tools — скачивание MP4, звук M4A и точная работа с кадрами прямо в плеере RuTube">
 
 <p>
 <a href="https://github.com/xxnetme/rutube-tools/releases/latest/download/rutube-tools-firefox.xpi"><b>Скачать для Firefox</b></a>
@@ -28,8 +20,6 @@ MP4 и M4A, плейлисты, A/B-навигация, субтитры и до
 </p>
 
 </div>
-
-<img src="assets/preview-ui.png" width="100%" alt="Панель RuTube Tools рядом с видео: выбор качества, формата и скачивание MP4">
 
 ---
 

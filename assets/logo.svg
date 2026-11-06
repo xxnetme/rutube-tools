@@ -1,12 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="RuTube Tools">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">RuTube Tools</title>
+  <desc id="desc">Фирменный знак RuTube Tools: буква R с символом воспроизведения в негативном пространстве</desc>
   <defs>
-    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff5b46"/><stop offset="1" stop-color="#d92d24"/>
+    <linearGradient id="brand" x1="64" y1="40" x2="448" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff6b50"/>
+      <stop offset="0.48" stop-color="#f0443c"/>
+      <stop offset="1" stop-color="#cf2635"/>
     </linearGradient>
+    <linearGradient id="edge" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.16"/>
+    </linearGradient>
+    <radialGradient id="light" cx="0" cy="0" r="1" gradientTransform="translate(126 88) rotate(47) scale(394)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="512" height="512" rx="116" fill="url(#lg)"/>
-  <rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2"/>
-  <g fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M256 148v154"/><path d="M186 258l70 70 70-70"/><path d="M172 366h168"/>
-  </g>
+  <rect width="512" height="512" rx="116" fill="url(#brand)"/>
+  <rect width="512" height="512" rx="116" fill="url(#light)"/>
+  <rect x="3" y="3" width="506" height="506" rx="113" fill="none" stroke="url(#edge)" stroke-width="3"/>
+  <!-- Собственная геометрия R; треугольный counter образует play без лишних деталей. -->
+  <path fill="#ffffff" fill-rule="evenodd" d="
+    M128 108H278
+    C364 108 410 150 410 220
+    C410 268 388 302 340 321
+    L412 404H312L244 332H214V404H128V108Z
+    M214 174L314 220L214 266Z"/>
 </svg>
