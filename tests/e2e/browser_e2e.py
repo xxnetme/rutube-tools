@@ -25,6 +25,8 @@ from pathlib import Path
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.selenium_manager import SeleniumManager
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -228,6 +230,17 @@ def shadow_text(driver) -> str:
     """)
 
 
+def chrome_service(binary: str) -> ChromeService:
+    """Подбирает driver именно к Playwright Chrome, а не к системному Chrome на runner."""
+    paths = SeleniumManager().binary_paths([
+        "--browser", "chrome", "--browser-path", binary, "--avoid-browser-download"
+    ])
+    driver_path = paths.get("driver_path")
+    if not driver_path or not Path(driver_path).is_file():
+        raise RuntimeError(f"Selenium Manager не выдал ChromeDriver для {binary}: {paths}")
+    return ChromeService(executable_path=driver_path)
+
+
 def make_driver(name: str, proxy_port: int, directory: Path) -> webdriver.Remote:
     proxy = f"http://127.0.0.1:{proxy_port}"
     if name == "chromium":
@@ -249,7 +262,7 @@ def make_driver(name: str, proxy_port: int, directory: Path) -> webdriver.Remote
             "download.default_directory": str(directory), "download.prompt_for_download": False,
             "download.directory_upgrade": True, "safebrowsing.enabled": False
         })
-        driver = webdriver.Chrome(options=options)
+        driver = webdriver.Chrome(service=chrome_service(options.binary_location), options=options)
     else:
         options = FirefoxOptions()
         options.binary_location = browser_binary(name)

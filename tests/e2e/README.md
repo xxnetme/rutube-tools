@@ -26,6 +26,8 @@ python3 tests/e2e/browser_e2e.py --browser firefox
 ```
 
 Свои сборки браузера можно задать через `CHROMIUM_BINARY` и `FIREFOX_BINARY`.
+Для Chromium Selenium Manager получает ChromeDriver по явному `binary_location` Playwright;
+это исключает смешивание системного driver одной версии с браузером другой на CI-runner.
 
 ## Как контролируется сеть
 
