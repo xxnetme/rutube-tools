@@ -483,6 +483,31 @@ test('rt:save-url: чужие хосты и не-http схемы отклоня�
   assert.equal(b.downloads.length, 1);
 });
 
+test('rt:save-vtt: SRT скачивается по allowlist и сохраняется как WebVTT', async () => {
+  const previousFetch = globalThis.fetch;
+  const srt = '1\r\n00:00:01,000 --> 00:00:02,500\r\nПривет\r\n';
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.startsWith('data:')) {
+      return { ok: true, blob: async () => new Blob([decodeURIComponent(value.slice(value.indexOf(',') + 1))]) };
+    }
+    return { ok: true, status: 200, text: async () => srt };
+  };
+  try {
+    const b = createBrowser();
+    const denied = await b.call({ type: 'rt:save-vtt', url: 'https://evil.example/sub.srt', filename: 'x.vtt' });
+    assert.equal(denied.ok, false);
+    assert.equal(denied.error, 'url-not-allowed');
+    const result = await b.call({ type: 'rt:save-vtt', url: 'https://cdn.rutube.ru/sub/ru.srt', filename: 'x.vtt' });
+    assert.equal(result.ok, true);
+    assert.equal(b.downloads.length, 1);
+    const blob = resolveObjectURL(b.downloads[0].url);
+    assert.equal(await blob.text(), 'WEBVTT\n\n00:00:01.000 --> 00:00:02.500\nПривет\n');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('rt:save-data-url: принимает кадры и текст, отклоняет всё остальное', async () => {
   // fetch подменён соседними тестами: для data: делаем свой, чтобы тест не зависел от порядка
   globalThis.fetch = async (u) => ({ ok: true, blob: async () => new Blob([String(u)]) });

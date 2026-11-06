@@ -627,10 +627,12 @@
     }
     var info = state.info;
     var subs = (info.captions || []).map(function (c, i) {
+      var isSrt = String(c.format || 'srt').toLowerCase() === 'srt';
       return D.h('div', { class: 'item' },
         D.h('span', { class: 'nm' },
           c.langTitle, c.isAuto ? [' · ', t('more.subAuto')] : null, ' · ', (c.format || 'srt').toUpperCase()),
-        btn(t('tab.download'), { class: 'go', 'data-sub': i })
+        btn(t('tab.download'), { class: 'go', 'data-sub': i }),
+        isSrt ? btn('VTT', { class: 'go', 'data-sub-vtt': i, title: t('more.saveVtt') }) : null
       );
     });
 
@@ -674,6 +676,17 @@
         if (!c) return;
         var name = L.sanitizeFilename(info.title + ' (' + c.langTitle + ')') + '.' + (c.format || 'srt');
         RT.sendMessage({ type: 'rt:save-url', url: c.url, filename: name }).then(function (r) {
+          RT.toast(r && r.ok ? t('more.saved', { name: r.name }) : t('more.saveFail'));
+        });
+      });
+    });
+
+    $$('[data-sub-vtt]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var c = info.captions[Number(b.getAttribute('data-sub-vtt'))];
+        if (!c) return;
+        var name = L.sanitizeFilename(info.title + ' (' + c.langTitle + ')') + '.vtt';
+        RT.sendMessage({ type: 'rt:save-vtt', url: c.url, filename: name }).then(function (r) {
           RT.toast(r && r.ok ? t('more.saved', { name: r.name }) : t('more.saveFail'));
         });
       });

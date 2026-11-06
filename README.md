@@ -224,7 +224,7 @@ flowchart LR
 
 ## Качество
 
-Проект покрыт автотестами (`npm test` — 111 JS-проверок, плюс 15 Python unit-тестов инфраструктуры).
+Проект покрыт автотестами (`npm test` — 115 JS-проверок, плюс 15 Python unit-тестов инфраструктуры).
 В CI они идут вместе с ESLint, `no-unsanitized`, JSDoc/`tsc --checkJs`, `addons-linter` и
 браузерным E2E в Firefox и Chromium:
 

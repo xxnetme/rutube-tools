@@ -125,6 +125,22 @@ test('главы: текст', () => {
   assert.equal(L.chaptersToText([]), '\n');
 });
 
+test('SRT → VTT: BOM, CRLF, миллисекунды, текст и cue settings', () => {
+  const srt = '\uFEFF1\r\n00:00:01,2 --> 00:00:04,500 align:start\r\nПривет\r\nмир\r\n\r\n' +
+    '2\r\n01:02:03.004 --> 01:02:05.006\r\n<i>Текст</i>';
+  assert.equal(L.srtToVtt(srt),
+    'WEBVTT\n\n00:00:01.200 --> 00:00:04.500 align:start\nПривет\nмир\n\n' +
+    '01:02:03.004 --> 01:02:05.006\n<i>Текст</i>\n');
+  assert.match(L.srtToVtt('intro\n00:00:00,000 --> 00:00:01,000\nText'), /^WEBVTT\n\nintro\n/);
+});
+
+test('SRT → VTT: повреждённый вход отклоняется', () => {
+  for (const value of ['', '1\nnot a time\nText', '1\n00:00:02,000 --> 00:00:01,000\nText',
+    '1\n00:00:01,000 --> 00:00:02,000', null]) {
+    assert.throws(() => L.srtToVtt(value), /srt|empty/);
+  }
+});
+
 test('главы: FFMETADATA — экранирование, сортировка, границы', () => {
   const out = L.chaptersToFfmetadata([{ time: 75.5, title: 'B=1; #' }, { time: 0, title: 'A' }], 200, 'Т=1');
   assert.ok(out.startsWith(';FFMETADATA1\ntitle=Т\\=1\n'));

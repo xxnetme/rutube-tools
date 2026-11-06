@@ -840,6 +840,47 @@
     }).join('\n') + '\n';
   }
 
+  /**
+   * Преобразует SubRip в WebVTT без сетевых библиотек и HTML-парсера.
+   * Индексы SRT не нужны WebVTT; необязательные cue settings после второго
+   * времени сохраняются. Невалидный файл отклоняется, а не сохраняется молча.
+   * @param {string} input
+   * @returns {string}
+   */
+  function srtToVtt(input) {
+    if (typeof input !== 'string') throw new Error('invalid-srt');
+    var source = input.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim();
+    if (!source) throw new Error('invalid-srt');
+    var timePattern = '(\\d{2,}:[0-5]\\d:[0-5]\\d[,.]\\d{1,3})';
+    var timingRe = new RegExp('^' + timePattern + '\\s+-->\\s+' + timePattern + '(?:\\s+(.*))?$');
+    function timestamp(value) {
+      var m = String(value).match(/^(\d{2,}):([0-5]\d):([0-5]\d)[,.](\d{1,3})$/);
+      if (!m) throw new Error('invalid-srt-time');
+      var ms = Number(m[4].padEnd(3, '0'));
+      return {
+        text: m[1].padStart(2, '0') + ':' + m[2] + ':' + m[3] + '.' + String(ms).padStart(3, '0'),
+        value: Number(m[1]) * 3600000 + Number(m[2]) * 60000 + Number(m[3]) * 1000 + ms
+      };
+    }
+    var cues = source.split(/\n[ \t]*\n/).map(function (block, index) {
+      var lines = block.split('\n');
+      var timingIndex = lines.findIndex(function (line) { return line.indexOf('-->') !== -1; });
+      if (timingIndex < 0 || timingIndex > 1) throw new Error('invalid-srt-cue-' + (index + 1));
+      var match = timingRe.exec(lines[timingIndex].trim());
+      if (!match) throw new Error('invalid-srt-time-' + (index + 1));
+      var start = timestamp(match[1]), end = timestamp(match[2]);
+      if (end.value < start.value) throw new Error('invalid-srt-order-' + (index + 1));
+      var text = lines.slice(timingIndex + 1);
+      if (!text.length || text.every(function (line) { return !line.trim(); })) {
+        throw new Error('empty-srt-cue-' + (index + 1));
+      }
+      var identifier = timingIndex === 1 && !/^\d+$/.test(lines[0].trim()) ? lines[0].trim() + '\n' : '';
+      return identifier + start.text + ' --> ' + end.text +
+        (match[3] ? ' ' + match[3].trim() : '') + '\n' + text.join('\n');
+    });
+    return 'WEBVTT\n\n' + cues.join('\n\n') + '\n';
+  }
+
   function ffEscape(s) {
     return String(s == null ? '' : s).replace(/[=;#\\\n]/g, function (ch) {
       return ch === '\n' ? '\\\n' : '\\' + ch;
@@ -1082,6 +1123,7 @@
     pickAudioVariant: pickAudioVariant,
     chaptersToText: chaptersToText,
     chaptersToFfmetadata: chaptersToFfmetadata,
+    srtToVtt: srtToVtt,
     planParts: planParts,
     segmentRange: segmentRange,
     segmentOffsets: segmentOffsets,

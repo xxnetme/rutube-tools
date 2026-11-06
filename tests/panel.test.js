@@ -152,6 +152,20 @@ test('вкладка «Ещё»: главы сохраняются в .txt и .f
   p.close();
 });
 
+test('вкладка «Ещё»: SRT можно сохранить как VTT', { skip }, async () => {
+  const p = await openPanel('https://rutube.ru/video/' + ID + '/');
+  await p.until(() => p.body().querySelector('[data-act="go"]'));
+  p.RT.setTab('more');
+  await p.until(() => p.body().querySelector('[data-sub-vtt]'));
+  assert.equal(p.body().querySelectorAll('[data-sub-vtt]').length, 1, 'VTT не конвертируется повторно');
+  p.body().querySelector('[data-sub-vtt]').click();
+  await p.until(() => p.sent.some((m) => m.type === 'rt:save-vtt'));
+  const msg = p.sent.find((m) => m.type === 'rt:save-vtt');
+  assert.equal(msg.url, 'https://c/sub-ru.srt');
+  assert.match(msg.filename, /\.vtt$/);
+  p.close();
+});
+
 test('плейлист: галочки серий — «Ни одной» блокирует старт, «Все» шлёт полный диапазон', { skip }, async () => {
   const p = await openPanel('https://rutube.ru/plst/9/');
   await p.until(() => p.body().querySelector('[data-pl]'));

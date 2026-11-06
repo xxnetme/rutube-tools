@@ -115,6 +115,7 @@
 
     /* ещё */
     'more.subtitles': 'Субтитры',
+    'more.saveVtt': 'Скачать .vtt',
     'more.subAuto': 'авто',
     'more.thumb': 'Обложка видео',
     'more.chapters': 'Главы',
@@ -344,6 +345,7 @@
     'fr.noVideo': 'Player not found on this page',
 
     'more.subtitles': 'Subtitles',
+    'more.saveVtt': 'Download .vtt',
     'more.subAuto': 'auto',
     'more.thumb': 'Video thumbnail',
     'more.chapters': 'Chapters',

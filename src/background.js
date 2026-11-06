@@ -225,6 +225,39 @@
     }
   }
 
+  /* Текстовые файлы проходят тот же offscreen-путь в Chromium, что и кадры/главы. */
+  async function saveTextData(dataUrl, filename) {
+    if (!RTNetwork.isAllowedDataUrl(dataUrl)) throw new Error('bad-data-url');
+    var fname = RTLib.sanitizeFilename(filename || 'file.txt');
+    var blobUrl;
+    if (CAN_OFFSCREEN) {
+      await ensureOffscreen();
+      var off = await sendExt({ type: 'rt:offscreen-data-url', dataUrl: dataUrl });
+      if (!off || !off.ok) throw new Error((off && off.error) || 'offscreen');
+      blobUrl = off.url;
+    } else {
+      var response = await fetch(dataUrl);
+      blobUrl = URL.createObjectURL(await response.blob());
+    }
+    try {
+      var dl = await downloadUrl(blobUrl, fname);
+      retainUrl(blobUrl, dl.id);
+      return dl;
+    } catch (e) {
+      try { URL.revokeObjectURL(blobUrl); } catch (ignore) {}
+      throw e;
+    }
+  }
+
+  async function saveVtt(url, name) {
+    if (!RTNetwork.isAllowedUrl(url)) throw new Error('url-not-allowed');
+    var resp = await RTNetwork.fetch(url, { credentials: 'omit' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var source = await resp.text();
+    var vtt = RTLib.srtToVtt(source);
+    return saveTextData('data:text/plain;charset=utf-8,' + encodeURIComponent(vtt), name);
+  }
+
   /* Отложенное освобождение blob-ссылки. В Node (тесты) таймер не держит процесс. */
   function revokeLater(url) {
     var t = setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 5 * 60000);
@@ -970,22 +1003,18 @@
         }
       }
 
+      case 'rt:save-vtt': {
+        try {
+          var dlVtt = await saveVtt(msg.url, msg.filename || 'subtitles.vtt');
+          return { ok: true, name: dlVtt.name, id: dlVtt.id };
+        } catch (e) {
+          return { ok: false, error: (e && e.message) || String(e) };
+        }
+      }
+
       case 'rt:save-data-url': {
         try {
-          if (!RTNetwork.isAllowedDataUrl(msg.dataUrl)) return { ok: false, error: 'bad-data-url' };
-          var fname = RTLib.sanitizeFilename(msg.filename || 'кадр.png');
-          var blobUrl;
-          if (CAN_OFFSCREEN) {
-            await ensureOffscreen();
-            var off = await sendExt({ type: 'rt:offscreen-data-url', dataUrl: msg.dataUrl });
-            if (!off || !off.ok) throw new Error((off && off.error) || 'offscreen');
-            blobUrl = off.url;
-          } else {
-            var r2 = await fetch(msg.dataUrl);
-            blobUrl = URL.createObjectURL(await r2.blob());
-          }
-          var dl2 = await downloadUrl(blobUrl, fname);
-          retainUrl(blobUrl, dl2.id);
+          var dl2 = await saveTextData(msg.dataUrl, msg.filename || 'кадр.png');
           return { ok: true, name: dl2.name, id: dl2.id };
         } catch (e) {
           return { ok: false, error: (e && e.message) || String(e) };
@@ -1044,7 +1073,7 @@
 
     var handled = ['rt:ping', 'rt:keepalive', 'rt:info', 'rt:playlist-info', 'rt:playlist-videos', 'rt:start',
       'rt:start-playlist', 'rt:pause', 'rt:resume', 'rt:cancel', 'rt:show-download',
-      'rt:diagnostics', 'rt:save-url', 'rt:save-data-url',
+      'rt:diagnostics', 'rt:save-url', 'rt:save-vtt', 'rt:save-data-url',
       'rt:pending-list', 'rt:pending-resume', 'rt:pending-discard', 'rt:history-list', 'rt:history-clear'];
     if (handled.indexOf(msg.type) === -1) return false;
 
